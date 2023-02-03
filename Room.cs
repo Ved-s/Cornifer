@@ -1,0 +1,392 @@
+﻿using Cornifer.Renderers;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using System;
+using System.Buffers;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Xml.Linq;
+
+namespace Cornifer
+{
+    public class Room : ISelectable, ISelectableContainer
+    {
+        static Point[] Directions = new Point[] { new Point(0, -1), new Point(1, 0), new Point(0, 1), new Point(-1, 0) };
+
+        public static bool DrawTileWalls = true;
+
+        public string Id;
+        public string Name = null!;
+
+        public bool IsGate;
+        public bool IsShelter;
+
+        public Point Size;
+        public int WaterLevel;
+        public bool WaterInFrontOfTerrain;
+        public Tile[,] Tiles = null!;
+
+        public Point[] Exits = Array.Empty<Point>();
+        public Shortcut[] Shortcuts = Array.Empty<Shortcut>();
+
+        public int Layer;
+        public string? Subregion;
+
+        public Vector2 WorldPos;
+
+        public Connection?[] Connections = Array.Empty<Connection>();
+        public PlacedObject[] PlacedObjects = Array.Empty<PlacedObject>();
+
+        public Texture2D? TileMap;
+        public bool TileMapDirty = false;
+
+        public bool Loaded = false;
+
+        Vector2 ISelectable.Position 
+        {
+            get => WorldPos;
+            set => WorldPos = value;
+        }
+        Vector2 ISelectable.Size => Size.ToVector2();
+
+        public Room(string id)
+        {
+            Id = id;
+        }
+        public Point TraceShotrcut(Point pos)
+        {
+            Point lastPos = pos;
+            int? dir = null;
+            bool foundDir = false;
+
+            while (true)
+            {
+                if (dir is not null)
+                {
+                    Point dirVal = Directions[dir.Value];
+
+                    Point testTilePos = pos + dirVal;
+
+                    if (testTilePos.X >= 0 && testTilePos.Y >= 0 && testTilePos.X < Size.X && testTilePos.Y < Size.Y)
+                    {
+                        Tile tile = Tiles[testTilePos.X, testTilePos.Y];
+                        if (tile.Shortcut == Tile.ShortcutType.Normal)
+                        {
+                            lastPos = pos;
+                            pos = testTilePos;
+                            continue;
+                        }
+                    }
+                }
+                foundDir = false;
+                for (int j = 0; j < 4; j++)
+                {
+                    Point dirVal = Directions[j];
+                    Point testTilePos = pos + dirVal;
+
+                    if (testTilePos == lastPos || testTilePos.X < 0 || testTilePos.Y < 0 || testTilePos.X >= Size.X || testTilePos.Y >= Size.Y)
+                        continue;
+
+                    Tile tile = Tiles[testTilePos.X, testTilePos.Y];
+                    if (tile.Shortcut == Tile.ShortcutType.Normal)
+                    {
+                        dir = j;
+                        foundDir = true;
+                        break;
+                    }
+                }
+                if (!foundDir)
+                    break;
+            }
+
+            return pos;
+        }
+
+        public Tile GetTile(int x, int y)
+        {
+            x = Math.Clamp(x, 0, Size.X - 1);
+            y = Math.Clamp(y, 0, Size.Y - 1);
+            return Tiles[x, y];
+        }
+
+        public void Load(string data, string? settings)
+        {
+            string[] lines = File.ReadAllLines(data);
+
+            if (lines.TryGet(0, out string displayname))
+                Name = displayname;
+
+            if (lines.TryGet(1, out string sizeWater))
+            {
+                string[] swArray = sizeWater.Split('|');
+                if (swArray.TryGet(0, out string size))
+                {
+                    string[] sArray = size.Split('*');
+                    if (sArray.TryGet(0, out string widthStr) && int.TryParse(widthStr, out int width))
+                        Size.X = width;
+                    if (sArray.TryGet(1, out string heightStr) && int.TryParse(heightStr, out int height))
+                        Size.Y = height;
+                }
+                if (swArray.TryGet(1, out string waterLevelStr) && int.TryParse(waterLevelStr, out int waterLevel))
+                {
+                    WaterLevel = waterLevel;
+                }
+                if (swArray.TryGet(2, out string waterInFrontStr))
+                {
+                    WaterInFrontOfTerrain = waterInFrontStr == "1";
+                }
+            }
+
+            if (lines.TryGet(11, out string tiles))
+            {
+                Tiles = new Tile[Size.X, Size.Y];
+
+                string[] tilesArray = tiles.Split('|');
+
+                int x = 0, y = 0;
+                for (int i = 0; i < tilesArray.Length; i++)
+                {
+                    if (tilesArray[i].Length == 0 || x < 0 || y < 0 || x >= Tiles.GetLength(0) || y >= Tiles.GetLength(1))
+                        continue;
+
+                    string[] tileArray = tilesArray[i].Split(',');
+                    Tile tile = new();
+
+                    for (int j = 0; j < tileArray.Length; j++)
+                    {
+                        if (j == 0)
+                        {
+                            if (!int.TryParse(tileArray[j], out int terrain))
+                                continue;
+
+                            tile.Terrain = (Tile.TerrainType)terrain;
+                            continue;
+                        }
+
+                        switch (tileArray[j])
+                        {
+                            case "1": tile.Attributes |= Tile.TileAttributes.VerticalBeam; break;
+                            case "2": tile.Attributes |= Tile.TileAttributes.HorizontalBeam; break;
+
+                            case "3" when tile.Shortcut == Tile.ShortcutType.None:
+                                tile.Shortcut = Tile.ShortcutType.Normal;
+                                break;
+
+                            case "4": tile.Shortcut = Tile.ShortcutType.RoomExit; break;
+                            case "5": tile.Shortcut = Tile.ShortcutType.CreatureHole; break;
+                            case "6": tile.Attributes |= Tile.TileAttributes.WallBehind; break;
+                            case "7": tile.Attributes |= Tile.TileAttributes.Hive; break;
+                            case "8": tile.Attributes |= Tile.TileAttributes.Waterfall; break;
+                            case "9": tile.Shortcut = Tile.ShortcutType.NPCTransportation; break;
+                            case "10": tile.Attributes |= Tile.TileAttributes.GarbageHole; break;
+                            case "11": tile.Attributes |= Tile.TileAttributes.WormGrass; break;
+                            case "12": tile.Shortcut = Tile.ShortcutType.RegionTransportation; break;
+                        }
+                    }
+
+                    Tiles[x, y] = tile;
+
+                    y++;
+                    if (y >= Size.Y)
+                    {
+                        x++;
+                        y = 0;
+                    }
+                }
+
+                List<Point> exits = new();
+                List<Point> shortcuts = new();
+
+                for (int j = 0; j < Size.Y; j++)
+                    for (int i = 0; i < Size.X; i++)
+                    {
+                        Tile tile = Tiles[i, j];
+
+                        if (tile.Terrain == Tile.TerrainType.ShortcutEntrance)
+                            shortcuts.Add(new Point(i, j));
+
+                        if (tile.Shortcut == Tile.ShortcutType.RoomExit)
+                            exits.Add(new Point(i, j));
+                    }
+
+                Point[] exitEntrances = new Point[exits.Count];
+
+                for (int i = 0; i < exits.Count; i++)
+                {
+                    exitEntrances[i] = TraceShotrcut(exits[i]);
+                }
+
+                List<Shortcut> tracedShortcuts = new();
+
+                foreach (Point shortcutIn in shortcuts)
+                {
+                    Point target = TraceShotrcut(shortcutIn);
+                    Tile targetTile = GetTile(target.X, target.Y);
+                    tracedShortcuts.Add(new(shortcutIn, target, targetTile.Shortcut));
+                }
+
+                Shortcuts = tracedShortcuts.ToArray();
+                Exits = exitEntrances;
+            }
+
+            if (settings is not null)
+            foreach (string line in File.ReadAllLines(settings))
+            {
+                string[] split = line.Split(':', 2, StringSplitOptions.TrimEntries);
+
+                if (split[0] == "PlacedObjects")
+                {
+                    string[] objects = split[1].Split(',', StringSplitOptions.TrimEntries);
+                    List<PlacedObject> objectList = new();
+                    foreach (string str in objects)
+                    {
+                        PlacedObject? obj = PlacedObject.Load(this, str);
+                        if (obj is not null)
+                            objectList.Add(obj);
+                    }
+
+                    PlacedObjects = objectList.ToArray();
+                }
+            }
+
+            Loaded = true;
+        }
+
+        public Texture2D GetTileMap()
+        {
+            if (TileMap is null || TileMapDirty)
+                UpdateTileMap();
+            return TileMap!;
+        }
+
+        public void UpdateTileMap()
+        {
+            Color[] colors = ArrayPool<Color>.Shared.Rent(Size.X * Size.Y);
+            try
+            {
+                for (int j = 0; j < Size.Y; j++)
+                    for (int i = 0; i < Size.X; i++)
+                    {
+                        Tile tile = GetTile(i, j);
+
+                        float gray = 1;
+
+                        bool solid = tile.Terrain == Tile.TerrainType.Solid;
+
+                        if (solid)
+                            gray = 0;
+
+                        else if (tile.Terrain == Tile.TerrainType.Floor)
+                            gray = 0.35f;
+
+                        else if (tile.Terrain == Tile.TerrainType.Slope)
+                            gray = .4f;
+
+                        else if (DrawTileWalls && tile.Attributes.HasFlag(Tile.TileAttributes.WallBehind))
+                            gray = 0.75f;
+
+                        if (tile.Attributes.HasFlag(Tile.TileAttributes.VerticalBeam) || tile.Attributes.HasFlag(Tile.TileAttributes.HorizontalBeam))
+                            gray = 0.35f;
+
+                        byte b = (byte)(gray * 255);
+
+                        Color color = new(b, b, b);
+
+                        if ((WaterInFrontOfTerrain || !solid) && j >= Size.Y - WaterLevel)
+                        {
+                            Color waterColor = new(0, 0, 200);
+
+                            color = Color.Lerp(color, waterColor, 0.4f);
+                        }
+
+                        colors[i + j * Size.X] = color;
+                    }
+
+                foreach (Point p in Exits)
+                    colors[p.X + p.Y * Size.X] = new(255, 0, 0);
+
+                TileMap ??= new(Main.Instance.GraphicsDevice, Size.X, Size.Y);
+                TileMap.SetData(colors, 0, Size.X * Size.Y);
+            }
+            finally 
+            {
+                ArrayPool<Color>.Shared.Return(colors);
+            }
+            TileMapDirty = false;
+        }
+
+        public void Draw(Renderer renderer)
+        {
+            if (!Loaded)
+                return;
+
+            renderer.DrawTexture(GetTileMap(), WorldPos);
+
+            foreach (PlacedObject obj in PlacedObjects)
+                obj.Draw(renderer);
+        }
+
+        public IEnumerable<ISelectable> EnumerateSelectables()
+        {
+            foreach (PlacedObject obj in PlacedObjects.Reverse())
+                foreach (ISelectable selectable in obj.EnumerateSelectables())
+                    yield return selectable;
+
+            yield return this;
+        }
+
+        public override string ToString()
+        {
+            return Id;
+        }
+
+        public record class Connection(Room Target, int Exit, int TargetExit)
+        {
+            public override string ToString()
+            {
+                return $"{Exit} -> {Target.Id}[{TargetExit}]";
+            }
+        }
+        public record Shortcut(Point entrance, Point target, Tile.ShortcutType type);
+
+        public struct Tile
+        {
+            public TerrainType Terrain;
+            public ShortcutType Shortcut;
+            public TileAttributes Attributes;
+
+            [Flags]
+            public enum TileAttributes
+            {
+                None = 0,
+                VerticalBeam = 1,
+                HorizontalBeam = 2,
+                WallBehind = 4,
+                Hive = 8,
+                Waterfall = 16,
+                GarbageHole = 32,
+                WormGrass = 64
+            }
+
+            public enum TerrainType
+            {
+                Air,
+                Solid,
+                Slope,
+                Floor,
+                ShortcutEntrance
+            }
+
+            public enum ShortcutType
+            {
+                None,
+                Normal,
+                RoomExit,
+                CreatureHole,
+                NPCTransportation,
+                RegionTransportation,
+            }
+        }
+    }
+}
