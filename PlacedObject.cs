@@ -106,7 +106,7 @@ namespace Cornifer
 
                 string subname = subsplit[5];
 
-                obj.Color *= 0.7f;
+                obj.Color *= 0.58824f;
                 obj.SlugcatAvailability = GetTokenSlugcats(subsplit[6]);
 
                 switch (split[0])
@@ -128,6 +128,7 @@ namespace Cornifer
 
                 if (subsplit.TryGet(4, out string type))
                     obj.Color = GetPearlColor(type);
+                obj.Color *= 0.64706f;
             }
 
             if (Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Length > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat))
@@ -439,9 +440,25 @@ namespace Cornifer
         {
             return type switch
             {
-                "CC" => new Color(0.9f, 0.6f, 0.1f),
                 "SI_west" => new Color(0.01f, 0.01f, 0.01f),
                 "SI_top" => new Color(0.01f, 0.01f, 0.01f),
+                "SI_chat3" => new Color(0.01f, 0.01f, 0.01f),
+                "SI_chat4" => new Color(0.01f, 0.01f, 0.01f),
+                "SI_chat5" => new Color(0.01f, 0.01f, 0.01f),
+                "Spearmasterpearl" => new Color(0.04f, 0.01f, 0.04f),
+                "SU_filt" => new Color(1f, 0.75f, 0.9f),
+                "DM" => new Color(0.95686275f, 0.92156863f, 0.20784314f),
+                "LC" => new Color(0f, 0.4f, 0.01569f),
+                "LC_second" => new Color(0.6f, 0f, 0f),
+                "OE" => new Color(0.54901963f, 0.36862746f, 0.8f),
+                "MS" => new Color(0.8156863f, 0.89411765f, 0.27058825f),
+                "RM" => new Color(0.38431373f, 0.18431373f, 0.9843137f),
+                "Rivulet_stomach" => new Color(0.5882353f, 0.87058824f, 0.627451f),
+                "CL" => new Color(0.48431373f, 0.28431374f, 1f),
+                "VS" => new Color(0.53f, 0.05f, 0.92f),
+                "BroadcastMisc" => new Color(0.9f, 0.7f, 0.8f),
+
+                "CC" => new Color(0.9f, 0.6f, 0.1f),
                 "LF_west" => new Color(1f, 0f, 0.3f),
                 "LF_bottom" => new Color(1f, 0.1f, 0.1f),
                 "HI" => new Color(0.007843138f, 0.19607843f, 1f),
