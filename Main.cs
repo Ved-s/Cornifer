@@ -199,6 +199,8 @@ namespace Cornifer
 
         protected override void Draw(GameTime gameTime)
         {
+            Viewport vp = GraphicsDevice.Viewport;
+            GraphicsDevice.ScissorRectangle = new(0, 0, vp.Width, vp.Height);
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             if (SelectedObjects.Count > 0)
