@@ -23,6 +23,7 @@ namespace Cornifer
 
         public bool IsGate;
         public bool IsShelter;
+        public bool IsAncientShelter;
 
         public Point Size;
         public int WaterLevel;

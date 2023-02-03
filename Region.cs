@@ -63,6 +63,7 @@ namespace Cornifer
                             {
                                 case "GATE": room.IsGate = true; break;
                                 case "SHELTER": room.IsShelter = true; break;
+                                case "ANCIENTSHELTER": room.IsShelter = room.IsAncientShelter = true; break;
                             }
 
                         Rooms.Add(room);
