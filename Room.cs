@@ -40,6 +40,8 @@ namespace Cornifer
         public Connection?[] Connections = Array.Empty<Connection>();
         public PlacedObject[] PlacedObjects = Array.Empty<PlacedObject>();
 
+        public SimpleIcon? ShelterIcon;
+
         public Texture2D? TileMap;
         public bool TileMapDirty = false;
 
@@ -253,6 +255,16 @@ namespace Cornifer
                 }
             }
 
+            if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
+            {
+                ShelterIcon = new()
+                {
+                    Parent = this,
+                    Texture = shelterMarker.Item1,
+                    Frame = shelterMarker.Item2,
+                };
+            }
+
             Loaded = true;
         }
 
@@ -331,10 +343,14 @@ namespace Cornifer
             foreach (PlacedObject obj in PlacedObjects)
                 if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))
                     obj.Draw(renderer);
+            ShelterIcon?.Draw(renderer);
         }
 
         public IEnumerable<ISelectable> EnumerateSelectables()
         {
+            if (ShelterIcon is not null)
+                yield return ShelterIcon;
+
             foreach (PlacedObject obj in PlacedObjects.Reverse())
                 if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))
                     foreach (ISelectable selectable in obj.EnumerateSelectables())
