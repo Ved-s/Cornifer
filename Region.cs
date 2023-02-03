@@ -155,9 +155,9 @@ namespace Cornifer
                 if (data.Length > 3)
                 {
                     if (float.TryParse(data[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float x))
-                        room.WorldPos.X = MathF.Floor(x / 2);
+                        room.WorldPos.X = MathF.Round(x / 2);
                     if (float.TryParse(data[3], NumberStyles.Float, CultureInfo.InvariantCulture, out float y))
-                        room.WorldPos.Y = MathF.Floor(-y / 2);
+                        room.WorldPos.Y = MathF.Round(-y / 2);
                 }
 
                 if (data.TryGet(4, out string layerstr) && int.TryParse(layerstr, out int layer))

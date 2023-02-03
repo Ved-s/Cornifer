@@ -161,7 +161,7 @@ namespace Cornifer
                     foreach (ISelectable selectable in SelectedObjects)
                     {
                         Vector2 pos = selectable.Position;
-                        pos.Floor();
+                        pos.Round();
                         selectable.Position = pos;
                     }
                 }

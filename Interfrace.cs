@@ -169,8 +169,6 @@ namespace Cornifer
                             InitSidePanel()
                         }
                     }.Assign(out SidePanel),
-
-
                 }
             };
         }
@@ -217,6 +215,24 @@ namespace Cornifer
                     new UIButton
                     {
                         Top = 75,
+
+                        Height = 20,
+                        Text = "Draw pickups",
+
+                        HoverText = "Draw placed items",
+
+                        Selectable = true,
+                        Selected = Room.DrawPickUpObjects,
+
+                        SelectedBackColor = Color.White,
+                        SelectedTextColor = Color.Black,
+
+                        TextAlign = new(.5f)
+                    }.OnEvent(UIElement.ClickEvent, (btn, _) => Room.DrawPickUpObjects = btn.Selected),
+
+                    new UIButton
+                    {
+                        Top = 100,
                         Height = 20,
 
                         Selectable = true,
@@ -227,6 +243,8 @@ namespace Cornifer
 
                         SelectedBackColor = Color.White,
                         SelectedTextColor = Color.Black,
+
+                        TextAlign = new(.5f)
 
                     }.OnEvent(UIElement.ClickEvent, (btn, _) =>
                     {

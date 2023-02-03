@@ -13,8 +13,10 @@ namespace Cornifer
     public class Room : ISelectable, ISelectableContainer
     {
         static Point[] Directions = new Point[] { new Point(0, -1), new Point(1, 0), new Point(0, 1), new Point(-1, 0) };
+        static HashSet<string> NonPickupObjectsWhitelist = new() { "GhostSpot", "BlueToken", "GoldToken", "RedToken", "DataPearl", "UniqueDataPearl" };
 
         public static bool DrawTileWalls = true;
+        public static bool DrawPickUpObjects = true;
 
         public string Id;
         public string Name = null!;
@@ -324,14 +326,16 @@ namespace Cornifer
             renderer.DrawTexture(GetTileMap(), WorldPos);
 
             foreach (PlacedObject obj in PlacedObjects)
-                obj.Draw(renderer);
+                if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))
+                    obj.Draw(renderer);
         }
 
         public IEnumerable<ISelectable> EnumerateSelectables()
         {
             foreach (PlacedObject obj in PlacedObjects.Reverse())
-                foreach (ISelectable selectable in obj.EnumerateSelectables())
-                    yield return selectable;
+                if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))
+                    foreach (ISelectable selectable in obj.EnumerateSelectables())
+                        yield return selectable;
 
             yield return this;
         }
