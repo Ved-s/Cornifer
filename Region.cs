@@ -36,6 +36,9 @@ namespace Cornifer
 
             foreach (string line in File.ReadAllLines(worldFile))
             {
+                if (line.StartsWith("//"))
+                    continue;
+
                 if (line == "ROOMS")
                     readingRooms = true;
                 else if (line == "END ROOMS")
@@ -274,7 +277,7 @@ namespace Cornifer
             {
                 foreach (Room.Connection? connection in room.Connections)
                 {
-                    if (connection is null || DrawnRoomConnections.Contains(connection.Target.Id))
+                    if (connection is null || DrawnRoomConnections.Contains(connection.Target.Id) || room.Exits.Length <= connection.Exit)
                         continue;
 
                     Vector2 start = renderer.TransformVector(room.WorldPos + room.Exits[connection.Exit].ToVector2() + new Vector2(.5f));

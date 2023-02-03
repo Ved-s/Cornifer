@@ -74,6 +74,7 @@ namespace Cornifer
             Pixel.SetData(new[] { Color.White });
 
             WorldCamera = new(SpriteBatch);
+            GameAtlases.Load();
         }
 
         protected override void Update(GameTime gameTime)
@@ -103,7 +104,7 @@ namespace Cornifer
             if (drag && !oldDrag)
             {
                 // Clicked on already selected room
-                if (FindSelectableAtPos(SelectedObjects, mouseWorld) is not null)
+                if (ISelectable.FindSelectableAtPos(SelectedObjects, mouseWorld) is not null)
                 {
                     Dragging = true;
                     OldDragPos = mouseWorld;
@@ -112,7 +113,7 @@ namespace Cornifer
                 if (Region is not null)
                 {
                     // Clicked on not selected room
-                    ISelectable? selectable = FindSelectableAtPos(Region.EnumerateSelectables(), mouseWorld);
+                    ISelectable? selectable = ISelectable.FindSelectableAtPos(Region.EnumerateSelectables(), mouseWorld);
                     if (selectable is not null)
                     {
                         SelectedObjects.Clear();
@@ -149,9 +150,9 @@ namespace Cornifer
                         SelectedObjects.Clear();
 
                     if (KeyboardState.IsKeyDown(Keys.LeftControl))
-                        SelectedObjects.ExceptWith(FindIntersectingSelectables(SelectedObjects, tl, br));
+                        SelectedObjects.ExceptWith(ISelectable.FindIntersectingSelectables(SelectedObjects, tl, br));
                     else if (Region is not null)
-                        SelectedObjects.UnionWith(FindIntersectingSelectables(Region.EnumerateSelectables(), tl, br));
+                        SelectedObjects.UnionWith(ISelectable.FindIntersectingSelectables(Region.EnumerateSelectables(), tl, br));
                 }
             }
             else
@@ -168,32 +169,6 @@ namespace Cornifer
 
                 Dragging = false;
                 Selecting = false;
-            }
-        }
-
-        ISelectable? FindSelectableAtPos(IEnumerable<ISelectable> selectables, Vector2 pos)
-        {
-            foreach (ISelectable selectable in selectables)
-            {
-                if (selectable.Position.X <= pos.X
-                 && selectable.Position.Y <= pos.Y
-                 && selectable.Position.X + selectable.Size.X > pos.X
-                 && selectable.Position.Y + selectable.Size.Y > pos.Y)
-                    return selectable;
-            }
-            return null;
-        }
-
-        IEnumerable<ISelectable> FindIntersectingSelectables(IEnumerable<ISelectable> selectables, Vector2 tl, Vector2 br)
-        {
-            foreach (ISelectable selectable in selectables)
-            {
-                bool intersects = selectable.Position.X < br.X
-                    && tl.X < selectable.Position.X + selectable.Size.X
-                    && selectable.Position.Y < br.Y
-                    && tl.Y < selectable.Position.Y + selectable.Size.Y;
-                if (intersects)
-                    yield return selectable;
             }
         }
 
@@ -340,7 +315,7 @@ namespace Cornifer
             return false;
         }
 
-        public static IEnumerable<(string name, string path)> FindRegions()
+        public static IEnumerable<(string id, string name, string path)> FindRegions()
         {
             if (RainWorldRoot is null)
                 yield break;
@@ -371,7 +346,7 @@ namespace Cornifer
                             if (foundRegions.Contains(name))
                                 continue;
 
-                            yield return (name, region);
+                            yield return (Path.GetFileName(region).ToUpper(), name, region);
 
                             foundRegions.Add(name);
                         }

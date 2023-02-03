@@ -19,6 +19,8 @@ namespace Cornifer
 
         public static UIPanel SidePanel = null!;
 
+        public static UIButton SlugcatIcons = null!;
+
         public static bool Hovered => Root?.Hover is not null;
 
         static bool regionSelectVisible = false;
@@ -74,11 +76,11 @@ namespace Cornifer
 
                             }.Execute(list =>
                             {
-                                foreach (var (name, path) in Main.FindRegions())
+                                foreach (var (id, name, path) in Main.FindRegions())
                                 {
                                     list.Elements.Add(new UIButton
                                     {
-                                        Text = name,
+                                        Text = $"{name} ({id})",
                                         Height = 20,
                                         TextAlign = new(.5f)
                                     }.OnEvent(UIElement.ClickEvent, (_, _) =>
@@ -199,6 +201,23 @@ namespace Cornifer
                         Top = 50,
 
                         Height = 20,
+                        Text = "Draw slugcat icons",
+
+                        Selectable = true,
+                        Selected = SlugcatIcon.DrawIcons,
+
+                        SelectedBackColor = Color.White,
+                        SelectedTextColor = Color.Black,
+
+                        TextAlign = new(.5f)
+                    }.OnEvent(UIElement.ClickEvent, (btn, _) => SlugcatIcon.DrawIcons = btn.Selected)
+                    .Assign(out SlugcatIcons),
+
+                    new UIButton
+                    {
+                        Top = 75,
+
+                        Height = 20,
                         Text = "Use diamonds",
 
                         HoverText = "Draw diamonds instead of\nslugcat icons",
@@ -214,7 +233,7 @@ namespace Cornifer
 
                     new UIButton
                     {
-                        Top = 75,
+                        Top = 100,
 
                         Height = 20,
                         Text = "Draw pickups",
@@ -232,7 +251,7 @@ namespace Cornifer
 
                     new UIButton
                     {
-                        Top = 100,
+                        Top = 125,
                         Height = 20,
 
                         Selectable = true,
@@ -281,6 +300,8 @@ namespace Cornifer
                 button.OnEvent(UIElement.ClickEvent, (_, _) =>
                 {
                     Main.SelectedSlugcat = slugcat;
+                    SlugcatIcon.DrawIcons = false;
+                    SlugcatIcons.Selected = SlugcatIcon.DrawIcons;
                     SlugcatSelectVisible = false;
                     RegionSelectVisible = true;
                 });
@@ -299,6 +320,8 @@ namespace Cornifer
             all.OnEvent(UIElement.ClickEvent, (_, _) =>
             {
                 Main.SelectedSlugcat = null;
+                SlugcatIcon.DrawIcons = true;
+                SlugcatIcons.Selected = SlugcatIcon.DrawIcons;
                 SlugcatSelectVisible = false;
                 RegionSelectVisible = true;
             });

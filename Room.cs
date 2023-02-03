@@ -45,6 +45,7 @@ namespace Cornifer
 
         public bool Loaded = false;
 
+        bool ISelectable.Active => true;
         Vector2 ISelectable.Position 
         {
             get => WorldPos;
@@ -324,6 +325,8 @@ namespace Cornifer
                 return;
 
             renderer.DrawTexture(GetTileMap(), WorldPos);
+
+            Main.SpriteBatch.DrawStringAligned(Content.Consolas10, Name, renderer.TransformVector(WorldPos + new Vector2(Size.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
 
             foreach (PlacedObject obj in PlacedObjects)
                 if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))

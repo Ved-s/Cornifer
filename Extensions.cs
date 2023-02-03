@@ -58,10 +58,20 @@ namespace Cornifer
             }
         }
 
-        public static void DrawStringAligned(this SpriteBatch spriteBatch, SpriteFont spriteFont, string text, Vector2 position, Color color, Vector2 align)
+        public static void DrawStringAligned(this SpriteBatch spriteBatch, SpriteFont spriteFont, string text, Vector2 position, Color color, Vector2 align, Color? shade = null)
         {
             Vector2 size = spriteFont.MeasureString(text);
-            spriteBatch.DrawString(spriteFont, text, position - size * align, color);
+            Vector2 pos = position - size * align;
+
+            if (shade.HasValue)
+            {
+                spriteBatch.DrawString(spriteFont, text, pos + new Vector2(0, -1), shade.Value);
+                spriteBatch.DrawString(spriteFont, text, pos + new Vector2(0, 1), shade.Value);
+                spriteBatch.DrawString(spriteFont, text, pos + new Vector2(-1, 0), shade.Value);
+                spriteBatch.DrawString(spriteFont, text, pos + new Vector2(1, 0), shade.Value);
+            }
+
+            spriteBatch.DrawString(spriteFont, text, pos, color);
         }
 
         public static void DrawStringShaded(this SpriteBatch spriteBatch, SpriteFont spriteFont, string text, Vector2 position, Color color, Color? shadeColor = null)
