@@ -6,7 +6,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Xml.Linq;
 
 namespace Cornifer
 {
@@ -16,6 +15,7 @@ namespace Cornifer
         static HashSet<string> NonPickupObjectsWhitelist = new() { "GhostSpot", "BlueToken", "GoldToken", "RedToken", "DataPearl", "UniqueDataPearl" };
 
         public static bool DrawTileWalls = true;
+        public static bool DrawObjects = true;
         public static bool DrawPickUpObjects = true;
 
         public string Id;
@@ -49,7 +49,7 @@ namespace Cornifer
         public bool Loaded = false;
 
         bool ISelectable.Active => true;
-        Vector2 ISelectable.Position 
+        Vector2 ISelectable.Position
         {
             get => WorldPos;
             set => WorldPos = value;
@@ -237,24 +237,24 @@ namespace Cornifer
             }
 
             if (settings is not null)
-            foreach (string line in File.ReadAllLines(settings))
-            {
-                string[] split = line.Split(':', 2, StringSplitOptions.TrimEntries);
-
-                if (split[0] == "PlacedObjects")
+                foreach (string line in File.ReadAllLines(settings))
                 {
-                    string[] objects = split[1].Split(',', StringSplitOptions.TrimEntries);
-                    List<PlacedObject> objectList = new();
-                    foreach (string str in objects)
-                    {
-                        PlacedObject? obj = PlacedObject.Load(this, str);
-                        if (obj is not null)
-                            objectList.Add(obj);
-                    }
+                    string[] split = line.Split(':', 2, StringSplitOptions.TrimEntries);
 
-                    PlacedObjects = objectList.ToArray();
+                    if (split[0] == "PlacedObjects")
+                    {
+                        string[] objects = split[1].Split(',', StringSplitOptions.TrimEntries);
+                        List<PlacedObject> objectList = new();
+                        foreach (string str in objects)
+                        {
+                            PlacedObject? obj = PlacedObject.Load(this, str);
+                            if (obj is not null)
+                                objectList.Add(obj);
+                        }
+
+                        PlacedObjects = objectList.ToArray();
+                    }
                 }
-            }
 
             if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
             {
@@ -325,7 +325,7 @@ namespace Cornifer
                 TileMap ??= new(Main.Instance.GraphicsDevice, Size.X, Size.Y);
                 TileMap.SetData(colors, 0, Size.X * Size.Y);
             }
-            finally 
+            finally
             {
                 ArrayPool<Color>.Shared.Return(colors);
             }
@@ -341,9 +341,10 @@ namespace Cornifer
 
             Main.SpriteBatch.DrawStringAligned(Content.Consolas10, Name, renderer.TransformVector(WorldPos + new Vector2(Size.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
 
-            foreach (PlacedObject obj in PlacedObjects)
-                if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))
-                    obj.Draw(renderer);
+            if (DrawObjects)
+                foreach (PlacedObject obj in PlacedObjects)
+                    if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))
+                        obj.Draw(renderer);
             ShelterIcon?.Draw(renderer);
         }
 
@@ -352,10 +353,11 @@ namespace Cornifer
             if (ShelterIcon is not null)
                 yield return ShelterIcon;
 
-            foreach (PlacedObject obj in PlacedObjects.Reverse())
-                if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))
-                    foreach (ISelectable selectable in obj.EnumerateSelectables())
-                        yield return selectable;
+            if (DrawObjects)
+                foreach (PlacedObject obj in PlacedObjects.Reverse())
+                    if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))
+                        foreach (ISelectable selectable in obj.EnumerateSelectables())
+                            yield return selectable;
 
             yield return this;
         }

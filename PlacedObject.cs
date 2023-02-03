@@ -106,6 +106,7 @@ namespace Cornifer
 
                 string subname = subsplit[5];
 
+                obj.Color *= 0.7f;
                 obj.SlugcatAvailability = GetTokenSlugcats(subsplit[6]);
 
                 switch (split[0])
@@ -113,7 +114,10 @@ namespace Cornifer
                     case "BlueToken":
                         PlacedObject? subObject = Load(obj, subname, obj.Size / 2);
                         if (subObject is not null)
+                        {
+                            subObject.Offset = new(0, 15);
                             obj.SubObjects.Add(subObject);
+                        }
                         break;
                 }
             }
@@ -129,12 +133,19 @@ namespace Cornifer
             if (Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Length > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat))
                 return null;
 
-            foreach (string slugcat in obj.SlugcatAvailability)
+            float iconAngle = 0.5f;
+            float totalAngle = Math.Max(0, obj.SlugcatAvailability.Length - 1) * iconAngle;
+            float currentAngle = (MathF.PI / 2) + totalAngle / 2;
+            for (int i = 0; i < obj.SlugcatAvailability.Length; i++)
             {
+                Vector2 offset = new Vector2(MathF.Cos(currentAngle), -MathF.Sin(currentAngle)) * 15;
+                currentAngle -= iconAngle;
+                string slugcat = obj.SlugcatAvailability[i];
                 obj.SubObjects.Add(new SlugcatIcon
                 {
                     Id = Array.IndexOf(Main.SlugCatNames, slugcat),
-                    Parent = obj
+                    Parent = obj,
+                    Offset = offset
                 });
             }
 

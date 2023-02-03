@@ -196,80 +196,97 @@ namespace Cornifer
                         TextAlign = new(.5f)
                     }.OnEvent(UIElement.ClickEvent, (_, _) => SlugcatSelectVisible = true),
 
-                    new UIButton
+                    new UIList()
                     {
                         Top = 50,
+                        Height = new(-100, 1),
+                        ElementSpacing = 2,
 
-                        Height = 20,
-                        Text = "Draw slugcat icons",
+                        Elements = 
+                        {
+                            new UIButton
+                            {
+                                Height = 20,
+                                Text = "Draw slugcat icons",
 
-                        Selectable = true,
-                        Selected = SlugcatIcon.DrawIcons,
+                                Selectable = true,
+                                Selected = SlugcatIcon.DrawIcons,
 
-                        SelectedBackColor = Color.White,
-                        SelectedTextColor = Color.Black,
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
 
-                        TextAlign = new(.5f)
-                    }.OnEvent(UIElement.ClickEvent, (btn, _) => SlugcatIcon.DrawIcons = btn.Selected)
-                    .Assign(out SlugcatIcons),
+                                TextAlign = new(.5f)
+                            }.OnEvent(UIElement.ClickEvent, (btn, _) => SlugcatIcon.DrawIcons = btn.Selected)
+                            .Assign(out SlugcatIcons),
 
-                    new UIButton
-                    {
-                        Top = 75,
+                            new UIButton
+                            {
+                                Height = 20,
+                                Text = "Use diamonds",
 
-                        Height = 20,
-                        Text = "Use diamonds",
+                                HoverText = "Draw diamonds instead of\nslugcat icons",
 
-                        HoverText = "Draw diamonds instead of\nslugcat icons",
+                                Selectable = true,
+                                Selected = SlugcatIcon.DrawDiamond,
 
-                        Selectable = true,
-                        Selected = SlugcatIcon.DrawDiamond,
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
 
-                        SelectedBackColor = Color.White,
-                        SelectedTextColor = Color.Black,
+                                TextAlign = new(.5f)
+                            }.OnEvent(UIElement.ClickEvent, (btn, _) => SlugcatIcon.DrawDiamond = btn.Selected),
 
-                        TextAlign = new(.5f)
-                    }.OnEvent(UIElement.ClickEvent, (btn, _) => SlugcatIcon.DrawDiamond = btn.Selected),
+                            new UIButton
+                            {
+                                Height = 20,
+                                Text = "Draw room objects",
 
-                    new UIButton
-                    {
-                        Top = 100,
+                                Selectable = true,
+                                Selected = Room.DrawObjects,
 
-                        Height = 20,
-                        Text = "Draw pickups",
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
 
-                        HoverText = "Draw placed items",
+                                TextAlign = new(.5f)
+                            }.OnEvent(UIElement.ClickEvent, (btn, _) => Room.DrawObjects = btn.Selected),
 
-                        Selectable = true,
-                        Selected = Room.DrawPickUpObjects,
+                            new UIButton
+                            {
+                                Height = 20,
+                                Text = "Draw pickups",
 
-                        SelectedBackColor = Color.White,
-                        SelectedTextColor = Color.Black,
+                                HoverText = "Draw placed items",
 
-                        TextAlign = new(.5f)
-                    }.OnEvent(UIElement.ClickEvent, (btn, _) => Room.DrawPickUpObjects = btn.Selected),
+                                Selectable = true,
+                                Selected = Room.DrawPickUpObjects,
 
-                    new UIButton
-                    {
-                        Top = 125,
-                        Height = 20,
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
 
-                        Selectable = true,
-                        Selected = Room.DrawTileWalls,
-                        Text = "Draw tile walls",
+                                TextAlign = new(.5f)
+                            }.OnEvent(UIElement.ClickEvent, (btn, _) => Room.DrawPickUpObjects = btn.Selected),
 
-                        HoverText = "Render room tiles with walls",
+                            new UIButton
+                            {
+                                Height = 20,
 
-                        SelectedBackColor = Color.White,
-                        SelectedTextColor = Color.Black,
+                                Selectable = true,
+                                Selected = Room.DrawTileWalls,
+                                Text = "Draw tile walls",
 
-                        TextAlign = new(.5f)
+                                HoverText = "Render room tiles with walls",
 
-                    }.OnEvent(UIElement.ClickEvent, (btn, _) =>
-                    {
-                        Room.DrawTileWalls = btn.Selected;
-                        Main.Region?.MarkRoomTilemapsDirty();
-                    }),
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.OnEvent(UIElement.ClickEvent, (btn, _) =>
+                            {
+                                Room.DrawTileWalls = btn.Selected;
+                                Main.Region?.MarkRoomTilemapsDirty();
+                            }),
+                        }
+                    },
 
                     new UIButton
                     {
