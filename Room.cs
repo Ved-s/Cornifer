@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -39,6 +40,7 @@ namespace Cornifer
 
         public Vector2 WorldPos;
 
+        public Effect[] Effects = Array.Empty<Effect>();
         public Connection?[] Connections = Array.Empty<Connection>();
         public PlacedObject[] PlacedObjects = Array.Empty<PlacedObject>();
 
@@ -255,6 +257,25 @@ namespace Cornifer
 
                         PlacedObjects = objectList.ToArray();
                     }
+                    else if (split[0] == "Effects")
+                    {
+                        List<Effect> effects = new();
+
+                        foreach (string effectStr in split[1].Split(',', StringSplitOptions.TrimEntries))
+                        {
+                            string[] effectSplit = effectStr.Split('-');
+                            if (effectSplit.Length == 4)
+                            {
+                                string name = effectSplit[0];
+                                if (!float.TryParse(effectSplit[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float amount))
+                                    amount = 0;
+
+                                effects.Add(new(name, amount));
+                            }
+                        }
+
+                        Effects = effects.ToArray();
+                    }
                 }
 
             if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
@@ -282,6 +303,19 @@ namespace Cornifer
             Color[] colors = ArrayPool<Color>.Shared.Rent(Size.X * Size.Y);
             try
             {
+                bool invertedWater = Effects.Any(ef => ef.name == "InvertedWater");
+
+                int waterLevel = WaterLevel;
+
+                Effect? waterFluxMin = Effects.FirstOrDefault(ef => ef.name == "WaterFluxMinLevel");
+                Effect? waterFluxMax = Effects.FirstOrDefault(ef => ef.name == "WaterFluxMaxLevel");
+
+                if (waterFluxMin is not null && waterFluxMax is not null)
+                {
+                    float waterMid = 1 - ((waterFluxMax.amount + waterFluxMin.amount) / 2 * (22f/20f));
+                    waterLevel = (int)(waterMid * Size.Y) + 2;
+                }
+
                 for (int j = 0; j < Size.Y; j++)
                     for (int i = 0; i < Size.X; i++)
                     {
@@ -310,7 +344,7 @@ namespace Cornifer
 
                         Color color = new(b, b, b);
 
-                        if ((!ForceWaterBehindSolid && WaterInFrontOfTerrain || !solid) && j >= Size.Y - WaterLevel)
+                        if ((!ForceWaterBehindSolid && WaterInFrontOfTerrain || !solid) && (invertedWater ? j <= waterLevel : j >= Size.Y - waterLevel))
                         {
                             Color waterColor = new(0, 0, 200);
 
@@ -375,7 +409,8 @@ namespace Cornifer
                 return $"{Exit} -> {Target.Id}[{TargetExit}]";
             }
         }
-        public record Shortcut(Point entrance, Point target, Tile.ShortcutType type);
+        public record class Shortcut(Point entrance, Point target, Tile.ShortcutType type);
+        public record class Effect(string name, float amount);
 
         public struct Tile
         {
