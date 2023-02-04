@@ -40,8 +40,8 @@ namespace Cornifer
 
         static Vector2 SelectionStart;
         static Vector2 OldDragPos;
-        static bool Selecting;
-        static bool Dragging;
+        internal static bool Selecting;
+        internal static bool Dragging;
 
         static bool OldActive;
 
@@ -101,7 +101,7 @@ namespace Cornifer
         {
             Vector2 mouseWorld = WorldCamera.InverseTransformVector(MouseState.Position.ToVector2());
 
-            if (drag && !oldDrag)
+            if (drag && !oldDrag && !Interface.Hovered)
             {
                 // Clicked on already selected room
                 if (ISelectable.FindSelectableAtPos(SelectedObjects, mouseWorld) is not null)
@@ -126,7 +126,6 @@ namespace Cornifer
 
                 SelectionStart = mouseWorld;
                 Selecting = true;
-
             }
             else if (drag && oldDrag)
             {

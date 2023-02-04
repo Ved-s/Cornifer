@@ -75,7 +75,7 @@ namespace Cornifer.UI.Elements
 
             if (MouseState.LeftButton != ButtonState.Pressed)
             {
-                UIElement? currentHover = Game.IsActive ? GetElementAt(MousePosition, false) : null;
+                UIElement? currentHover = Game.IsActive && !Interface.BlockUIHover ? GetElementAt(MousePosition, false) : null;
 
                 if (currentHover != Hover)
                 {

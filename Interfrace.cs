@@ -22,6 +22,7 @@ namespace Cornifer
         public static UIButton SlugcatIcons = null!;
 
         public static bool Hovered => Root?.Hover is not null;
+        public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.MouseState.RightButton == ButtonState.Pressed && !Interface.Hovered;
 
         static bool regionSelectVisible = false;
         public static bool RegionSelectVisible
