@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -19,6 +20,7 @@ namespace Cornifer
         public static bool ForceWaterBehindSolid = false;
         public static bool DrawObjects = true;
         public static bool DrawPickUpObjects = true;
+        public static bool DrawCropped = false;
 
         public string Id;
         public string Name = null!;
@@ -31,6 +33,8 @@ namespace Cornifer
         public int WaterLevel;
         public bool WaterInFrontOfTerrain;
         public Tile[,] Tiles = null!;
+
+        public Rectangle? NonSolidRect;
 
         public Point[] Exits = Array.Empty<Point>();
         public Shortcut[] Shortcuts = Array.Empty<Shortcut>();
@@ -153,6 +157,9 @@ namespace Cornifer
 
                 string[] tilesArray = tiles.Split('|');
 
+                Point nonSolidTL = new(Size.X, Size.Y);
+                Point nonSolidBR = new(0, 0);
+
                 int x = 0, y = 0;
                 for (int i = 0; i < tilesArray.Length; i++)
                 {
@@ -196,6 +203,14 @@ namespace Cornifer
 
                     Tiles[x, y] = tile;
 
+                    if (tile.Terrain != Tile.TerrainType.Solid)
+                    {
+                        if (x < nonSolidTL.X) nonSolidTL.X = x;
+                        if (y < nonSolidTL.Y) nonSolidTL.Y = y;
+                        if (x > nonSolidBR.X) nonSolidBR.X = x;
+                        if (y > nonSolidBR.Y) nonSolidBR.Y = y;
+                    }
+
                     y++;
                     if (y >= Size.Y)
                     {
@@ -203,6 +218,12 @@ namespace Cornifer
                         y = 0;
                     }
                 }
+
+                nonSolidTL = new(Math.Max(0, nonSolidTL.X - 1), Math.Max(0, nonSolidTL.Y - 1));
+                nonSolidBR = new(Math.Min(Size.X, nonSolidBR.X + 2), Math.Min(Size.Y, nonSolidBR.Y + 2));
+
+                if (nonSolidTL.X < nonSolidBR.X && nonSolidTL.Y < nonSolidBR.Y)
+                    NonSolidRect = new(nonSolidTL.X, nonSolidTL.Y, nonSolidBR.X - nonSolidTL.X, nonSolidBR.Y - nonSolidTL.Y);
 
                 List<Point> exits = new();
                 List<Point> shortcuts = new();
@@ -372,7 +393,10 @@ namespace Cornifer
             if (!Loaded)
                 return;
 
-            renderer.DrawTexture(GetTileMap(), WorldPos);
+            if (DrawCropped && NonSolidRect.HasValue)
+                renderer.DrawTexture(GetTileMap(), WorldPos + NonSolidRect.Value.Location.ToVector2(), NonSolidRect.Value);
+            else 
+                renderer.DrawTexture(GetTileMap(), WorldPos);
 
             Main.SpriteBatch.DrawStringAligned(Content.Consolas10, Name, renderer.TransformVector(WorldPos + new Vector2(Size.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
 
