@@ -15,6 +15,7 @@ namespace Cornifer
         static HashSet<string> NonPickupObjectsWhitelist = new() { "GhostSpot", "BlueToken", "GoldToken", "RedToken", "DataPearl", "UniqueDataPearl" };
 
         public static bool DrawTileWalls = true;
+        public static bool ForceWaterBehindSolid = false;
         public static bool DrawObjects = true;
         public static bool DrawPickUpObjects = true;
 
@@ -309,7 +310,7 @@ namespace Cornifer
 
                         Color color = new(b, b, b);
 
-                        if ((WaterInFrontOfTerrain || !solid) && j >= Size.Y - WaterLevel)
+                        if ((!ForceWaterBehindSolid && WaterInFrontOfTerrain || !solid) && j >= Size.Y - WaterLevel)
                         {
                             Color waterColor = new(0, 0, 200);
 

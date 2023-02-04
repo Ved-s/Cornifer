@@ -285,6 +285,25 @@ namespace Cornifer
                                 Room.DrawTileWalls = btn.Selected;
                                 Main.Region?.MarkRoomTilemapsDirty();
                             }),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Selectable = true,
+                                Selected = Room.ForceWaterBehindSolid,
+                                Text = "Force water behind terrain",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.OnEvent(UIElement.ClickEvent, (btn, _) =>
+                            {
+                                Room.ForceWaterBehindSolid = btn.Selected;
+                                Main.Region?.MarkRoomTilemapsDirty();
+                            }),
                         }
                     },
 
