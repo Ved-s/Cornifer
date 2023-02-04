@@ -16,12 +16,14 @@ namespace Cornifer
 
         public int Id;
 
-        public override bool Active => DrawIcons;
-        public override Vector2 Size => DrawDiamond ? new(8) : new(9);
+        public bool ForceSlugcatIcon;
+
+        public override bool Active => DrawIcons || ForceSlugcatIcon;
+        public override Vector2 Size => DrawDiamond && !ForceSlugcatIcon ? new(9) : new(8);
 
         public override void DrawIcon(Renderer renderer)
         {
-            Rectangle frame = DrawDiamond ? new(Id*9, 8, 9, 9) : new(Id*8, 0, 8, 8);
+            Rectangle frame = DrawDiamond && !ForceSlugcatIcon ? new(Id*9, 8, 9, 9) : new(Id*8, 0, 8, 8);
 
             renderer.DrawTexture(Content.SlugcatIcons, Position, frame);
         }

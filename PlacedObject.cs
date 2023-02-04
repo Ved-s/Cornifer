@@ -3,12 +3,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace Cornifer
 {
@@ -29,10 +25,10 @@ namespace Cornifer
 
         public string[] SlugcatAvailability = Array.Empty<string>();
 
-        public Vector2 Position 
+        public Vector2 Position
         {
             get => Parent.Position + ParentPosition + Offset - Size / 2;
-            set 
+            set
             {
                 if (!Parent.Selected)
                 {
@@ -96,21 +92,58 @@ namespace Cornifer
             if (frame is null)
                 return null;
 
-            PlacedObject? obj = Load(selectable, split[0], new Vector2(float.Parse(split[1], CultureInfo.InvariantCulture) / 20, selectable.Size.Y - (float.Parse(split[2], CultureInfo.InvariantCulture) / 20)));
-            if (obj is null)
-                return null;
+            string objName = split[0];
 
-            if (split[0].Contains("Token"))
+            if (objName.Contains("Token"))
             {
                 string[] subsplit = split[3].Split('~');
 
                 string subname = subsplit[5];
 
-                obj.Color *= 0.58824f;
+                if (subsplit[4] == "1")
+                    objName = "BlueToken";
+                else if (subsplit.Length > 7 && subsplit[7] == "1")
+                    objName = "GreenToken";
+                else if (subsplit.Length > 8 && subsplit[8] == "1")
+                    objName = "WhiteToken";
+                else if (subsplit.Length > 9 && subsplit[9] == "1")
+                    objName = "RedToken";
+                else if (subsplit.Length > 10 && subsplit[10] == "1")
+                    objName = "DevToken";
+                else
+                    objName = "GoldToken";
+            }
+
+            PlacedObject? obj = Load(selectable, split[0], new Vector2(float.Parse(split[1], CultureInfo.InvariantCulture) / 20, selectable.Size.Y - (float.Parse(split[2], CultureInfo.InvariantCulture) / 20)));
+            if (obj is null)
+                return null;
+
+            if (objName.Contains("Token"))
+            {
+                string[] subsplit = split[3].Split('~');
+
+                string subname = subsplit[5];
+
+                obj.Color.A = 150;
                 obj.SlugcatAvailability = GetTokenSlugcats(subsplit[6]);
 
-                switch (split[0])
+                switch (objName)
                 {
+                    case "GreenToken":
+                        int slugcatId = Array.IndexOf(Main.SlugCatNames, subname);
+                        if (slugcatId >= 0)
+                        {
+                            obj.SubObjects.Add(new SlugcatIcon()
+                            {
+                                Id = slugcatId,
+                                Offset = new(0, 8),
+                                Parent = obj,
+                                ForceSlugcatIcon = true,
+                                LineColor = Color.Lime
+                            });
+                        }
+                        break;
+
                     case "BlueToken":
                         PlacedObject? subObject = Load(obj, subname, obj.Size / 2);
                         if (subObject is not null)
@@ -128,7 +161,7 @@ namespace Cornifer
 
                 if (subsplit.TryGet(4, out string type))
                     obj.Color = GetPearlColor(type);
-                obj.Color *= 0.64706f;
+                obj.Color.A = 165;
             }
 
             if (Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Length > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat))
@@ -169,7 +202,7 @@ namespace Cornifer
                 color = GetAtlasColor(name);
                 shade = true;
             }
-            else 
+            else
             {
                 Rectangle? objectFrame = GetObjectFrame(name);
 
@@ -178,7 +211,7 @@ namespace Cornifer
                     frame = objectFrame.Value;
                     texture = Content.Objects;
                 }
-                else 
+                else
                 {
                     return null;
                 }
@@ -388,26 +421,26 @@ namespace Cornifer
         {
             return name switch
             {
-                "KarmaFlower"       => new(76, 0, 23, 23),
-                "SeedCob"           => new(40, 0, 35, 38),
-                "GhostSpot"         => new(0, 0, 38, 48),
-                "BlueToken"         => new(76, 24, 10, 20),
-                "GoldToken"         => new(87, 24, 10, 20),
-                "RedToken"          => new(100, 0, 10, 20),
-                "WhiteToken"        => new(98, 24, 10, 20),
-                "GreenToken"        => new(111, 0, 10, 20),
-                "DataPearl"         => new(39, 39, 11, 10),
-                "UniqueDataPearl"   => new(39, 39, 11, 10),
-                
+                "KarmaFlower" => new(76, 0, 23, 23),
+                "SeedCob" => new(40, 0, 35, 38),
+                "GhostSpot" => new(0, 0, 38, 48),
+                "BlueToken" => new(76, 24, 10, 20),
+                "GoldToken" => new(87, 24, 10, 20),
+                "RedToken" => new(100, 0, 10, 20),
+                "WhiteToken" => new(98, 24, 10, 20),
+                "GreenToken" => new(111, 0, 10, 20),
+                "DataPearl" => new(39, 39, 11, 10),
+                "UniqueDataPearl" => new(39, 39, 11, 10),
+
                 _ => null,
             };
         }
 
         static string[] GetTokenSlugcats(string availability)
         {
+            List<string> slugcats = new();
             if (availability.All(char.IsDigit))
             {
-                List<string> slugcats = new();
                 for (int i = 0; i < availability.Length; i++)
                 {
                     if (availability[i] != '1')
@@ -433,7 +466,13 @@ namespace Cornifer
                 return slugcats.ToArray();
             }
 
-            return availability.Split('|');
+            slugcats.AddRange(Main.SlugCatNames);
+            slugcats.Remove("Night");
+            slugcats.Remove("Inv");
+            foreach (string name in availability.Split('|'))
+                slugcats.Remove(name);
+
+            return slugcats.ToArray();
         }
 
         static Color GetPearlColor(string type)

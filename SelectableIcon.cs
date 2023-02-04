@@ -7,6 +7,8 @@ namespace Cornifer
     {
         public ISelectable Parent;
 
+        public Color LineColor = new(90, 90, 90);
+
         public Vector2 Offset;
         public Vector2 Position
         {
@@ -33,8 +35,8 @@ namespace Cornifer
             Main.SpriteBatch.DrawLine(parentPoint, worldPoint, Color.Black, 3);
             Main.SpriteBatch.DrawRect(parentPoint - new Vector2(3), new(5), Color.Black);
 
-            Main.SpriteBatch.DrawLine(parentPoint, worldPoint, new(90, 90, 90), 1);
-            Main.SpriteBatch.DrawRect(parentPoint - new Vector2(2), new(3), new(90, 90, 90));
+            Main.SpriteBatch.DrawLine(parentPoint, worldPoint, LineColor, 1);
+            Main.SpriteBatch.DrawRect(parentPoint - new Vector2(2), new(3), LineColor);
 
             DrawIcon(renderer);
         }

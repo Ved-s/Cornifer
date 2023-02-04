@@ -271,6 +271,13 @@ namespace Cornifer
                 }
 
             Region = new(id, worldFile, mapFile, Path.Combine(regionPath, $"../{id}-rooms"));
+
+            foreach (ISelectable selectable in Region.EnumerateSelectables())
+            {
+                Vector2 pos = selectable.Position;
+                pos.Round();
+                selectable.Position = pos;
+            }
         }
 
         public static bool TryFindParentDir(string path, string dirName, [NotNullWhen(true)] out string? result)
