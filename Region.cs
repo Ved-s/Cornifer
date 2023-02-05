@@ -165,6 +165,7 @@ namespace Cornifer
                     roomConnections[exit] = replacement;
 
             HashSet<string> subregions = new();
+            HashSet<Room> unmappedRooms = new(Rooms);
 
             foreach (string line in File.ReadLines(mapFile))
             {
@@ -172,8 +173,14 @@ namespace Cornifer
                     continue;
 
                 string[] split = line.Split(':', 2, StringSplitOptions.TrimEntries);
-                if (!TryGetRoom(split[0], out Room? room))
+                if (split[0] == "Connection")
                     continue;
+
+                if (!TryGetRoom(split[0], out Room? room))
+                {
+                    Main.LoadErrors.Add($"Tried to position unknown room {split[0]}");
+                    continue;
+                }
 
                 string[] data = split[1].Split("><", StringSplitOptions.TrimEntries);
 
@@ -194,6 +201,14 @@ namespace Cornifer
                     room.Subregion = subregion;
                     subregions.Add(subregion);
                 }
+
+                unmappedRooms.Remove(room);
+            }
+
+            if (unmappedRooms.Count > 0)
+            {
+                Main.LoadErrors.Add($"{unmappedRooms.Count} rooms aren't positioned! Skipping them.");
+                Rooms.RemoveAll(r => unmappedRooms.Contains(r));
             }
 
             Subregions = subregions.ToArray();
