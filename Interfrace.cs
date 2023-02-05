@@ -163,7 +163,7 @@ namespace Cornifer
                         Top = new(0, .5f, -.5f),
                         Left = new(0, .5f, -.5f),
 
-                        Width = new(0, .8f),
+                        Width = new(0, .83f),
                         Height = new(0, .8f),
 
                         Margin = 5,
