@@ -19,6 +19,8 @@ namespace Cornifer
 
         public string[] Subregions;
 
+        public HashSet<SelectableIcon> Icons = new();
+
         HashSet<string> DrawnRoomConnections = new();
 
         public Region(string id, string worldFile, string mapFile, string roomsDir)
@@ -353,11 +355,17 @@ namespace Cornifer
                 DrawnRoomConnections.Add(room.Id);
             }
 
+            foreach (SelectableIcon icon in Icons)
+                icon.Draw(renderer);
+
             Main.SpriteBatch.End();
         }
 
         public IEnumerable<ISelectable> EnumerateSelectables()
         {
+            foreach (SelectableIcon icon in((IEnumerable<SelectableIcon>)Icons).Reverse())
+                yield return icon;
+
             foreach (Room room in ((IEnumerable<Room>)Rooms).Reverse())
                 foreach (ISelectable selectable in room.EnumerateSelectables())
                     yield return selectable;

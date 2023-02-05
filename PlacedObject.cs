@@ -88,17 +88,14 @@ namespace Cornifer
         {
             string[] split = data.Split("><", 4);
 
-            Rectangle? frame = GetObjectFrame(split[0]);
-            if (frame is null)
+            if (split.Length < 3)
                 return null;
 
             string objName = split[0];
 
-            if (objName.Contains("Token"))
+            if (objName.EndsWith("Token"))
             {
                 string[] subsplit = split[3].Split('~');
-
-                string subname = subsplit[5];
 
                 if (subsplit[4] == "1")
                     objName = "BlueToken";
@@ -118,13 +115,12 @@ namespace Cornifer
             if (obj is null)
                 return null;
 
-            if (objName.Contains("Token"))
+            if (objName.EndsWith("Token"))
             {
                 string[] subsplit = split[3].Split('~');
 
                 string subname = subsplit[5];
-
-                obj.Color.A = 150;
+                
                 obj.SlugcatAvailability = GetTokenSlugcats(subsplit[6]);
 
                 switch (objName)
@@ -188,33 +184,9 @@ namespace Cornifer
 
         public static PlacedObject? Load(ISelectable selectable, string name, Vector2 pos)
         {
-            string? atlasName = GetAtlasName(name);
-
-            Rectangle frame;
-            Texture2D texture;
-            Color color = Color.White;
-            bool shade = false;
-
-            if (atlasName is not null && GameAtlases.Sprites.TryGetValue(atlasName, out var atlas))
+            if (!GameAtlases.Sprites.TryGetValue("Object_" + name, out var atlas))
             {
-                texture = atlas.Item1;
-                frame = atlas.Item2;
-                color = GetAtlasColor(name);
-                shade = true;
-            }
-            else
-            {
-                Rectangle? objectFrame = GetObjectFrame(name);
-
-                if (objectFrame.HasValue)
-                {
-                    frame = objectFrame.Value;
-                    texture = Content.Objects;
-                }
-                else
-                {
-                    return null;
-                }
+                return null;
             }
 
             return new()
@@ -222,217 +194,10 @@ namespace Cornifer
                 Name = name,
                 Parent = selectable,
                 ParentPosition = pos,
-                Frame = frame,
-                Texture = texture,
-                Color = color,
-                Shade = shade
-            };
-        }
-
-        public static string? GetAtlasName(string name)
-        {
-            return name switch
-            {
-                "Slugcat" => "Kill_Slugcat",
-                "GreenLizard" => "Kill_Green_Lizard",
-                "PinkLizard" => "Kill_Standard_Lizard",
-                "BlueLizard" => "Kill_Standard_Lizard",
-                "WhiteLizard" => "Kill_White_Lizard",
-                "BlackLizard" => "Kill_Black_Lizard",
-                "YellowLizard" => "Kill_Yellow_Lizard",
-                "SpitLizard" => "Kill_Spit_Lizard",
-                "ZoopLizard" => "Kill_White_Lizard",
-                "CyanLizard" => "Kill_Standard_Lizard",
-                "RedLizard" => "Kill_Standard_Lizard",
-                "Salamander" => "Kill_Salamander",
-                "EelLizard" => "Kill_Salamander",
-                "Fly" => "Kill_Bat",
-                "CicadaA" => "Kill_Cicada",
-                "CicadaB" => "Kill_Cicada",
-                "Snail" => "Kill_Snail",
-                "Leech" => "Kill_Leech",
-                "SeaLeech" => "Kill_Leech",
-                "JungleLeech" => "Kill_Leech",
-                "PoleMimic" => "Kill_PoleMimic",
-                "TentaclePlant" => "Kill_TentaclePlant",
-                "Scavenger" => "Kill_Scavenger",
-                "ScavengerElite" => "Kill_ScavengerElite",
-                "VultureGrub" => "Kill_VultureGrub",
-                "Vulture" => "Kill_Vulture",
-                "KingVulture" => "Kill_KingVulture",
-                "SmallCentipede" => "Kill_Centipede1",
-                "MediumCentipede" => "Kill_Centipede2",
-                "BigCentipede" => "Kill_Centipede3",
-                "RedCentipede" => "Kill_Centipede3",
-                "Centiwing" => "Kill_Centiwing",
-                "AquaCenti" => "Kill_Centiwing",
-                "TubeWorm" => "Kill_Tubeworm",
-                "Hazer" => "Kill_Hazer",
-                "LanternMouse" => "Kill_Mouse",
-                "Spider" => "Kill_SmallSpider",
-                "BigSpider" => "Kill_BigSpider",
-                "SpitterSpider" => "Kill_BigSpider",
-                "MotherSpider" => "Kill_BigSpider",
-                "MirosBird" => "Kill_MirosBird",
-                "MirosVulture" => "Kill_MirosBird",
-                "BrotherLongLegs" => "Kill_Daddy",
-                "DaddyLongLegs" => "Kill_Daddy",
-                "TerrorLongLegs" => "Kill_Daddy",
-                "Inspector" => "Kill_Inspector",
-                "Deer" => "Kill_RainDeer",
-                "EggBug" => "Kill_EggBug",
-                "FireBug" => "Kill_FireBug",
-                "DropBug" => "Kill_DropBug",
-                "SlugNPC" => "Kill_Slugcat",
-                "BigNeedleWorm" => "Kill_NeedleWorm",
-                "SmallNeedleWorm" => "Kill_SmallNeedleWorm",
-                "JetFish" => "Kill_Jetfish",
-                "Yeek" => "Kill_Yeek",
-                "BigEel" => "Kill_BigEel",
-                "BigJelly" => "Kill_BigJellyFish",
-                "Rock" => "Symbol_Rock",
-                "Spear" => "Symbol_Spear",
-                "FireSpear" => "Symbol_FireSpear",
-                "ElectricSpear" => "Symbol_ElectricSpear",
-                "HellSpear" => "Symbol_HellSpear",
-                "LillyPuck" => "Symbol_LillyPuck",
-                "Pearl" => "Symbol_Pearl",
-                "ScavengerBomb" => "Symbol_StunBomb",
-                "SingularityBomb" => "Symbol_Singularity",
-                "FireEgg" => "Symbol_FireEgg",
-                "SporePlant" => "Symbol_SporePlant",
-                "Lantern" => "Symbol_Lantern",
-                "VultureMask" => "Kill_Vulture",
-                "FlyLure" => "Symbol_FlyLure",
-                "Mushroom" => "Symbol_Mushroom",
-                "FlareBomb" => "Symbol_FlashBomb",
-                "PuffBall" => "Symbol_PuffBall",
-                "GooieDuck" => "Symbol_GooieDuck",
-                "WaterNut" => "Symbol_WaterNut",
-                "DandelionPeach" => "Symbol_DandelionPeach",
-                "FirecrackerPlant" => "Symbol_Firecracker",
-                "DangleFruit" => "Symbol_DangleFruit",
-                "JellyFish" => "Symbol_JellyFish",
-                "BubbleGrass" => "Symbol_BubbleGrass",
-                "GlowWeed" => "Symbol_GlowWeed",
-                "SlimeMold" => "Symbol_SlimeMold",
-                "EnergyCell" => "Symbol_EnergyCell",
-                "JokeRifle" => "Symbol_JokeRifle",
-
-                "NeedleEgg" => "needleEggSymbol",
-                _ => null,
-            };
-        }
-        public static Color GetAtlasColor(string name)
-        {
-            return name switch
-            {
-                "Slugcat" => new(255, 255, 255),
-                "GreenLizard" => new(51, 255, 0),
-                "PinkLizard" => new(255, 0, 255),
-                "BlueLizard" => new(0, 128, 255),
-                "WhiteLizard" => new(255, 255, 255),
-                "BlackLizard" => new(94, 94, 111),
-                "YellowLizard" => new(255, 153, 0),
-                "SpitLizard" => new(140, 102, 51),
-                "ZoopLizard" => new(242, 186, 186),
-                "CyanLizard" => new(0, 232, 230),
-                "RedLizard" => new(230, 14, 14),
-                "Salamander" => new(238, 199, 228),
-                "EelLizard" => new(5, 199, 51),
-                "Fly" => new(169, 164, 178),
-                "CicadaA" => new(255, 255, 255),
-                "CicadaB" => new(94, 94, 111),
-                "Snail" => new(169, 164, 178),
-                "Leech" => new(174, 40, 30),
-                "SeaLeech" => new(13, 77, 179),
-                "JungleLeech" => new(26, 179, 26),
-                "PoleMimic" => new(169, 164, 178),
-                "TentaclePlant" => new(169, 164, 178),
-                "Scavenger" => new(169, 164, 178),
-                "ScavengerElite" => new(169, 164, 178),
-                "VultureGrub" => new(212, 202, 111),
-                "Vulture" => new(212, 202, 111),
-                "KingVulture" => new(212, 202, 111),
-                "SmallCentipede" => new(255, 153, 0),
-                "MediumCentipede" => new(255, 153, 0),
-                "BigCentipede" => new(255, 153, 0),
-                "RedCentipede" => new(230, 14, 14),
-                "Centiwing" => new(14, 178, 60),
-                "AquaCenti" => new(0, 0, 255),
-                "TubeWorm" => new(13, 77, 179),
-                "Hazer" => new(54, 202, 99),
-                "LanternMouse" => new(169, 164, 178),
-                "Spider" => new(169, 164, 178),
-                "BigSpider" => new(169, 164, 178),
-                "SpitterSpider" => new(174, 40, 30),
-                "MotherSpider" => new(26, 179, 26),
-                "MirosBird" => new(169, 164, 178),
-                "MirosVulture" => new(230, 14, 14),
-                "BrotherLongLegs" => new(116, 134, 78),
-                "DaddyLongLegs" => new(0, 0, 255),
-                "TerrorLongLegs" => new(77, 0, 255),
-                "Inspector" => new(114, 230, 196),
-                "Deer" => new(169, 164, 178),
-                "EggBug" => new(0, 255, 120),
-                "FireBug" => new(255, 120, 120),
-                "DropBug" => new(169, 164, 178),
-                "SlugNPC" => new(169, 164, 178),
-                "BigNeedleWorm" => new(255, 152, 152),
-                "SmallNeedleWorm" => new(255, 152, 152),
-                "JetFish" => new(169, 164, 178),
-                "Yeek" => new(230, 230, 230),
-                "BigEel" => new(169, 164, 178),
-                "BigJelly" => new(255, 217, 179),
-                "Rock" => new(169, 164, 178),
-                "Spear" => new(169, 164, 178),
-                "FireSpear" => new(230, 14, 14),
-                "ElectricSpear" => new(0, 0, 255),
-                "HellSpear" => new(255, 120, 120),
-                "LillyPuck" => new(44, 245, 255),
-                "Pearl" => new(179, 179, 179),
-                "ScavengerBomb" => new(230, 14, 14),
-                "SingularityBomb" => new(5, 165, 217),
-                "FireEgg" => new(255, 120, 120),
-                "SporePlant" => new(174, 40, 30),
-                "Lantern" => new(255, 146, 81),
-                "VultureMask" => new(169, 164, 178),
-                "FlyLure" => new(173, 68, 54),
-                "Mushroom" => new(255, 255, 255),
-                "FlareBomb" => new(187, 174, 255),
-                "PuffBall" => new(169, 164, 178),
-                "GooieDuck" => new(114, 230, 196),
-                "WaterNut" => new(13, 77, 179),
-                "DandelionPeach" => new(150, 199, 245),
-                "FirecrackerPlant" => new(174, 40, 30),
-                "DangleFruit" => new(0, 0, 255),
-                "JellyFish" => new(169, 164, 178),
-                "BubbleGrass" => new(14, 178, 60),
-                "GlowWeed" => new(242, 255, 69),
-                "SlimeMold" => new(255, 153, 0),
-                "EnergyCell" => new(5, 165, 217),
-                "JokeRifle" => new(169, 164, 178),
-                "NeedleEgg" => new(45, 13, 20),
-                _ => Color.White,
-            };
-        }
-
-        public static Rectangle? GetObjectFrame(string name)
-        {
-            return name switch
-            {
-                "KarmaFlower" => new(76, 0, 23, 23),
-                "SeedCob" => new(40, 0, 35, 38),
-                "GhostSpot" => new(0, 0, 38, 48),
-                "BlueToken" => new(76, 24, 10, 20),
-                "GoldToken" => new(87, 24, 10, 20),
-                "RedToken" => new(100, 0, 10, 20),
-                "WhiteToken" => new(98, 24, 10, 20),
-                "GreenToken" => new(111, 0, 10, 20),
-                "DataPearl" => new(39, 39, 11, 10),
-                "UniqueDataPearl" => new(39, 39, 11, 10),
-
-                _ => null,
+                Frame = atlas.Frame,
+                Texture = atlas.Texture,
+                Color = atlas.Color,
+                Shade = atlas.Shade
             };
         }
 

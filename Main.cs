@@ -98,6 +98,15 @@ namespace Cornifer
             if (KeyboardState.IsKeyDown(Keys.Escape) && OldKeyboardState.IsKeyUp(Keys.Escape))
                 LoadErrors.Clear();
 
+            if (Region is not null && KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete))
+            {
+                HashSet<SelectableIcon> iconsToDelete = new(SelectedObjects.OfType<SelectableIcon>());
+                iconsToDelete.IntersectWith(Region.Icons);
+
+                Region.Icons.ExceptWith(iconsToDelete);
+                SelectedObjects.ExceptWith(iconsToDelete);
+            }
+
             WorldCamera.Update();
             Interface.Update();
         }

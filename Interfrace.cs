@@ -6,6 +6,7 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Png;
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace Cornifer
@@ -16,6 +17,7 @@ namespace Cornifer
 
         public static UIModal RegionSelect = null!;
         public static UIModal SlugcatSelect = null!;
+        public static UIModal AddIconSelect = null!;
 
         public static UIPanel SidePanel = null!;
 
@@ -25,17 +27,25 @@ namespace Cornifer
         public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.MouseState.RightButton == ButtonState.Pressed && !Interface.Hovered;
 
         static bool regionSelectVisible = false;
+        static bool slugcatSelectVisible = true;
+        static bool addIconSelectVisible = false;
+
         public static bool RegionSelectVisible
         {
             get => regionSelectVisible;
             set { regionSelectVisible = value; RegionSelect.Visible = value; }
         }
 
-        static bool slugcatSelectVisible = true;
         public static bool SlugcatSelectVisible
         {
             get => slugcatSelectVisible;
             set { slugcatSelectVisible = value; SlugcatSelect.Visible = value; }
+        }
+
+        public static bool AddIconSelectVisible
+        {
+            get => addIconSelectVisible;
+            set { addIconSelectVisible = value; AddIconSelect.Visible = value; }
         }
 
         public static void Init()
@@ -147,6 +157,64 @@ namespace Cornifer
 
                     }.Execute(PopulateSlugcatSelect)
                     .Assign(out SlugcatSelect),
+
+                    new UIModal
+                    {
+                        Top = new(0, .5f, -.5f),
+                        Left = new(0, .5f, -.5f),
+
+                        Width = new(0, .8f),
+                        Height = new(0, .8f),
+
+                        Margin = 5,
+                        Padding = 5,
+
+                        Visible = AddIconSelectVisible,
+
+                        Elements =
+                        {
+                            new UILabel
+                            {
+                                Top = 10,
+                                Height = 20,
+                                Text = "Add icon to the map",
+                                TextAlign = new(.5f)
+                            },
+                            new UIList
+                            {
+                                Top = 35,
+                                Height = new(-60, 1),
+                                Elements = 
+                                {
+                                    new UIFlow
+                                    {
+                                        ElementSpacing = 5
+                                    }
+                                    .Execute(PopulateObjectSelect),
+                                }
+                            },
+                            
+                            new UILabel
+                            {
+                                Top = new(-15, 1),
+                                Height = 20,
+                                Width = new(-80, 1),
+                                Text = "Hold Shift to add multiple icons. To delete icons, select them and press Delete.",
+                                TextAlign = new(.5f)
+                            },
+                            new UIButton
+                            {
+                                Top = new(-20, 1),
+                                Left = new(-80, 1),
+                                Width = 80,
+                                Height = 20,
+                                Text = "Close",
+                                TextAlign = new(.5f)
+                            }.OnEvent(UIElement.ClickEvent, (_, _) => AddIconSelectVisible = false)
+                        }
+
+                    }
+                    .Assign(out AddIconSelect),
 
                     new UIResizeablePanel()
                     {
@@ -319,6 +387,16 @@ namespace Cornifer
                                 Room.ForceWaterBehindSolid = btn.Selected;
                                 Main.Region?.MarkRoomTilemapsDirty();
                             }),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Text = "Add icons to map",
+
+                                TextAlign = new(.5f)
+
+                            }.OnEvent(UIElement.ClickEvent, (btn, _) => AddIconSelectVisible = true),
                         }
                     },
 
@@ -381,6 +459,54 @@ namespace Cornifer
             y += 25;
 
             select.Height = y + 15;
+        }
+        static void PopulateObjectSelect(UIFlow list)
+        {
+            foreach (var (name, sprite) in GameAtlases.Sprites.OrderBy(kvp => kvp.Key))
+            {
+                UIHoverPanel panel = new()
+                {
+                    Width = 120,
+                    Height = 100,
+
+                    Padding = 3,
+
+                    Elements = 
+                    {
+                        new UIImage
+                        {
+                            Width = 114,
+                            Height = 79,
+
+                            Texture = sprite.Texture,
+                            TextureColor = sprite.Color,
+                            TextureFrame = sprite.Frame,
+                        },
+                        new UILabel
+                        {
+                            Top = new(-15, 1),
+                            Height = 15,
+                            Text = name,
+                            TextAlign = new(.5f)
+                        }
+                    }
+                };
+                panel.OnEvent(UIElement.UpdateEvent, (panel, _) => 
+                {
+                    if (panel.Hovered && panel.Root.MouseLeftKey == KeybindState.JustPressed)
+                    {
+                        Main.Region?.Icons.Add(new SimpleIcon(null, sprite)
+                            {
+                                Position = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
+                            });
+
+                        if (Root!.ShiftKey == KeybindState.Released)
+                            AddIconSelectVisible = false;
+                    }
+                });
+
+                list.Elements.Add(panel);
+            }
         }
 
         static void CaptureClicked(UIButton btn, Empty _)

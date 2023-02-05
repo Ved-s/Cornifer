@@ -31,7 +31,20 @@ namespace Cornifer
 
     public class SimpleIcon : SelectableIcon
     {
-        public Texture2D Texture;
+        public SimpleIcon()
+        { 
+        }
+
+        public SimpleIcon(ISelectable? parent, AtlasSprite sprite, Color? color = null)
+        {
+            Parent = parent;
+            Texture = sprite.Texture;
+            Frame = sprite.Frame;
+            Color = color ?? sprite.Color;
+            Shade = sprite.Shade;
+        }
+
+        public Texture2D? Texture;
         public Rectangle Frame;
         public Color Color = Color.White;
         public bool Shade = true;
@@ -43,6 +56,9 @@ namespace Cornifer
 
         public override void DrawIcon(Renderer renderer)
         {
+            if (Texture is null)
+                return;
+
             if (Shade)
             {
                 renderer.DrawTexture(Texture, Position + new Vector2(-1, -1), Frame, color: Color.Black);

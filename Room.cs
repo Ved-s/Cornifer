@@ -14,7 +14,7 @@ namespace Cornifer
     public class Room : ISelectable, ISelectableContainer
     {
         static Point[] Directions = new Point[] { new Point(0, -1), new Point(1, 0), new Point(0, 1), new Point(-1, 0) };
-        static HashSet<string> NonPickupObjectsWhitelist = new() { "GhostSpot", "BlueToken", "GoldToken", "RedToken", "DataPearl", "UniqueDataPearl" };
+        static HashSet<string> NonPickupObjectsWhitelist = new() { "GhostSpot", "BlueToken", "GoldToken", "RedToken", "WhiteToken", "DevToken", "DataPearl", "UniqueDataPearl" };
 
         public static bool DrawTileWalls = true;
         public static bool ForceWaterBehindSolid = false;
@@ -300,15 +300,8 @@ namespace Cornifer
                 }
 
             if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
-            {
-                ShelterIcon = new()
-                {
-                    Parent = this,
-                    Texture = shelterMarker.Item1,
-                    Frame = shelterMarker.Item2,
-                };
-            }
-
+                ShelterIcon = new(this, shelterMarker);
+            
             Loaded = true;
         }
 
