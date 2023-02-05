@@ -30,9 +30,12 @@ namespace Cornifer
             bool readingRooms = false;
             bool readingConditionalLinks = false;
 
-            List<string> skipRooms = new();
+            
             List<(string room, string? target, int disconnectedTarget, string replacement)> connectionOverrides = new();
             List<(string room, int exit, string replacement)> resolvedConnectionOverrides = new();
+
+            Dictionary<string, HashSet<string>> exclusiveRooms = new();
+            Dictionary<string, HashSet<string>> hideRooms = new();
 
             foreach (string line in File.ReadAllLines(worldFile))
             {
@@ -43,7 +46,7 @@ namespace Cornifer
                     readingRooms = true;
                 else if (line == "END ROOMS")
                     readingRooms = false;
-                if (line == "CONDITIONAL LINKS")
+                else if (line == "CONDITIONAL LINKS")
                     readingConditionalLinks = true;
                 else if (line == "END CONDITIONAL LINKS")
                     readingConditionalLinks = false;
@@ -78,8 +81,13 @@ namespace Cornifer
                         if (Main.SelectedSlugcat is not null)
                         {
                             string[] slugcats = split[0].Split(',', StringSplitOptions.TrimEntries);
-                            if (!slugcats.Contains(Main.SelectedSlugcat))
-                                skipRooms.Add(split[2]);
+
+                            if (!exclusiveRooms.TryGetValue(split[2], out HashSet<string>? roomCatNames))
+                            {
+                                exclusiveRooms[split[2]] = roomCatNames = new();
+                            }
+
+                            roomCatNames.UnionWith(slugcats);
                         }
                     }
                     else if (split[1] == "HIDEROOM")
@@ -87,8 +95,13 @@ namespace Cornifer
                         if (Main.SelectedSlugcat is not null)
                         {
                             string[] slugcats = split[0].Split(',', StringSplitOptions.TrimEntries);
-                            if (slugcats.Contains(Main.SelectedSlugcat))
-                                skipRooms.Add(split[2]);
+
+                            if (!hideRooms.TryGetValue(split[2], out HashSet<string>? roomCatNames))
+                            {
+                                hideRooms[split[2]] = roomCatNames = new();
+                            }
+
+                            roomCatNames.UnionWith(slugcats);
                         }
                     }
                     else 
@@ -109,8 +122,16 @@ namespace Cornifer
                 }
             }
 
-            foreach (string skipRoom in skipRooms)
-                Rooms.RemoveAll(r => r.Id.Equals(skipRoom, StringComparison.InvariantCultureIgnoreCase));
+            if (Main.SelectedSlugcat is not null)
+            {
+                foreach (var (room, slugcats) in exclusiveRooms)
+                    if (!slugcats.Contains(Main.SelectedSlugcat))
+                        Rooms.RemoveAll(r => r.Id.Equals(room, StringComparison.InvariantCultureIgnoreCase));
+
+                foreach (var (room, slugcats) in hideRooms)
+                    if (slugcats.Contains(Main.SelectedSlugcat))
+                        Rooms.RemoveAll(r => r.Id.Equals(room, StringComparison.InvariantCultureIgnoreCase));
+            }
 
             foreach (var (room, target, disconnectedTarget, replacement) in connectionOverrides)
                 if (connections.TryGetValue(room, out string[]? roomConnections))
@@ -201,6 +222,9 @@ namespace Cornifer
                 room.Connections = new Room.Connection[roomConnections.Length];
                 for (int i = 0; i < roomConnections.Length; i++)
                 {
+                    if (roomConnections[i] == "DISCONNECTED")
+                        continue;
+
                     if (TryGetRoom(roomConnections[i], out Room? targetRoom))
                     {
                         string[] targetConnections = connections[roomConnections[i]];
@@ -211,10 +235,26 @@ namespace Cornifer
                             room.Connections[i] = new(targetRoom, i, targetExit);
                         }
                     }
+                    else 
+                    {
+                        if (hideRooms.ContainsKey(roomConnections[i]))
+                            Main.LoadErrors.Add($"{room.Id} connects to hidden room {roomConnections[i]}!");
+                        else if (exclusiveRooms.ContainsKey(roomConnections[i]))
+                            Main.LoadErrors.Add($"{room.Id} connects to excluded room {roomConnections[i]}!");
+                        else
+                            Main.LoadErrors.Add($"{room.Id} connects to a nonexistent room {roomConnections[i]}!");
+                    }
                 }
             }
 
             roomDirs.Add(roomsDir);
+
+            if (Main.TryFindParentDir(worldFile, "mergedmods", out string? mergedmods))
+            {
+                string rwworld = Path.Combine(mergedmods, "../world");
+                if (Directory.Exists(rwworld))
+                    roomDirs.Add(Path.Combine(rwworld, Id));
+            }
 
             foreach (Room r in Rooms)
             {
@@ -243,7 +283,10 @@ namespace Cornifer
                 }
 
                 if (data is null)
+                {
+                    Main.LoadErrors.Add($"Could not find data for room {r.Id}");
                     continue;
+                }
 
                 r.Load(data!, settings);
             }

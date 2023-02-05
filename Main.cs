@@ -38,6 +38,8 @@ namespace Cornifer
 
         public static string? SelectedSlugcat;
 
+        public static List<string> LoadErrors = new();
+
         static Vector2 SelectionStart;
         static Vector2 OldDragPos;
         internal static bool Selecting;
@@ -92,6 +94,9 @@ namespace Cornifer
             bool active = OldActive && IsActive;
 
             UpdateSelectionAndDrag(active && MouseState.LeftButton == ButtonState.Pressed, active && OldMouseState.LeftButton == ButtonState.Pressed);
+
+            if (KeyboardState.IsKeyDown(Keys.Escape) && OldKeyboardState.IsKeyUp(Keys.Escape))
+                LoadErrors.Clear();
 
             WorldCamera.Update();
             Interface.Update();
@@ -195,6 +200,25 @@ namespace Cornifer
 
                 SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
                 SpriteBatch.DrawRect(WorldCamera.TransformVector(tl), (br - tl) * WorldCamera.Scale, Color.LightBlue * 0.2f);
+                SpriteBatch.End();
+            }
+
+            if (LoadErrors.Count > 0)
+            {
+                int y = 10;
+                int x = 10;
+
+                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+                SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"{LoadErrors.Count} error(s) have occured during region loading.\nPress Esc to clear.", new(x, y), Color.OrangeRed);
+                y += Cornifer.Content.Consolas10.LineSpacing * 2 + 10;
+
+                foreach (string error in LoadErrors)
+                {
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, error, new(x, y), Color.White);
+                    y += Cornifer.Content.Consolas10.LineSpacing;
+                }
+
                 SpriteBatch.End();
             }
 
