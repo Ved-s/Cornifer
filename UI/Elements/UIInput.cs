@@ -98,6 +98,9 @@ namespace Cornifer.UI.Elements
             }
         }
 
+        public StringBuilder.ChunkEnumerator? FirstLineChunks => Lines.Count == 0 ? null : Lines[0].GetChunks();
+        public IEnumerable<StringBuilder.ChunkEnumerator> LineEnumerator => Lines.Select(sb => sb.GetChunks());
+
         protected List<StringBuilder> Lines = new();
         float[] LineWidths = Array.Empty<float>();
         float MaxLineWidth;

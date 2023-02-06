@@ -89,5 +89,11 @@ namespace Cornifer
         {
             spriteBatch.DrawRect(pos - new Vector2(size/2), new Vector2(size), color);
         }
+
+        public static void Clamp01(ref this Vector2 vector)
+        {
+            vector.X = Math.Clamp(vector.X, 0, 1);
+            vector.Y = Math.Clamp(vector.Y, 0, 1);    
+        }
     }
 }

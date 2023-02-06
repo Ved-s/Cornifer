@@ -1,4 +1,5 @@
-﻿using Cornifer.UI.Elements;
+﻿using Cornifer.UI;
+using Cornifer.UI.Elements;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
@@ -23,11 +24,13 @@ namespace Cornifer
 
         public static UIButton SlugcatIcons = null!;
 
+        public static ColorSelector ColorSelector = null!;
+
         public static bool Hovered => Root?.Hover is not null;
         public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.MouseState.RightButton == ButtonState.Pressed && !Interface.Hovered;
 
         static bool regionSelectVisible = false;
-        static bool slugcatSelectVisible = true;
+        static bool slugcatSelectVisible = false;
         static bool addIconSelectVisible = false;
 
         public static bool RegionSelectVisible
@@ -240,6 +243,12 @@ namespace Cornifer
                             InitSidePanel()
                         }
                     }.Assign(out SidePanel),
+
+                    new UI.ColorSelector
+                    {
+                        Top = 5, 
+                        Left = 5,
+                    }.Assign(out ColorSelector)
                 }
             };
         }
