@@ -17,7 +17,7 @@ namespace Cornifer
         public string Id;
         public List<Room> Rooms = new();
 
-        public string[] Subregions;
+        public Subregion[] Subregions;
 
         public HashSet<SelectableIcon> Icons = new();
 
@@ -58,7 +58,7 @@ namespace Cornifer
 
                     if (split.Length >= 1)
                     {
-                        Room room = new(split[0]);
+                        Room room = new(this, split[0]);
 
                         if (split.Length >= 2)
                             connections[room.Id] = split[1].Split(',', StringSplitOptions.TrimEntries);
@@ -166,7 +166,7 @@ namespace Cornifer
                 if (connections.TryGetValue(room, out string[]? roomConnections))
                     roomConnections[exit] = replacement;
 
-            HashSet<string> subregions = new();
+            List<string> subregions = new() { "" };
             HashSet<Room> unmappedRooms = new(Rooms);
 
             foreach (string line in File.ReadLines(mapFile))
@@ -198,10 +198,16 @@ namespace Cornifer
                 {
                     room.Layer = layer;
                 }
-                if (data.TryGet(5, out string subregion) && subregion.Length > 0)
+                if (data.TryGet(5, out string subregion))
                 {
-                    room.Subregion = subregion;
-                    subregions.Add(subregion);
+                    int index = subregions.IndexOf(subregion);
+                    if (index < 0)
+                    {
+                        index = subregions.Count;
+                        subregions.Add(subregion);
+                    }
+
+                    room.Subregion = index;
                 }
 
                 unmappedRooms.Remove(room);
@@ -213,7 +219,7 @@ namespace Cornifer
                 Rooms.RemoveAll(r => unmappedRooms.Contains(r));
             }
 
-            Subregions = subregions.ToArray();
+            Subregions = subregions.Select(s => new Subregion(s)).ToArray();
 
             List<string> roomDirs = new();
 
@@ -363,12 +369,25 @@ namespace Cornifer
 
         public IEnumerable<ISelectable> EnumerateSelectables()
         {
-            foreach (SelectableIcon icon in((IEnumerable<SelectableIcon>)Icons).Reverse())
+            foreach (SelectableIcon icon in Icons.Reverse())
                 yield return icon;
 
             foreach (Room room in ((IEnumerable<Room>)Rooms).Reverse())
                 foreach (ISelectable selectable in room.EnumerateSelectables())
                     yield return selectable;
+        }
+
+        public class Subregion 
+        {
+            public string Name;
+
+            public Color BackgroundColor = Color.White;
+            public Color WaterColor = Color.Blue;
+
+            public Subregion(string name)
+            {
+                Name = name;
+            }
         }
     }
 }

@@ -310,6 +310,8 @@ namespace Cornifer
                 pos.Round();
                 selectable.Position = pos;
             }
+
+            Interface.RegionChanged(Region);
         }
 
         public static bool TryFindParentDir(string path, string dirName, [NotNullWhen(true)] out string? result)

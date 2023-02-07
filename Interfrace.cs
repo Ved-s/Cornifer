@@ -21,16 +21,16 @@ namespace Cornifer
         public static UIModal AddIconSelect = null!;
 
         public static UIPanel SidePanel = null!;
-
         public static UIButton SlugcatIcons = null!;
-
         public static ColorSelector ColorSelector = null!;
+
+        public static UIList SubreginColorList = null!;
 
         public static bool Hovered => Root?.Hover is not null;
         public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.MouseState.RightButton == ButtonState.Pressed && !Interface.Hovered;
 
         static bool regionSelectVisible = false;
-        static bool slugcatSelectVisible = false;
+        static bool slugcatSelectVisible = true;
         static bool addIconSelectVisible = false;
 
         public static bool RegionSelectVisible
@@ -38,13 +38,11 @@ namespace Cornifer
             get => regionSelectVisible;
             set { regionSelectVisible = value; RegionSelect.Visible = value; }
         }
-
         public static bool SlugcatSelectVisible
         {
             get => slugcatSelectVisible;
             set { slugcatSelectVisible = value; SlugcatSelect.Visible = value; }
         }
-
         public static bool AddIconSelectVisible
         {
             get => addIconSelectVisible;
@@ -187,7 +185,7 @@ namespace Cornifer
                             {
                                 Top = 35,
                                 Height = new(-60, 1),
-                                Elements = 
+                                Elements =
                                 {
                                     new UIFlow
                                     {
@@ -196,7 +194,7 @@ namespace Cornifer
                                     .Execute(PopulateObjectSelect),
                                 }
                             },
-                            
+
                             new UILabel
                             {
                                 Top = new(-15, 1),
@@ -240,20 +238,40 @@ namespace Cornifer
 
                         Elements =
                         {
-                            InitSidePanel()
+                            new TabContainer
+                            {
+                                Tabs =
+                                {
+                                    new()
+                                    {
+                                        Name = "General",
+                                        Element = InitGeneralTab()
+                                    },
+                                    new()
+                                    {
+                                        Name = "Subregions",
+                                        Element = InitSubregionsTab(),
+                                    }
+                                }
+                            }
                         }
                     }.Assign(out SidePanel),
 
-                    new UI.ColorSelector
+                    new ColorSelector
                     {
-                        Top = 5, 
+                        Top = 5,
                         Left = 5,
+                        Visible = false,
                     }.Assign(out ColorSelector)
                 }
             };
+            Root.Recalculate();
+
+            if (Main.Region is not null)
+                RegionChanged(Main.Region);
         }
 
-        static UIElement InitSidePanel()
+        static UIElement InitGeneralTab()
         {
             return new UIPanel
             {
@@ -280,7 +298,7 @@ namespace Cornifer
                         Height = new(-100, 1),
                         ElementSpacing = 2,
 
-                        Elements = 
+                        Elements =
                         {
                             new UIButton
                             {
@@ -421,6 +439,32 @@ namespace Cornifer
                 }
             };
         }
+        static UIElement InitSubregionsTab()
+        {
+            return new UIPanel
+            {
+                BackColor = new(30, 30, 30),
+                BorderColor = new(100, 100, 100),
+
+                Padding = new(5),
+
+                Elements =
+                {
+                    new UILabel
+                    {
+                        Height = 20,
+                        Text = "Subregion colors",
+                        TextAlign = new(.5f)
+                    },
+                    new UIList
+                    {
+                        Top = 20,
+                        Height = new(-20, 1),
+                        ElementSpacing = 3,
+                    }.Assign(out SubreginColorList),
+                }
+            };
+        }
 
         static void PopulateSlugcatSelect(UIModal select)
         {
@@ -480,7 +524,7 @@ namespace Cornifer
 
                     Padding = 3,
 
-                    Elements = 
+                    Elements =
                     {
                         new UIImage
                         {
@@ -500,14 +544,14 @@ namespace Cornifer
                         }
                     }
                 };
-                panel.OnEvent(UIElement.UpdateEvent, (panel, _) => 
+                panel.OnEvent(UIElement.UpdateEvent, (panel, _) =>
                 {
                     if (panel.Hovered && panel.Root.MouseLeftKey == KeybindState.JustPressed)
                     {
                         Main.Region?.Icons.Add(new SimpleIcon(null, sprite)
-                            {
-                                Position = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
-                            });
+                        {
+                            Position = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
+                        });
 
                         if (Root!.ShiftKey == KeybindState.Released)
                             AddIconSelectVisible = false;
@@ -547,6 +591,56 @@ namespace Cornifer
             }
         }
 
+        public static void RegionChanged(Region region)
+        {
+            SubreginColorList.Elements.Clear();
+
+            foreach (Region.Subregion subregion in region.Subregions)
+            {
+                UIPanel panel = new()
+                {
+                    Height = 72,
+                    Padding = 3,
+
+                    Elements =
+                    {
+                        new UILabel
+                        {
+                            Text = subregion.Name.Length == 0 ? "Main region" : subregion.Name,
+                            Height = 20,
+                            TextAlign = new(.5f)
+                        },
+                        new UIButton
+                        {
+                            Top = 20,
+                            Height = 20,
+                            Text = "Set background color",
+                            TextAlign = new(.5f)
+                        }.OnEvent(UIElement.ClickEvent, (_, _) => ColorSelector.Show("Background color", subregion.BackgroundColor, (_, color) =>
+                        {
+                            subregion.BackgroundColor = color;
+                            Main.Region?.MarkRoomTilemapsDirty();
+                        })),
+                        new UIButton
+                        {
+                            Top = 45,
+                            Height = 20,
+                            Text = "Set water color",
+                            TextAlign = new(.5f)
+                        }.OnEvent(UIElement.ClickEvent, (_, _) => ColorSelector.Show("Water color", subregion.WaterColor, (_, color) =>
+                        {
+                            subregion.WaterColor = color;
+                            Main.Region?.MarkRoomTilemapsDirty();
+                        }))
+                    }
+                };
+
+                SubreginColorList.Elements.Add(panel);
+            }
+
+            SubreginColorList.Recalculate();
+        }
+
         public static void Update()
         {
             Root?.Update();
@@ -554,7 +648,6 @@ namespace Cornifer
             if (Main.KeyboardState.IsKeyDown(Keys.F12) && Main.OldKeyboardState.IsKeyUp(Keys.F12))
                 Init();
         }
-
         public static void Draw()
         {
             Root?.Draw(Main.SpriteBatch);

@@ -40,7 +40,7 @@ namespace Cornifer
         public Shortcut[] Shortcuts = Array.Empty<Shortcut>();
 
         public int Layer;
-        public string? Subregion;
+        public int Subregion = 0;
 
         public Vector2 WorldPos;
 
@@ -55,6 +55,8 @@ namespace Cornifer
 
         public bool Loaded = false;
 
+        public readonly Region Region;
+
         bool ISelectable.Active => true;
         Vector2 ISelectable.Position
         {
@@ -63,8 +65,9 @@ namespace Cornifer
         }
         Vector2 ISelectable.Size => Size.ToVector2();
 
-        public Room(string id)
+        public Room(Region region, string id)
         {
+            Region = region;
             Id = id;
         }
         public Point TraceShotrcut(Point pos)
@@ -321,14 +324,19 @@ namespace Cornifer
 
                 int waterLevel = WaterLevel;
 
-                Effect? waterFluxMin = Effects.FirstOrDefault(ef => ef.name == "WaterFluxMinLevel");
-                Effect? waterFluxMax = Effects.FirstOrDefault(ef => ef.name == "WaterFluxMaxLevel");
-
-                if (waterFluxMin is not null && waterFluxMax is not null)
+                if (waterLevel < 0)
                 {
-                    float waterMid = 1 - ((waterFluxMax.amount + waterFluxMin.amount) / 2 * (22f/20f));
-                    waterLevel = (int)(waterMid * Size.Y) + 2;
+                    Effect? waterFluxMin = Effects.FirstOrDefault(ef => ef.name == "WaterFluxMinLevel");
+                    Effect? waterFluxMax = Effects.FirstOrDefault(ef => ef.name == "WaterFluxMaxLevel");
+
+                    if (waterFluxMin is not null && waterFluxMax is not null)
+                    {
+                        float waterMid = 1 - ((waterFluxMax.amount + waterFluxMin.amount) / 2 * (22f / 20f));
+                        waterLevel = (int)(waterMid * Size.Y) + 2;
+                    }
                 }
+
+                Region.Subregion subregion = Region.Subregions[Subregion];
 
                 for (int j = 0; j < Size.Y; j++)
                     for (int i = 0; i < Size.X; i++)
@@ -354,15 +362,11 @@ namespace Cornifer
                         if (tile.Attributes.HasFlag(Tile.TileAttributes.VerticalBeam) || tile.Attributes.HasFlag(Tile.TileAttributes.HorizontalBeam))
                             gray = 0.35f;
 
-                        byte b = (byte)(gray * 255);
-
-                        Color color = new(b, b, b);
+                        Color color = Color.Lerp(Color.Black, subregion.BackgroundColor, gray);
 
                         if ((!ForceWaterBehindSolid && WaterInFrontOfTerrain || !solid) && (invertedWater ? j <= waterLevel : j >= Size.Y - waterLevel))
                         {
-                            Color waterColor = new(0, 0, 200);
-
-                            color = Color.Lerp(color, waterColor, 0.4f);
+                            color = Color.Lerp(color, subregion.WaterColor, 0.7f);
                         }
 
                         colors[i + j * Size.X] = color;
