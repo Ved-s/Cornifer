@@ -27,7 +27,7 @@ namespace Cornifer
         public static UIList SubreginColorList = null!;
 
         public static bool Hovered => Root?.Hover is not null;
-        public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.MouseState.RightButton == ButtonState.Pressed && !Interface.Hovered;
+        public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.MouseState.RightButton == ButtonState.Pressed && !Hovered;
 
         static bool regionSelectVisible = false;
         static bool slugcatSelectVisible = true;
@@ -424,6 +424,46 @@ namespace Cornifer
                                 TextAlign = new(.5f)
 
                             }.OnEvent(UIElement.ClickEvent, (btn, _) => AddIconSelectVisible = true),
+
+                            new UIPanel
+                            {
+                                Height = 40,
+                                Padding = 3,
+
+                                BorderColor = new(100, 100, 100),
+
+                                Elements =
+                                {
+                                    new UILabel
+                                    {
+                                        Height = 20,
+                                        Text = $"Water transparency: {Room.WaterTransparency*100:0}%",
+                                        TextAlign = new(0, .5f)
+                                    }.Assign(out UILabel waterTransparencyLabel),
+                                    new UIScrollBar
+                                    {
+                                        Top = 20,
+                                        Height = 8,
+                                        Margin = new(0, 5),
+
+                                        BackColor = new(36, 36, 36),
+                                        BorderColor = new(100, 100, 100),
+
+                                        Horizontal = true,
+                                        BarPadding = -4,
+                                        BarSize = 7,
+                                        BarSizeAbsolute = true,
+                                        ScrollMin = 0,
+                                        ScrollMax = 1,
+                                        ScrollPosition = Room.WaterTransparency,
+                                    }.OnEvent(UIScrollBar.ScrollChanged, (_, scroll) =>
+                                    {
+                                        Room.WaterTransparency = scroll;
+                                        waterTransparencyLabel.Text = $"Water transparency: {Room.WaterTransparency*100:0}%";
+                                        Main.Region?.MarkRoomTilemapsDirty();
+                                    })
+                                }
+                            }
                         }
                     },
 

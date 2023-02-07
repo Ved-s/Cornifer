@@ -22,6 +22,8 @@ namespace Cornifer
         public static bool DrawPickUpObjects = true;
         public static bool DrawCropped = false;
 
+        public static float WaterTransparency = .3f;
+
         public string Id;
         public string Name = null!;
 
@@ -366,7 +368,7 @@ namespace Cornifer
 
                         if ((!ForceWaterBehindSolid && WaterInFrontOfTerrain || !solid) && (invertedWater ? j <= waterLevel : j >= Size.Y - waterLevel))
                         {
-                            color = Color.Lerp(color, subregion.WaterColor, 0.7f);
+                            color = Color.Lerp(subregion.WaterColor, color, WaterTransparency);
                         }
 
                         colors[i + j * Size.X] = color;
