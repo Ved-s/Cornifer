@@ -122,6 +122,8 @@ namespace Cornifer
                 string subname = subsplit[5];
                 
                 obj.SlugcatAvailability = GetTokenSlugcats(subsplit[6]);
+                obj.Color.A = 150;
+                obj.Shade = false;
 
                 switch (objName)
                 {

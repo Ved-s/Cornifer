@@ -97,7 +97,9 @@ namespace Cornifer
             {"SlimeMold", ("Symbol_SlimeMold", new(255, 153, 0))},
             {"EnergyCell", ("Symbol_EnergyCell", new(5, 165, 217))},
             {"JokeRifle", ("Symbol_JokeRifle", new(169, 164, 178))},
+
             {"NeedleEgg", ("needleEggSymbol", new(45, 13, 20))},
+            {"WhiteToken", ("Symbol_Satellite", new(255, 255, 255))},
         };
 
         static Dictionary<string, (Rectangle Frame, Color Color)> ObjectSpriteFrames = new()
@@ -108,7 +110,7 @@ namespace Cornifer
             { "BlueToken",       (new(76, 24, 10, 20), new(255, 255, 255, 150)) },
             { "GoldToken",       (new(87, 24, 10, 20), new(255, 255, 255, 150)) },
             { "RedToken",        (new(100, 0, 10, 20), new(255, 255, 255, 150)) },
-            { "WhiteToken",      (new(98, 24, 10, 20), new(255, 255, 255, 150)) },
+            { "DevToken",        (new(98, 24, 10, 20), new(255, 255, 255, 150)) },
             { "GreenToken",      (new(111, 0, 10, 20), new(255, 255, 255, 150)) },
             { "DataPearl",       (new(39, 39, 11, 10), new(255, 255, 255, 255)) },
             { "UniqueDataPearl", (new(39, 39, 11, 10), new(255, 255, 255, 255)) },
