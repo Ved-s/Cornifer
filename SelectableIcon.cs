@@ -12,7 +12,7 @@ namespace Cornifer
         public Vector2 Offset;
         public Vector2 Position
         {
-            get => Parent is null ? Offset : Parent.Position + Parent.Size / 2 + Offset - Size / 2;
+            get => Parent is null ? Offset : Parent.Position + Parent.Size  * ParentPosAlign + Offset - Size * IconPosAlign;
             set
             {
                 if (Parent is null)
@@ -22,12 +22,15 @@ namespace Cornifer
                 }
                 if (!Parent.Selected)
                 {
-                    Offset = value - Parent.Position + Size / 2 - Parent.Size / 2;
+                    Offset = value - Parent.Position + Size * IconPosAlign - Parent.Size * ParentPosAlign;
                 }
             }
         }
         public abstract bool Active { get; }
         public abstract Vector2 Size { get; }
+
+        public virtual Vector2 ParentPosAlign { get; set; } = new(.5f);
+        public virtual Vector2 IconPosAlign { get; set; } = new(.5f);
 
         public void Draw(Renderer renderer)
         {
@@ -36,8 +39,8 @@ namespace Cornifer
 
             if (Parent is not null)
             {
-                Vector2 parentPoint = renderer.TransformVector(Parent.Position + Parent.Size / 2 + new Vector2(.5f));
-                Vector2 worldPoint = renderer.TransformVector(Position + Size / 2);
+                Vector2 parentPoint = renderer.TransformVector(Parent.Position + Parent.Size * ParentPosAlign + new Vector2(.5f));
+                Vector2 worldPoint = renderer.TransformVector(Position + Size * IconPosAlign);
 
                 Main.SpriteBatch.DrawLine(parentPoint, worldPoint, Color.Black, 3);
                 Main.SpriteBatch.DrawRect(parentPoint - new Vector2(3), new(5), Color.Black);
