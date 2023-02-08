@@ -4,6 +4,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -94,6 +95,85 @@ namespace Cornifer
         {
             vector.X = Math.Clamp(vector.X, 0, 1);
             vector.Y = Math.Clamp(vector.Y, 0, 1);    
+        }
+
+        delegate void DrawSpriteBatchRawDelegate(SpriteBatch spriteBatch, Texture2D texture, float sortingKey, VertexPositionColorTexture tl, VertexPositionColorTexture tr, VertexPositionColorTexture bl, VertexPositionColorTexture br);
+        static DrawSpriteBatchRawDelegate? DrawSpriteBatchRaw;
+        public static void Draw(this SpriteBatch spriteBatch, Texture2D texture, float sortingKey, VertexPositionColorTexture tl, VertexPositionColorTexture tr, VertexPositionColorTexture bl, VertexPositionColorTexture br)
+        {
+            if (DrawSpriteBatchRaw is null)
+            {
+                ParameterExpression spriteBatchParam = Expression.Parameter(typeof(SpriteBatch), "spriteBatch");
+                ParameterExpression textureParam = Expression.Parameter(typeof(Texture2D), "texture");
+                ParameterExpression sortingKeyParam = Expression.Parameter(typeof(float), "sortingKey");
+                ParameterExpression tlParam = Expression.Parameter(typeof(VertexPositionColorTexture), "tl");
+                ParameterExpression trParam = Expression.Parameter(typeof(VertexPositionColorTexture), "tr");
+                ParameterExpression blParam = Expression.Parameter(typeof(VertexPositionColorTexture), "bl");
+                ParameterExpression brParam = Expression.Parameter(typeof(VertexPositionColorTexture), "br");
+
+                ParameterExpression batchItem = Expression.Variable(typeof(SpriteBatch).Assembly.GetType("Microsoft.Xna.Framework.Graphics.SpriteBatchItem")!, "batchItem");
+                Expression batcher = Expression.Field(spriteBatchParam, "_batcher");
+
+                Expression itemTexture = Expression.Field(batchItem, "Texture");
+                Expression itemSortingKey = Expression.Field(batchItem, "SortKey");
+                Expression itemVertexTL = Expression.Field(batchItem, "vertexTL");
+                Expression itemVertexTR = Expression.Field(batchItem, "vertexTR");
+                Expression itemVertexBL = Expression.Field(batchItem, "vertexBL");
+                Expression itemVertexBR = Expression.Field(batchItem, "vertexBR");
+
+                BlockExpression body = Expression.Block(
+                    new ParameterExpression[] 
+                    {
+                        batchItem
+                    },
+                    new Expression[]
+                    {
+                        Expression.Assign(batchItem, Expression.Call(batcher, "CreateBatchItem", null, null)),
+                        Expression.Assign(itemTexture, textureParam),
+                        Expression.Assign(itemSortingKey, sortingKeyParam),
+                        Expression.Assign(itemVertexTL, tlParam),
+                        Expression.Assign(itemVertexTR, trParam),
+                        Expression.Assign(itemVertexBL, blParam),
+                        Expression.Assign(itemVertexBR, brParam),
+                        Expression.Call(spriteBatchParam, "FlushIfNeeded", null, null)
+                    });
+
+                DrawSpriteBatchRaw = Expression.Lambda<DrawSpriteBatchRawDelegate>(body, spriteBatchParam, textureParam, sortingKeyParam, tlParam, trParam, blParam, brParam).Compile();
+            }
+            DrawSpriteBatchRaw.Invoke(spriteBatch, texture, sortingKey, tl, tr, bl, br);
+        }
+
+        public static void Draw(this SpriteBatch spriteBatch, Texture2D texture, Vector2 tl, Vector2 tr, Vector2 bl, Vector2 br, Rectangle? source, Color color)
+        {
+            VertexPositionColorTexture tlVert = new()
+            {
+                Color = color,
+                Position = new(tl, 0),
+                TextureCoordinate = source is null ? new(0, 0) : new Vector2(source.Value.Left, source.Value.Top) / texture.Size(),
+            };
+
+            VertexPositionColorTexture trVert = new()
+            {
+                Color = color,
+                Position = new(tr, 0),
+                TextureCoordinate = source is null ? new(1, 0) : new Vector2(source.Value.Right, source.Value.Top) / texture.Size(),
+            };
+
+            VertexPositionColorTexture blVert = new()
+            {
+                Color = color,
+                Position = new(bl, 0),
+                TextureCoordinate = source is null ? new(0, 1) : new Vector2(source.Value.Left, source.Value.Bottom) / texture.Size(),
+            };
+
+            VertexPositionColorTexture brVert = new()
+            {
+                Color = color,
+                Position = new(br, 0),
+                TextureCoordinate = source is null ? new(1, 1) : new Vector2(source.Value.Right, source.Value.Bottom) / texture.Size(),
+            };
+
+            Draw(spriteBatch, texture, 0f, tlVert, trVert, blVert, brVert);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Cornifer.Renderers;
+﻿using Cornifer.Interfaces;
+using Cornifer.Renderers;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

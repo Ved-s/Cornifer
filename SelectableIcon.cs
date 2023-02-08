@@ -1,9 +1,10 @@
-﻿using Cornifer.Renderers;
+﻿using Cornifer.Interfaces;
+using Cornifer.Renderers;
 using Microsoft.Xna.Framework;
 
 namespace Cornifer
 {
-    public abstract class SelectableIcon : ISelectable, IDrawable
+    public abstract class SelectableIcon : ISelectable, Interfaces.IDrawable
     {
         public ISelectable? Parent;
 

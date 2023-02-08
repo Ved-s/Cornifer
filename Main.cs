@@ -1,4 +1,5 @@
-﻿using Cornifer.Renderers;
+﻿using Cornifer.Interfaces;
+using Cornifer.Renderers;
 using Microsoft.Win32;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -71,6 +72,8 @@ namespace Cornifer
         {
             SpriteBatch = new SpriteBatch(GraphicsDevice);
             Cornifer.Content.Load(Content);
+
+            FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt20] = 4;
 
             Pixel = new(GraphicsDevice, 1, 1);
             Pixel.SetData(new[] { Color.White });
@@ -241,6 +244,12 @@ namespace Cornifer
 
             SpriteBatch.Begin();
             Interface.Draw();
+            SpriteBatch.End();
+
+            SpriteBatch.Begin();
+            FormattedText.Draw(SpriteBatch, Cornifer.Content.RodondoExt20, "Test [c:f00]colored [i]italic [b]Bold [u]Underline [s]Shaded[/s][/u][/b][/i][/c] RodondoExt", new(10, 10), Color.White);
+            FormattedText.Draw(SpriteBatch, Cornifer.Content.Consolas10, "Test [c:f00]colored [i]italic [b]Bold [u]Underline [s]Shaded[/s][/u][/b][/i][/c] Consolas", new(10, 40), Color.White);
+
             SpriteBatch.End();
 
             base.Draw(gameTime);

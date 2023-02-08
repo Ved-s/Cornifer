@@ -1,4 +1,5 @@
-﻿using Cornifer.Renderers;
+﻿using Cornifer.Interfaces;
+using Cornifer.Renderers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -23,34 +24,12 @@ namespace Cornifer
         public override Vector2 ParentPosAlign => Parent is null ? Vector2.Zero : ParentPosition / Parent.Size;
         public override bool Active => true;
 
-        public void Draw(Renderer renderer)
+        public override void DrawIcon(Renderer renderer)
         {
-            Vector2 roomPoint = renderer.TransformVector(Parent.Position + ParentPosition + new Vector2(.5f));
-            Vector2 worldPoint = renderer.TransformVector(Parent.Position + ParentPosition + Offset);
-
-            Main.SpriteBatch.DrawLine(roomPoint, worldPoint, Color.Black, 3);
-            Main.SpriteBatch.DrawRect(roomPoint - new Vector2(3), new(5), Color.Black);
-
-            Main.SpriteBatch.DrawLine(roomPoint, worldPoint, new(90, 90, 90), 1);
-            Main.SpriteBatch.DrawRect(roomPoint - new Vector2(2), new(3), new(90, 90, 90));
-
-            if (Shade)
-            {
-                renderer.DrawTexture(Texture, Position + new Vector2(-1, -1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(1, -1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(-1, 1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(1, 1), Frame, color: Color.Black);
-
-                renderer.DrawTexture(Texture, Position + new Vector2(0, -1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(1, 0), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(-1, 0), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(0, 1), Frame, color: Color.Black);
-            }
-
-            renderer.DrawTexture(Texture, Position, Frame, color: Color);
+            base.DrawIcon(renderer);
 
             foreach (ISelectable selectable in SubObjects)
-                if (selectable is IDrawable drawable)
+                if (selectable is Interfaces.IDrawable drawable)
                     drawable.Draw(renderer);
         }
 
