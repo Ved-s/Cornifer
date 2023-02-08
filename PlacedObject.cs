@@ -8,37 +8,20 @@ using System.Linq;
 
 namespace Cornifer
 {
-    public class PlacedObject : ISelectable, ISelectableContainer, IDrawable
+    public class PlacedObject : SimpleIcon, ISelectableContainer
     {
         public string Name;
 
-        public ISelectable Parent;
-
         public Vector2 ParentPosition;
-        public Vector2 Offset;
-        public Texture2D Texture = null!;
-        public Rectangle Frame;
-        public bool Shade = false;
-        public Color Color = Color.White;
 
         public List<ISelectable> SubObjects = new();
 
         public string[] SlugcatAvailability = Array.Empty<string>();
 
-        public Vector2 Position
-        {
-            get => Parent.Position + ParentPosition + Offset - Size / 2;
-            set
-            {
-                if (!Parent.Selected)
-                {
-                    Offset = value - Parent.Position - ParentPosition + Size / 2;
-                }
-            }
-        }
-        public Vector2 Size => Frame.Size.ToVector2();
+        public override Vector2 Size => Frame.Size.ToVector2();
 
-        bool ISelectable.Active => true;
+        public override Vector2 ParentPosAlign => Parent is null ? Vector2.Zero : ParentPosition / Parent.Size;
+        public override bool Active => true;
 
         public void Draw(Renderer renderer)
         {

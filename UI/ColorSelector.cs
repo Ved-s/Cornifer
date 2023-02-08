@@ -137,7 +137,7 @@ namespace Cornifer.UI
             }.OnEvent(UIElement.ClickEvent, (_, _) => 
             {
                 Visible = false;
-                Callback?.Invoke(true, CurrentColor);
+                Callback?.Invoke(true, CurrentColor with { A = OriginalColor.A });
             }));
 
             Elements.Add(new UIButton
@@ -332,7 +332,7 @@ namespace Cornifer.UI
                 HEXInput.Text = $"{CurrentColor.R:x2}{CurrentColor.G:x2}{CurrentColor.B:x2}";
             }
 
-            Callback?.Invoke(null, CurrentColor);
+            Callback?.Invoke(null, CurrentColor with { A = OriginalColor.A });
         }
 
         static Color HSVToRGB(float hue, float saturation, float value)

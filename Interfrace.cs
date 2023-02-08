@@ -24,6 +24,10 @@ namespace Cornifer
         public static UIButton SlugcatIcons = null!;
         public static ColorSelector ColorSelector = null!;
 
+        public static UILabel NoConfigObjectLabel = null!;
+        public static UILabel NoConfigLabel = null!;
+        public static UIPanel ConfigPanel = null!;
+
         public static UIList SubreginColorList = null!;
 
         public static bool Hovered => Root?.Hover is not null;
@@ -49,8 +53,51 @@ namespace Cornifer
             set { addIconSelectVisible = value; AddIconSelect.Visible = value; }
         }
 
+        static UIElement? ConfigElement;
+        static IConfigurable? configurableObject;
+        public static IConfigurable? ConfigurableObject
+        {
+            get => configurableObject;
+            set
+            {
+                if (value is null)
+                {
+                    NoConfigObjectLabel.Visible = Main.SelectedObjects.Count != 1;
+                    NoConfigLabel.Visible = Main.SelectedObjects.Count == 1;
+                }
+                else 
+                {
+                    NoConfigObjectLabel.Visible = false;
+                    NoConfigLabel.Visible = false;
+                }
+
+                if (ReferenceEquals(configurableObject, value))
+                    return;
+
+                configurableObject = value;
+
+                if (ConfigElement is not null)
+                    ConfigPanel.Elements.Remove(ConfigElement);
+
+                ConfigElement = value?.Config;
+
+                if (ConfigElement is not null)
+                    ConfigPanel.Elements.Add(ConfigElement);
+            }
+        }
+
         public static void Init()
         {
+            if (ConfigurableObject is not null)
+            {
+                ConfigurableObject.ConfigCache = null;
+            }
+
+            if (ConfigElement is not null)
+                ConfigPanel.Elements.Remove(ConfigElement);
+            
+            ConfigElement = configurableObject?.Config;
+
             Root = new(Main.Instance)
             {
                 Font = Content.Consolas10,
@@ -251,6 +298,11 @@ namespace Cornifer
                                     {
                                         Name = "Subregions",
                                         Element = InitSubregionsTab(),
+                                    },
+                                    new()
+                                    {
+                                        Name = "Config",
+                                        Element = InitObjectConfigTab(),
                                     }
                                 }
                             }
@@ -505,6 +557,38 @@ namespace Cornifer
                 }
             };
         }
+        static UIElement InitObjectConfigTab()
+        {
+            return new UIPanel
+            {
+                BackColor = new(30, 30, 30),
+                BorderColor = new(100, 100, 100),
+
+                Padding = new(5),
+
+                Elements =
+                {
+                    new UILabel
+                    {
+                        Height = 20,
+                        Text = "Select one object on the map to configure",
+                        TextAlign = new(.5f),
+                        Visible = ConfigurableObject is null && Main.SelectedObjects.Count != 1,
+                    }.Assign(out NoConfigObjectLabel),
+                    new UILabel
+                    {
+                        Height = 20,
+                        Text = "Selected object is not configurable",
+                        TextAlign = new(.5f),
+                        Visible = ConfigurableObject is null && Main.SelectedObjects.Count == 1
+                    }.Assign(out NoConfigLabel)
+                }
+            }.Assign(out ConfigPanel).Execute(panel =>
+            {
+                if (ConfigElement is not null)
+                    panel.Elements.Add(ConfigElement);
+            });
+        }
 
         static void PopulateSlugcatSelect(UIModal select)
         {
@@ -687,6 +771,14 @@ namespace Cornifer
 
             if (Main.KeyboardState.IsKeyDown(Keys.F12) && Main.OldKeyboardState.IsKeyUp(Keys.F12))
                 Init();
+
+            if (Main.SelectedObjects.Count != 1)
+                ConfigurableObject = null;
+            else
+            {
+                ISelectable selectable = Main.SelectedObjects.First();
+                ConfigurableObject = selectable as IConfigurable;
+            }
         }
         public static void Draw()
         {

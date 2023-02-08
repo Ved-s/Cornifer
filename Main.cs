@@ -117,20 +117,28 @@ namespace Cornifer
 
             if (drag && !oldDrag && !Interface.Hovered)
             {
-                // Clicked on already selected room
-                if (ISelectable.FindSelectableAtPos(SelectedObjects, mouseWorld) is not null)
+                // Clicked on already selected object
+                ISelectable? underMouse = ISelectable.FindSelectableAtPos(SelectedObjects, mouseWorld);
+                if (underMouse is not null)
                 {
+                    if (KeyboardState.IsKeyDown(Keys.LeftControl))
+                    {
+                        SelectedObjects.Remove(underMouse);
+                        return;
+                    }
+
                     Dragging = true;
                     OldDragPos = mouseWorld;
                     return;
                 }
                 if (Region is not null)
                 {
-                    // Clicked on not selected room
+                    // Clicked on not selected object
                     ISelectable? selectable = ISelectable.FindSelectableAtPos(Region.EnumerateSelectables(), mouseWorld);
                     if (selectable is not null)
                     {
-                        SelectedObjects.Clear();
+                        if (!KeyboardState.IsKeyDown(Keys.LeftShift))
+                            SelectedObjects.Clear();
                         SelectedObjects.Add(selectable);
                         Dragging = true;
                         OldDragPos = mouseWorld;

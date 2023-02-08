@@ -80,8 +80,7 @@ namespace Cornifer.UI.Elements
             base.Recalculate();
             if (!SkipRecalculatingChildren)
                 foreach (UIElement element in Elements)
-                    if (element.Visible && element.Enabled)
-                        element.Recalculate();
+                    element.Recalculate();
             SkipRecalculatingChildren = false;
         }
 
