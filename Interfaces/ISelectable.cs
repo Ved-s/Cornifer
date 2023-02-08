@@ -1,8 +1,7 @@
-﻿
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 
-namespace Cornifer
+namespace Cornifer.Interfaces
 {
     public interface ISelectable
     {

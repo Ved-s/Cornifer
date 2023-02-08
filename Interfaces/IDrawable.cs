@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Cornifer
+namespace Cornifer.Interfaces
 {
     public interface IDrawable
     {
