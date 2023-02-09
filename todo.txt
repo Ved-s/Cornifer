@@ -1,0 +1,4 @@
+MapObject, like Unity GameObject
+State file
+
+Shortcut graphics
