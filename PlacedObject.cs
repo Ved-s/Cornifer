@@ -120,7 +120,15 @@ namespace Cornifer
                 string[] subsplit = data.Split('~');
 
                 if (subsplit.TryGet(4, out string type))
+                {
                     obj.Color = GetPearlColor(type);
+
+                    if (split[0] == "UniqueDataPearl")
+                        obj.SubObjects.Add(new MapText(obj, Content.RodondoExt20, $"[c:{obj.Color.R:x2}{obj.Color.G:x2}{obj.Color.B:x2}]Colored[/c] pearl")
+                        {
+                            Shade = true
+                        });
+                }
                 obj.Color.A = 165;
             }
 

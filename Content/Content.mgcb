@@ -39,6 +39,13 @@
 /processorParam:TextureFormat=Compressed
 /build:RodondoExt20.spritefont
 
+#begin RodondoExt30.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:RodondoExt30.spritefont
+
 #begin SlugcatIcons.png
 /importer:TextureImporter
 /processor:TextureProcessor

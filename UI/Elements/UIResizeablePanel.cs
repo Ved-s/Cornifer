@@ -118,7 +118,7 @@ namespace Cornifer.UI.Elements
                     {
                         float max = MaxSize.Y - ScreenRect.Height;
                         float min = MinSize.Y - ScreenRect.Height;
-                        Top.Value += Math.Clamp(diff.Y, min, max);
+                        Top.Value += Math.Clamp(-diff.Y, min, max);
                     }
 
                     if (GrabbedLeft && SizingChangesPosition)
@@ -139,7 +139,7 @@ namespace Cornifer.UI.Elements
                     {
                         float max = MaxSize.Y - ScreenRect.Height;
                         float min = MinSize.Y - ScreenRect.Height;
-                        Height.Value += Math.Clamp(-diff.Y, min, max);
+                        Height.Value += Math.Clamp(diff.Y, min, max);
                     }
 
                     Recalculate();

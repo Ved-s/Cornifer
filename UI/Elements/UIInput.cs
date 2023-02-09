@@ -443,6 +443,9 @@ namespace Cornifer.UI.Elements
 
         protected override void ActiveChanged()
         {
+            if (Root is null)
+                return;
+
             if (Active)
                 Root.Game.Window.TextInput += TextInput;
             else
