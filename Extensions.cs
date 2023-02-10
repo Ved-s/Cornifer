@@ -3,9 +3,11 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 namespace Cornifer
@@ -200,6 +202,34 @@ namespace Cornifer
         {
             for (int i = array.Length - 1; i >= 0; i--)
                 yield return array[i];
+        }
+
+        public static bool TryGet<T>([NotNullWhen(true)] this JsonNode? node, string key, [NotNullWhen(true)] out T? value)
+        {
+            node = node?[key];
+            if (node is not null)
+            {
+                if (node is T t)
+                {
+                    value = t;
+                    return true;
+                }
+
+                if (node is JsonValue jvalue)
+                {
+                    return jvalue.TryGetValue<T>(out value);
+                }
+            }
+
+            value = default;
+            return false;
+        }
+
+        public static T? Get<T>(this JsonNode? node, string key, T? @default = default)
+        {
+            if (node.TryGet(key, out T? value))
+                return value;
+            return @default;
         }
     }
 }

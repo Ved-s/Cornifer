@@ -7,6 +7,9 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SixLabors.ImageSharp.ColorSpaces.Conversion;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json.Nodes;
 
 namespace Cornifer
 {
@@ -54,8 +57,14 @@ namespace Cornifer
             }
         }
 
-        public MapText(SpriteFont font, string text)
+        public MapText() 
         {
+            font = Content.RodondoExt20;
+        }
+
+        public MapText(string name, SpriteFont font, string text)
+        {
+            Name = name;
             this.font = font;
             Text = text;
         }
@@ -239,6 +248,42 @@ namespace Cornifer
                     return;
                 Font = font;
             };
+        }
+
+        protected override JsonNode? SaveInnerJson()
+        {
+            return new JsonObject
+            {
+                ["text"] = Text,
+                ["font"] = Content.Fonts.FirstOrDefault(kvp => kvp.Value == Font).Key,
+                ["scale"] = Scale,
+                ["color"] = Color.PackedValue,
+                ["shade"] = Shade,
+                ["shadeColor"] = ShadeColor.PackedValue,
+            };
+        }
+
+        protected override void LoadInnerJson(JsonNode node)
+        {
+            if (node.TryGet("text", out string? text))
+                this.text = text;
+
+            if (node.TryGet("font", out string? font))
+                this.font = Content.Fonts.GetValueOrDefault(font) ?? Content.RodondoExt20;
+
+            if (node.TryGet("scale", out float scale))
+                this.scale = scale;
+
+            if (node.TryGet("color", out uint color))
+                Color.PackedValue = color;
+
+            if (node.TryGet("shade", out bool shade))
+                Shade = shade;
+
+            if (node.TryGet("shadeColor", out uint shadeColor))
+                ShadeColor.PackedValue = shadeColor;
+
+            ParamsChanged();
         }
     }
 }

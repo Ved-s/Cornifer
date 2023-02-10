@@ -20,6 +20,11 @@ namespace Cornifer
         public override bool Active => DrawIcons || ForceSlugcatIcon;
         public override Vector2 Size => DrawDiamond && !ForceSlugcatIcon ? new(9) : new(8);
 
+        public SlugcatIcon(string name)
+        {
+            Name = name;
+        }
+
         public override void DrawIcon(Renderer renderer)
         {
             Rectangle frame = DrawDiamond && !ForceSlugcatIcon ? new(Id*9, 8, 9, 9) : new(Id*8, 0, 8, 8);

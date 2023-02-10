@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Threading;
 
 namespace Cornifer
 {
@@ -48,6 +51,7 @@ namespace Cornifer
         internal static bool Dragging;
 
         static bool OldActive;
+        static string? CurrentStatePath;
 
         public Main()
         {
@@ -65,6 +69,34 @@ namespace Cornifer
 
             Window.AllowUserResizing = true;
             Window.ClientSizeChanged += (_, _) => Interface.Root?.Recalculate();
+
+            if (File.Exists("state.json"))
+            {
+                try
+                {
+                    using FileStream fs = File.OpenRead("state.json");
+
+                    JsonNode? node = JsonSerializer.Deserialize<JsonNode>(fs);
+                    if (node is not null)
+                        LoadJson(node);
+                }
+                catch (Exception ex)
+                {
+                    var result = System.Windows.Forms.MessageBox.Show(
+                        $"Exception has been thrown while opening previous state.\n" +
+                        $"Clicking Ok will delete current state (state.json) and continue normally.\n" +
+                        $"Clicking Cancel will exit the application.\n" +
+                        $"\n" +
+                        $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error", System.Windows.Forms.MessageBoxButtons.OKCancel);
+
+                    if (result != System.Windows.Forms.DialogResult.OK)
+                    {
+                        Environment.Exit(1);
+                    }
+                    File.Delete("state.json");
+                    Region = null;
+                }
+            }
 
             Interface.Init();
         }
@@ -114,6 +146,87 @@ namespace Cornifer
 
             WorldCamera.Update();
             Interface.Update();
+        }
+
+        protected override void Draw(GameTime gameTime)
+        {
+            Viewport vp = GraphicsDevice.Viewport;
+            GraphicsDevice.ScissorRectangle = new(0, 0, vp.Width, vp.Height);
+            GraphicsDevice.Clear(Color.CornflowerBlue);
+
+            if (SelectedObjects.Count > 0)
+            {
+                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+                foreach (MapObject obj in SelectedObjects)
+                    SpriteBatch.DrawRect(WorldCamera.TransformVector(obj.WorldPosition) - new Vector2(2), obj.Size * WorldCamera.Scale + new Vector2(4), Color.White * 0.4f);
+                SpriteBatch.End();
+            }
+
+            DrawMap(WorldCamera);
+
+            if (Selecting)
+            {
+                Vector2 mouseWorld = WorldCamera.InverseTransformVector(MouseState.Position.ToVector2());
+                Vector2 tl = new(Math.Min(mouseWorld.X, SelectionStart.X), Math.Min(mouseWorld.Y, SelectionStart.Y));
+                Vector2 br = new(Math.Max(mouseWorld.X, SelectionStart.X), Math.Max(mouseWorld.Y, SelectionStart.Y));
+
+                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+                SpriteBatch.DrawRect(WorldCamera.TransformVector(tl), (br - tl) * WorldCamera.Scale, Color.LightBlue * 0.2f);
+                SpriteBatch.End();
+            }
+
+            if (LoadErrors.Count > 0)
+            {
+                int y = 10;
+                int x = 10;
+
+                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+                SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"{LoadErrors.Count} error(s) have occured during region loading.\nPress Esc to clear.", new(x, y), Color.OrangeRed);
+                y += Cornifer.Content.Consolas10.LineSpacing * 2 + 10;
+
+                foreach (string error in LoadErrors)
+                {
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, error, new(x, y), Color.White);
+                    y += Cornifer.Content.Consolas10.LineSpacing;
+                }
+
+                SpriteBatch.End();
+            }
+
+            SpriteBatch.Begin();
+            Interface.Draw();
+            SpriteBatch.End();
+
+            //SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            //Vector2 pos = new(10, 10);
+            //Vector2 size = FormattedText.DrawAndMeasure(SpriteBatch, Cornifer.Content.RodondoExt20, "[sc:1.5]Big name[/sc][sc:.8][a:.6] small subscript", pos, Color.White);
+            //SpriteBatch.DrawRect(pos, size, null, Color.Red);
+            //
+            //SpriteBatch.End();
+
+            base.Draw(gameTime);
+        }
+
+        protected override void EndRun()
+        {
+            using MemoryStream ms = new();
+            try
+            {
+                JsonSerializer.Serialize(ms, SaveJson(), new JsonSerializerOptions { WriteIndented = true });
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    $"Exception has been thrown while saving app state.\n" +
+                    $"Clicking Ok skip saving process and leave old state (state.json) intact.\n" +
+                    $"\n" +
+                    $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
+                return;
+            }
+            FileStream fs = File.Create("state.json");
+            ms.Position = 0;
+            ms.CopyTo(fs);
         }
 
         private void UpdateSelectionAndDrag(bool drag, bool oldDrag)
@@ -199,66 +312,6 @@ namespace Cornifer
             }
         }
 
-        protected override void Draw(GameTime gameTime)
-        {
-            Viewport vp = GraphicsDevice.Viewport;
-            GraphicsDevice.ScissorRectangle = new(0, 0, vp.Width, vp.Height);
-            GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            if (SelectedObjects.Count > 0)
-            {
-                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-                foreach (MapObject obj in SelectedObjects)
-                    SpriteBatch.DrawRect(WorldCamera.TransformVector(obj.WorldPosition) - new Vector2(2), obj.Size * WorldCamera.Scale + new Vector2(4), Color.White * 0.4f);
-                SpriteBatch.End();
-            }
-
-            DrawMap(WorldCamera);
-
-            if (Selecting)
-            {
-                Vector2 mouseWorld = WorldCamera.InverseTransformVector(MouseState.Position.ToVector2());
-                Vector2 tl = new(Math.Min(mouseWorld.X, SelectionStart.X), Math.Min(mouseWorld.Y, SelectionStart.Y));
-                Vector2 br = new(Math.Max(mouseWorld.X, SelectionStart.X), Math.Max(mouseWorld.Y, SelectionStart.Y));
-
-                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-                SpriteBatch.DrawRect(WorldCamera.TransformVector(tl), (br - tl) * WorldCamera.Scale, Color.LightBlue * 0.2f);
-                SpriteBatch.End();
-            }
-
-            if (LoadErrors.Count > 0)
-            {
-                int y = 10;
-                int x = 10;
-
-                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-
-                SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"{LoadErrors.Count} error(s) have occured during region loading.\nPress Esc to clear.", new(x, y), Color.OrangeRed);
-                y += Cornifer.Content.Consolas10.LineSpacing * 2 + 10;
-
-                foreach (string error in LoadErrors)
-                {
-                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, error, new(x, y), Color.White);
-                    y += Cornifer.Content.Consolas10.LineSpacing;
-                }
-
-                SpriteBatch.End();
-            }
-
-            SpriteBatch.Begin();
-            Interface.Draw();
-            SpriteBatch.End();
-
-            //SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-            //Vector2 pos = new(10, 10);
-            //Vector2 size = FormattedText.DrawAndMeasure(SpriteBatch, Cornifer.Content.RodondoExt20, "[sc:1.5]Big name[/sc][sc:.8][a:.6] small subscript", pos, Color.White);
-            //SpriteBatch.DrawRect(pos, size, null, Color.Red);
-            //
-            //SpriteBatch.End();
-
-            base.Draw(gameTime);
-        }
-
         public static void DrawMap(Renderer renderer)
         {
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
@@ -295,10 +348,6 @@ namespace Cornifer
 
         public static void LoadRegion(string regionPath)
         {
-            SelectedObjects.Clear();
-            Selecting = false;
-            Dragging = false;
-
             string id = Path.GetFileName(regionPath);
 
             string worldFile = Path.Combine(regionPath, $"world_{id}.txt");
@@ -341,10 +390,18 @@ namespace Cornifer
                 }
 
             Region = new(id, worldFile, mapFile, Path.Combine(regionPath, $"../{id}-rooms"));
+            RegionLoaded(Region);
+        }
+        public static void RegionLoaded(Region region)
+        {
+            SelectedObjects.Clear();
+            Selecting = false;
+            Dragging = false;
 
             WorldObjectLists.Clear();
-            WorldObjectLists.Add(Region.Rooms);
+            WorldObjectLists.Add(region.Rooms);
             WorldObjectLists.Add(WorldObjects);
+            WorldObjects.Clear();
 
             foreach (MapObject obj in WorldObjectLists)
             {
@@ -353,7 +410,162 @@ namespace Cornifer
                 obj.WorldPosition = pos;
             }
 
-            Interface.RegionChanged(Region);
+            Interface.RegionSelectVisible = false;
+            Interface.SlugcatSelectVisible = false;
+
+            Interface.RegionChanged(region);
+        }
+
+        public static JsonObject SaveJson()
+        {
+            return new()
+            {
+                ["slugcat"] = SelectedSlugcat,
+                ["region"] = Region?.SaveJson(),
+                ["objects"] = new JsonArray(WorldObjectLists.Enumerate().Select(o => o.SaveJson()).ToArray())
+            };
+        }
+        public static void LoadJson(JsonNode node)
+        {
+            if (node.TryGet("slugcat", out string? slugcat))
+            { 
+                SelectedSlugcat = slugcat;
+            }
+            if (node.TryGet("region", out JsonNode? region))
+            {
+                Region = new();
+                Region.LoadJson(region);
+                Main.RegionLoaded(Region);
+            }
+            if (node.TryGet("objects", out JsonArray? objects))
+                foreach (JsonNode? objNode in objects)
+                    if (objNode is not null && !MapObject.LoadObject(objNode, WorldObjectLists))
+                    {
+                        MapObject? obj = MapObject.CreateObject(objNode);
+                        if (obj is not null)
+                            WorldObjects.Add(obj);
+                    }
+        }
+
+        public static void OpenState()
+        {
+            string? fileName = null;
+            Thread thread = new(() =>
+            {
+                System.Windows.Forms.OpenFileDialog ofd = new();
+
+                ofd.Filter = "JSON Files|*.json";
+
+                if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    fileName = ofd.FileName;
+            });
+
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+
+            if (fileName is null)
+                return;
+
+            try
+            {
+                using FileStream fs = File.OpenRead(fileName);
+
+                JsonNode? node = JsonSerializer.Deserialize<JsonNode>(fs);
+                if (node is not null)
+                {
+                    LoadJson(node);
+                    CurrentStatePath = fileName;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show($"Exception has been thrown while opening selected state.\n\n{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
+            }
+        }
+        public static void SaveState()
+        {
+            if (CurrentStatePath is null)
+            {
+                bool exit = false;
+                Thread thread = new(() =>
+                {
+                    System.Windows.Forms.SaveFileDialog sfd = new();
+
+                    sfd.Filter = "JSON Files|*.json";
+
+                    if (sfd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        CurrentStatePath = sfd.FileName;
+                    else
+                        exit = true;
+                });
+
+                thread.SetApartmentState(ApartmentState.STA);
+                thread.Start();
+                thread.Join();
+
+                if (exit)
+                    return;
+            }
+
+            using MemoryStream ms = new();
+            try
+            {
+                JsonSerializer.Serialize(ms, SaveJson(), new JsonSerializerOptions { WriteIndented = true });
+
+                FileStream fs = File.Create(CurrentStatePath!);
+                ms.Position = 0;
+                ms.CopyTo(fs);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    $"Exception has been thrown while saving state.\n" +
+                    $"Clicking Ok skip saving process and leave old state (state.json) intact.\n" +
+                    $"\n" +
+                    $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
+            }
+            
+        }
+        public static void SaveStateAs()
+        {
+            bool exit = false;
+            Thread thread = new(() =>
+            {
+                System.Windows.Forms.SaveFileDialog sfd = new();
+
+                sfd.Filter = "JSON Files|*.json";
+
+                if (sfd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    CurrentStatePath = sfd.FileName;
+                else
+                    exit = true;
+            });
+
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+
+            if (exit)
+                return;
+
+            using MemoryStream ms = new();
+            try
+            {
+                JsonSerializer.Serialize(ms, SaveJson(), new JsonSerializerOptions { WriteIndented = true });
+
+                FileStream fs = File.Create(CurrentStatePath!);
+                ms.Position = 0;
+                ms.CopyTo(fs);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show(
+                    $"Exception has been thrown while saving state.\n" +
+                    $"Clicking Ok skip saving process and leave old state (state.json) intact.\n" +
+                    $"\n" +
+                    $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
+            }
         }
 
         public static bool TryFindParentDir(string path, string dirName, [NotNullWhen(true)] out string? result)
@@ -369,19 +581,16 @@ namespace Cornifer
             }
             return false;
         }
-
         public static bool FileExists(string dir, string file, out string filepath)
         {
             filepath = Path.Combine(dir, file);
             return File.Exists(filepath);
         }
-
         public static string CheckSlugcatAltFile(string filepath)
         {
             TryCheckSlugcatAltFile(filepath, out string result);
             return result;
         }
-
         public static bool TryCheckSlugcatAltFile(string filepath, out string result)
         {
             result = filepath;
@@ -397,7 +606,6 @@ namespace Cornifer
             }
             return false;
         }
-
         public static IEnumerable<(string id, string name, string path)> FindRegions()
         {
             if (RainWorldRoot is null)
@@ -413,7 +621,7 @@ namespace Cornifer
             string mods = Path.Combine(RainWorldRoot, "RainWorld_Data/StreamingAssets/mods");
 
             if (Directory.Exists(mods))
-                foreach(string mod in Directory.EnumerateDirectories(mods))
+                foreach (string mod in Directory.EnumerateDirectories(mods))
                     worlds.Add(Path.Combine(mod, "world"));
 
             foreach (string world in worlds)

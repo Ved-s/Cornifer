@@ -71,7 +71,7 @@ namespace Cornifer
                         int slugcatId = Array.IndexOf(Main.SlugCatNames, subname);
                         if (slugcatId >= 0)
                         {
-                            obj.Children.Add(new SlugcatIcon()
+                            obj.Children.Add(new SlugcatIcon("GreenTokenSlugcat")
                             {
                                 Id = slugcatId,
                                 ParentPosition = new(0, 8),
@@ -102,7 +102,7 @@ namespace Cornifer
                     obj.Color = GetPearlColor(type);
 
                     if (split[0] == "UniqueDataPearl")
-                        obj.Children.Add(new MapText(Content.RodondoExt20, $"[c:{obj.Color.R:x2}{obj.Color.G:x2}{obj.Color.B:x2}]Colored[/c] pearl")
+                        obj.Children.Add(new MapText("PearlText", Content.RodondoExt20, $"[c:{obj.Color.R:x2}{obj.Color.G:x2}{obj.Color.B:x2}]Colored[/c] pearl")
                         {
                             Shade = true
                         });
@@ -121,7 +121,7 @@ namespace Cornifer
                 Vector2 offset = new Vector2(MathF.Cos(currentAngle), -MathF.Sin(currentAngle)) * 15;
                 currentAngle -= iconAngle;
                 string slugcat = obj.SlugcatAvailability[i];
-                obj.Children.Add(new SlugcatIcon
+                obj.Children.Add(new SlugcatIcon($"Availability_{slugcat}")
                 {
                     Id = Array.IndexOf(Main.SlugCatNames, slugcat),
                     Parent = obj,

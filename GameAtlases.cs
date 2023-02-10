@@ -119,7 +119,10 @@ namespace Cornifer
         public static void Load()
         {
             foreach (var (objectName, objectSprite) in ObjectSpriteFrames)
-                Sprites["Object_" + objectName] = new(Content.Objects, objectSprite.Frame, objectSprite.Color, false);
+            {
+                string name = "Object_" + objectName;
+                Sprites[name] = new(name, Content.Objects, objectSprite.Frame, objectSprite.Color, false);
+            }
             
             if (!Directory.Exists("Atlases"))
                 return;
@@ -156,7 +159,7 @@ namespace Cornifer
                                 int w = (int)frame["w"]!;
                                 int h = (int)frame["h"]!;
 
-                                Sprites[asset] = new(texture, new(x, y, w, h), Color.White, true);
+                                Sprites[asset] = new(asset, texture, new(x, y, w, h), Color.White, true);
                             }
                             catch { }
                         }
@@ -165,9 +168,12 @@ namespace Cornifer
 
             foreach (var (spriteName, spriteData) in ObjectSprites)
                 if (Sprites.TryGetValue(spriteData.Atlas, out AtlasSprite? sprite))
-                    Sprites["Object_"+spriteName] = new(sprite.Texture, sprite.Frame, spriteData.Color, true);
+                {
+                    string name = "Object_" + spriteName;
+                    Sprites[name] = new(name, sprite.Texture, sprite.Frame, spriteData.Color, true);
+                }
         }
     }
 
-    public record class AtlasSprite(Texture2D Texture, Rectangle Frame, Color Color, bool Shade);
+    public record class AtlasSprite(string Name, Texture2D Texture, Rectangle Frame, Color Color, bool Shade);
 }

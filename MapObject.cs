@@ -4,8 +4,12 @@ using Microsoft.Xna.Framework;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Cornifer
@@ -67,6 +71,50 @@ namespace Cornifer
             return BuildInnerConfig();
         }
 
+        public JsonObject? SaveJson()
+        {
+            JsonNode? inner = SaveInnerJson();
+
+            JsonObject json = new()
+            {
+                ["name"] = Name ?? throw new InvalidOperationException(
+                        $"MapObject doesn't have a name and can't be saved.\n" +
+                        $"Type: {GetType().Name}\n" +
+                        $"Parent: {Parent?.Name ?? Parent?.GetType().Name ?? "null"}"),
+                ["type"] = GetType().FullName,
+                ["pos"] = JsonTypes.SaveVector2(ParentPosition),
+                ["active"] = Active,
+            };
+            if (inner is not null)
+                json["data"] = inner;
+            if (Children.Count > 0)
+                json["children"] = new JsonArray(Children.Select(c => c.SaveJson()).OfType<JsonNode>().ToArray());
+            
+            return json;
+        }
+        public void LoadJson(JsonNode json)
+        {
+            if (json.TryGet("name", out string? name))
+                Name = name;
+
+            if (json.TryGet("pos", out JsonNode? pos))
+                ParentPosition = JsonTypes.LoadVector2(pos);
+            
+            if (json.TryGet("active", out bool active))
+                Active = active;
+            
+            if (json.TryGet("data", out JsonNode? data))
+                LoadInnerJson(data);
+
+            if (json.TryGet("children", out JsonArray? children))
+                foreach (JsonNode? childNode in children)
+                    if (childNode is not null)
+                        LoadObject(childNode, Children);
+        }
+
+        protected virtual JsonNode? SaveInnerJson() => null;
+        protected virtual void LoadInnerJson(JsonNode node) { }
+
         protected virtual UIElement? BuildInnerConfig() => null;
 
         public static MapObject? FindSelectableAtPos(IEnumerable<MapObject> objects, Vector2 pos, bool searchChildren)
@@ -103,6 +151,36 @@ namespace Cornifer
                 if (intersects)
                     yield return obj;
             }
+        }
+
+        public static bool LoadObject(JsonNode node, IEnumerable<MapObject> objEnumerable)
+        {
+            if (!node.TryGet("name", out string? name))
+                return false;
+
+            MapObject? obj = objEnumerable.FirstOrDefault(o => o.Name == name);
+            if (obj is null)
+                return false;
+
+            obj.LoadJson(node);
+            return true;
+        }
+        public static MapObject? CreateObject(JsonNode node)
+        {
+            if (!node.TryGet("type", out string? typeName))
+                return null;
+
+            Type? type = Type.GetType(typeName);
+            if (type is null || !type.IsAssignableTo(typeof(MapObject))) 
+                return null;
+
+            MapObject instance = (MapObject)Activator.CreateInstance(type)!;
+
+            if (node.TryGet("name", out string? name))
+                instance.Name = name;
+
+            instance.LoadJson(node);
+            return instance;
         }
 
         public class MapObjectCollection : ICollection<MapObject>

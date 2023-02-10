@@ -124,7 +124,6 @@ namespace Cornifer
 
         public void Load(string data, string? settings)
         {
-            DataString = data;
             SettingsString = settings;
 
             string[] lines = data.Split('\n', StringSplitOptions.TrimEntries);
@@ -262,6 +261,13 @@ namespace Cornifer
                 Exits = exitEntrances;
             }
 
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (i != 0 && i != 1 && i != 11)
+                    lines[i] = "";
+            }
+            DataString = string.Join('\n', lines);
+
             if (settings is not null)
                 foreach (string line in settings.Split('\n', StringSplitOptions.TrimEntries))
                 {
@@ -299,7 +305,7 @@ namespace Cornifer
                 }
 
             if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
-                Children.Add(new SimpleIcon(shelterMarker));
+                Children.Add(new SimpleIcon("ShelterMarker", shelterMarker));
             
             Loaded = true;
         }

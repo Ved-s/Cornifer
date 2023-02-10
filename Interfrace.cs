@@ -30,7 +30,7 @@ namespace Cornifer
         public static UILabel NoConfigLabel = null!;
         public static UIPanel ConfigPanel = null!;
 
-        public static UIList SubreginColorList = null!;
+        public static UIList SubregionColorList = null!;
 
         public static bool Hovered => Root?.Hover is not null;
         public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.MouseState.RightButton == ButtonState.Pressed && !Hovered;
@@ -43,22 +43,22 @@ namespace Cornifer
         public static bool RegionSelectVisible
         {
             get => regionSelectVisible;
-            set { regionSelectVisible = value; RegionSelect.Visible = value; }
+            set { regionSelectVisible = value; if (RegionSelect is not null) RegionSelect.Visible = value; }
         }
         public static bool SlugcatSelectVisible
         {
             get => slugcatSelectVisible;
-            set { slugcatSelectVisible = value; SlugcatSelect.Visible = value; }
+            set { slugcatSelectVisible = value; if (SlugcatSelect is not null) SlugcatSelect.Visible = value; }
         }
         public static bool AddIconSelectVisible
         {
             get => addIconSelectVisible;
-            set { addIconSelectVisible = value; AddIconSelect.Visible = value; }
+            set { addIconSelectVisible = value; if (AddIconSelect is not null) AddIconSelect.Visible = value; }
         }
         public static bool TextFormattingVisible
         {
             get => textFormattingVisible;
-            set { textFormattingVisible = value; TextFormatting.Visible = value; }
+            set { textFormattingVisible = value; if (TextFormatting is not null) TextFormatting.Visible = value; }
         }
 
         static UIElement? ConfigElement;
@@ -240,7 +240,16 @@ namespace Cornifer
                                 dirSelect.SetApartmentState(ApartmentState.STA);
                                 dirSelect.Start();
                                 dirSelect.Join();
-                            })
+                            }),
+                            new UIButton
+                            {
+                                Top = new(-20, 1),
+                                Left = new(0, .5f, -.5f),
+                                Width = 80,
+                                Height = 20,
+                                Text = "Close",
+                                TextAlign = new(.5f)
+                            }.OnEvent(UIElement.ClickEvent, (_, _) => RegionSelectVisible = false)
                         }
                     }.Assign(out RegionSelect),
 
@@ -265,7 +274,16 @@ namespace Cornifer
                                 Height = 20,
                                 Text = "Select slugcat",
                                 TextAlign = new(.5f)
-                            }
+                            },
+                            new UIButton
+                            {
+                                Top = new(-20, 1),
+                                Left = new(0, .5f, -.5f),
+                                Width = 80,
+                                Height = 20,
+                                Text = "Close",
+                                TextAlign = new(.5f)
+                            }.OnEvent(UIElement.ClickEvent, (_, _) => SlugcatSelectVisible = false)
                         }
 
                     }.Execute(PopulateSlugcatSelect)
@@ -594,7 +612,7 @@ namespace Cornifer
 
                             }.OnEvent(UIElement.ClickEvent, (btn, _) => 
                             {
-                                Main.Region?.RegionIcons.Add(new MapText(Content.RodondoExt20, "Sample text")
+                                Main.WorldObjects.Add(new MapText($"WorldText_{Random.Shared.Next():x}", Content.RodondoExt20, "Sample text")
                                 {
                                     Shade = true,
                                     WorldPosition = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
@@ -639,6 +657,51 @@ namespace Cornifer
                                         Main.Region?.MarkRoomTilemapsDirty();
                                     })
                                 }
+                            },
+
+                            new UIElement { Height = 20 },
+                            new UIPanel
+                            {
+                                Height = 50,
+                                Padding = 3,
+
+                                BorderColor = new(100, 100, 100),
+                                Elements = 
+                                {
+                                    new UILabel
+                                    {
+                                        Height = 18,
+                                        Text = "State",
+                                        TextAlign = new(.5f)
+                                    },
+                                    new UIButton
+                                    {
+                                        Top = 20,
+                                        Left = 0,
+                                        Width = new(-1, .33f),
+                                        Height = new(-20, 1),
+                                        Text = "Open", 
+                                        TextAlign = new(.5f)
+                                    }.OnEvent(UIElement.ClickEvent, (_, _) => Main.OpenState()),
+                                    new UIButton
+                                    {
+                                        Top = 20,
+                                        Left = new(1, .33f),
+                                        Width = new(-1, .33f),
+                                        Height = new(-20, 1),
+                                        Text = "Save",
+                                        TextAlign = new(.5f)
+                                    }.OnEvent(UIElement.ClickEvent, (_, _) => Main.SaveState()),
+                                    new UIButton
+                                    {
+                                        Top = 20,
+                                        Left = new(2, .66f),
+                                        Width = new(-2, .34f),
+                                        Height = new(-20, 1),
+                                        Text = "Save as",
+                                        TextAlign = new(.5f)
+                                    }.OnEvent(UIElement.ClickEvent, (_, _) => Main.SaveStateAs())
+                                }
                             }
                         }
                     },
@@ -677,7 +740,7 @@ namespace Cornifer
                         Top = 20,
                         Height = new(-20, 1),
                         ElementSpacing = 3,
-                    }.Assign(out SubreginColorList),
+                    }.Assign(out SubregionColorList),
                 }
             };
         }
@@ -759,7 +822,7 @@ namespace Cornifer
 
             y += 25;
 
-            select.Height = y + 15;
+            select.Height = y + 40;
         }
         static void PopulateObjectSelect(UIFlow list)
         {
@@ -796,7 +859,7 @@ namespace Cornifer
                 {
                     if (panel.Hovered && panel.Root.MouseLeftKey == KeybindState.JustPressed)
                     {
-                        Main.WorldObjects.Add(new SimpleIcon(sprite)
+                        Main.WorldObjects.Add(new SimpleIcon($"WorldIcon_{name}_{Random.Shared.Next():x}", sprite)
                         {
                             WorldPosition = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
                         });
@@ -875,16 +938,18 @@ namespace Cornifer
 
         public static void RegionChanged(Region region)
         {
-            SubreginColorList.Elements.Clear();
-
-            foreach (Region.Subregion subregion in region.Subregions)
+            if (SubregionColorList is not null)
             {
-                UIPanel panel = new()
-                {
-                    Height = 72,
-                    Padding = 3,
+                SubregionColorList.Elements.Clear();
 
-                    Elements =
+                foreach (Region.Subregion subregion in region.Subregions)
+                {
+                    UIPanel panel = new()
+                    {
+                        Height = 72,
+                        Padding = 3,
+
+                        Elements =
                     {
                         new UILabel
                         {
@@ -915,12 +980,13 @@ namespace Cornifer
                             Main.Region?.MarkRoomTilemapsDirty();
                         }))
                     }
-                };
+                    };
 
-                SubreginColorList.Elements.Add(panel);
+                    SubregionColorList.Elements.Add(panel);
+                }
+
+                SubregionColorList.Recalculate();
             }
-
-            SubreginColorList.Recalculate();
         }
 
         public static void Update()

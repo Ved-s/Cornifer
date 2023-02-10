@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Nodes;
 
 namespace Cornifer
 {
@@ -19,17 +20,19 @@ namespace Cornifer
 
         public Subregion[] Subregions = Array.Empty<Subregion>();
 
-        public HashSet<MapObject> RegionIcons = new();
-
         HashSet<string> DrawnRoomConnections = new();
 
-        string WorldString;
-        string MapString;
+        string? WorldString;
+        string? MapString;
+
+        public Region()
+        {
+            
+        }
 
         public Region(string id, string worldFilePath, string mapFilePath, string roomsDir)
         {
             Id = id;
-
             WorldString = File.ReadAllText(worldFilePath);
             MapString = File.ReadAllText(mapFilePath);
 
@@ -117,7 +120,7 @@ namespace Cornifer
                 if (!GameAtlases.Sprites.TryGetValue(spriteName, out AtlasSprite? sprite))
                     return;
 
-                room.Children.Add(new SimpleIcon(sprite)
+                room.Children.Add(new SimpleIcon($"GateSymbol{(leftSide? "Left" : "Right")}", sprite)
                 {
                     ParentPosAlign = align
                 });
@@ -146,6 +149,9 @@ namespace Cornifer
 
         private void Load()
         {
+            if (WorldString is null || MapString is null)
+                throw new InvalidOperationException($"Region {Id} is missing either world or map data and can't be loaded.");
+
             Dictionary<string, string[]> connections = new();
 
             bool readingRooms = false;
@@ -413,6 +419,50 @@ namespace Cornifer
                     Main.SpriteBatch.DrawRect(end - new Vector2(2), new(3), Color.White);
                 }
                 DrawnRoomConnections.Add(room.Id);
+            }
+        }
+
+        public JsonObject SaveJson()
+        {
+            return new()
+            {
+                ["id"] = Id,
+                ["world"] = WorldString,
+                ["map"] = MapString,
+                ["rooms"] = new JsonArray(Rooms.Select(r => new JsonObject() 
+                {
+                    ["id"] = r.Id,
+                    ["data"] = r.DataString,
+                    ["settings"] = r.SettingsString
+                }).ToArray())
+            };
+        }
+
+        public void LoadJson(JsonNode node)
+        {
+            if (node.TryGet("id", out string? id))
+                Id = id;
+
+            if (node.TryGet("world", out string? world))
+                WorldString = world;
+
+            if (node.TryGet("map", out string? map))
+                MapString = map;
+
+            Load();
+
+            if (node.TryGet("rooms", out JsonArray? rooms))
+            {
+                foreach (JsonNode? roomNode in rooms)
+                    if (roomNode is JsonObject roomObj 
+                        && roomObj.TryGet("id", out string? roomId) 
+                        && TryGetRoom(roomId, out Room? room)
+                        && roomObj.TryGet("data", out string? roomData))
+                    {
+                        string? settings = roomObj.Get<string>("settings");
+                        room.Load(roomData, settings);
+                        room.Loaded = true;
+                    }
             }
         }
 
