@@ -175,5 +175,31 @@ namespace Cornifer
 
             Draw(spriteBatch, texture, 0f, tlVert, trVert, blVert, brVert);
         }
+
+        public static IEnumerable<T> SmartReverse<T>(this IEnumerable<T> ienum)
+        {
+            if (ienum is T[] array)
+                return Reverse(array);
+
+            if (ienum is IList<T> list)
+                return Reverse(list);
+
+            if (ienum is CompoundEnumerable<T> compound)
+                return compound.EnumerateBackwards();
+
+            return ienum.Reverse();
+        }
+
+        public static IEnumerable<T> Reverse<T>(this IList<T> list)
+        {
+            for (int i = list.Count - 1; i >= 0; i--)
+                yield return list[i];
+        }
+
+        public static IEnumerable<T> Reverse<T>(this T[] array)
+        {
+            for (int i = array.Length - 1; i >= 0; i--)
+                yield return array[i];
+        }
     }
 }

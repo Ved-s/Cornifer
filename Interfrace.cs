@@ -1,5 +1,4 @@
-﻿using Cornifer.Interfaces;
-using Cornifer.UI;
+﻿using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
@@ -63,13 +62,13 @@ namespace Cornifer
         }
 
         static UIElement? ConfigElement;
-        static IConfigurable? configurableObject;
-        public static IConfigurable? ConfigurableObject
+        static MapObject? configurableObject;
+        public static MapObject? ConfigurableObject
         {
             get => configurableObject;
             set
             {
-                if (value is null)
+                if (ConfigElement is null)
                 {
                     NoConfigObjectLabel.Visible = Main.SelectedObjects.Count != 1;
                     NoConfigLabel.Visible = Main.SelectedObjects.Count == 1;
@@ -595,10 +594,10 @@ namespace Cornifer
 
                             }.OnEvent(UIElement.ClickEvent, (btn, _) => 
                             {
-                                Main.Region?.Icons.Add(new MapText(null, Content.RodondoExt20, "Sample text")
+                                Main.Region?.RegionIcons.Add(new MapText(Content.RodondoExt20, "Sample text")
                                 {
                                     Shade = true,
-                                    Position = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
+                                    WorldPosition = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
                                 });
                             }),
 
@@ -797,9 +796,9 @@ namespace Cornifer
                 {
                     if (panel.Hovered && panel.Root.MouseLeftKey == KeybindState.JustPressed)
                     {
-                        Main.Region?.Icons.Add(new SimpleIcon(null, sprite)
+                        Main.WorldObjects.Add(new SimpleIcon(sprite)
                         {
-                            Position = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
+                            WorldPosition = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
                         });
 
                         if (Root!.ShiftKey == KeybindState.Released)
@@ -865,7 +864,7 @@ namespace Cornifer
 
             if (renderFile is not null)
             {
-                var capResult = Capture.CaptureRegion(Main.Region);
+                var capResult = Capture.CaptureMap();
                 IImageEncoder encoder = new PngEncoder();
                 using FileStream fs = File.Create(renderFile);
                 capResult.Save(fs, encoder);
@@ -934,10 +933,7 @@ namespace Cornifer
             if (Main.SelectedObjects.Count != 1)
                 ConfigurableObject = null;
             else
-            {
-                ISelectable selectable = Main.SelectedObjects.First();
-                ConfigurableObject = selectable as IConfigurable;
-            }
+                ConfigurableObject = Main.SelectedObjects.First();
         }
         public static void Draw()
         {

@@ -1,5 +1,4 @@
-﻿using Cornifer.Interfaces;
-using Cornifer.Renderers;
+﻿using Cornifer.Renderers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -12,10 +11,10 @@ using System.Linq;
 
 namespace Cornifer
 {
-    public class Room : ISelectable, ISelectableContainer
+    public class Room : MapObject
     {
         static Point[] Directions = new Point[] { new Point(0, -1), new Point(1, 0), new Point(0, 1), new Point(-1, 0) };
-        static HashSet<string> NonPickupObjectsWhitelist = new() { "GhostSpot", "BlueToken", "GoldToken", "RedToken", "WhiteToken", "DevToken", "DataPearl", "UniqueDataPearl" };
+        public static HashSet<string> NonPickupObjectsWhitelist = new() { "GhostSpot", "BlueToken", "GoldToken", "RedToken", "WhiteToken", "DevToken", "DataPearl", "UniqueDataPearl" };
 
         public static bool DrawTileWalls = true;
         public static bool ForceWaterBehindSolid = false;
@@ -26,13 +25,12 @@ namespace Cornifer
         public static float WaterTransparency = .3f;
 
         public string Id;
-        public string Name = null!;
 
         public bool IsGate;
         public bool IsShelter;
         public bool IsAncientShelter;
 
-        public Point Size;
+        public Point TileSize;
         public int WaterLevel;
         public bool WaterInFrontOfTerrain;
         public Tile[,] Tiles = null!;
@@ -49,24 +47,19 @@ namespace Cornifer
 
         public Effect[] Effects = Array.Empty<Effect>();
         public Connection?[] Connections = Array.Empty<Connection>();
-        public PlacedObject[] PlacedObjects = Array.Empty<PlacedObject>();
-
-        public List<SelectableIcon> Icons = new();
 
         public Texture2D? TileMap;
         public bool TileMapDirty = false;
 
         public bool Loaded = false;
 
+        public string? DataString;
+        public string? SettingsString;
+
         public readonly Region Region;
 
-        bool ISelectable.Active => true;
-        Vector2 ISelectable.Position
-        {
-            get => WorldPos;
-            set => WorldPos = value;
-        }
-        Vector2 ISelectable.Size => Size.ToVector2();
+        public override Vector2 ParentPosition { get => WorldPos; set => WorldPos = value; }
+        public override Vector2 Size => TileSize.ToVector2();
 
         public Room(Region region, string id)
         {
@@ -87,7 +80,7 @@ namespace Cornifer
 
                     Point testTilePos = pos + dirVal;
 
-                    if (testTilePos.X >= 0 && testTilePos.Y >= 0 && testTilePos.X < Size.X && testTilePos.Y < Size.Y)
+                    if (testTilePos.X >= 0 && testTilePos.Y >= 0 && testTilePos.X < TileSize.X && testTilePos.Y < TileSize.Y)
                     {
                         Tile tile = Tiles[testTilePos.X, testTilePos.Y];
                         if (tile.Shortcut == Tile.ShortcutType.Normal)
@@ -104,7 +97,7 @@ namespace Cornifer
                     Point dirVal = Directions[j];
                     Point testTilePos = pos + dirVal;
 
-                    if (testTilePos == lastPos || testTilePos.X < 0 || testTilePos.Y < 0 || testTilePos.X >= Size.X || testTilePos.Y >= Size.Y)
+                    if (testTilePos == lastPos || testTilePos.X < 0 || testTilePos.Y < 0 || testTilePos.X >= TileSize.X || testTilePos.Y >= TileSize.Y)
                         continue;
 
                     Tile tile = Tiles[testTilePos.X, testTilePos.Y];
@@ -124,14 +117,17 @@ namespace Cornifer
 
         public Tile GetTile(int x, int y)
         {
-            x = Math.Clamp(x, 0, Size.X - 1);
-            y = Math.Clamp(y, 0, Size.Y - 1);
+            x = Math.Clamp(x, 0, TileSize.X - 1);
+            y = Math.Clamp(y, 0, TileSize.Y - 1);
             return Tiles[x, y];
         }
 
         public void Load(string data, string? settings)
         {
-            string[] lines = File.ReadAllLines(data);
+            DataString = data;
+            SettingsString = settings;
+
+            string[] lines = data.Split('\n', StringSplitOptions.TrimEntries);
 
             if (lines.TryGet(0, out string displayname))
                 Name = displayname;
@@ -143,9 +139,9 @@ namespace Cornifer
                 {
                     string[] sArray = size.Split('*');
                     if (sArray.TryGet(0, out string widthStr) && int.TryParse(widthStr, out int width))
-                        Size.X = width;
+                        TileSize.X = width;
                     if (sArray.TryGet(1, out string heightStr) && int.TryParse(heightStr, out int height))
-                        Size.Y = height;
+                        TileSize.Y = height;
                 }
                 if (swArray.TryGet(1, out string waterLevelStr) && int.TryParse(waterLevelStr, out int waterLevel))
                 {
@@ -159,11 +155,11 @@ namespace Cornifer
 
             if (lines.TryGet(11, out string tiles))
             {
-                Tiles = new Tile[Size.X, Size.Y];
+                Tiles = new Tile[TileSize.X, TileSize.Y];
 
                 string[] tilesArray = tiles.Split('|');
 
-                Point nonSolidTL = new(Size.X, Size.Y);
+                Point nonSolidTL = new(TileSize.X, TileSize.Y);
                 Point nonSolidBR = new(0, 0);
 
                 int x = 0, y = 0;
@@ -218,7 +214,7 @@ namespace Cornifer
                     }
 
                     y++;
-                    if (y >= Size.Y)
+                    if (y >= TileSize.Y)
                     {
                         x++;
                         y = 0;
@@ -226,7 +222,7 @@ namespace Cornifer
                 }
 
                 nonSolidTL = new(Math.Max(0, nonSolidTL.X - 1), Math.Max(0, nonSolidTL.Y - 1));
-                nonSolidBR = new(Math.Min(Size.X, nonSolidBR.X + 2), Math.Min(Size.Y, nonSolidBR.Y + 2));
+                nonSolidBR = new(Math.Min(TileSize.X, nonSolidBR.X + 2), Math.Min(TileSize.Y, nonSolidBR.Y + 2));
 
                 if (nonSolidTL.X < nonSolidBR.X && nonSolidTL.Y < nonSolidBR.Y)
                     NonSolidRect = new(nonSolidTL.X, nonSolidTL.Y, nonSolidBR.X - nonSolidTL.X, nonSolidBR.Y - nonSolidTL.Y);
@@ -234,8 +230,8 @@ namespace Cornifer
                 List<Point> exits = new();
                 List<Point> shortcuts = new();
 
-                for (int j = 0; j < Size.Y; j++)
-                    for (int i = 0; i < Size.X; i++)
+                for (int j = 0; j < TileSize.Y; j++)
+                    for (int i = 0; i < TileSize.X; i++)
                     {
                         Tile tile = Tiles[i, j];
 
@@ -267,22 +263,19 @@ namespace Cornifer
             }
 
             if (settings is not null)
-                foreach (string line in File.ReadAllLines(settings))
+                foreach (string line in settings.Split('\n', StringSplitOptions.TrimEntries))
                 {
                     string[] split = line.Split(':', 2, StringSplitOptions.TrimEntries);
 
                     if (split[0] == "PlacedObjects")
                     {
                         string[] objects = split[1].Split(',', StringSplitOptions.TrimEntries);
-                        List<PlacedObject> objectList = new();
                         foreach (string str in objects)
                         {
-                            PlacedObject? obj = PlacedObject.Load(this, str);
+                            PlacedObject? obj = PlacedObject.Load(str);
                             if (obj is not null)
-                                objectList.Add(obj);
+                                Children.Add(obj);
                         }
-
-                        PlacedObjects = objectList.ToArray();
                     }
                     else if (split[0] == "Effects")
                     {
@@ -306,7 +299,7 @@ namespace Cornifer
                 }
 
             if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
-                Icons.Add(new SimpleIcon(this, shelterMarker));
+                Children.Add(new SimpleIcon(shelterMarker));
             
             Loaded = true;
         }
@@ -320,7 +313,7 @@ namespace Cornifer
 
         public void UpdateTileMap()
         {
-            Color[] colors = ArrayPool<Color>.Shared.Rent(Size.X * Size.Y);
+            Color[] colors = ArrayPool<Color>.Shared.Rent(TileSize.X * TileSize.Y);
             try
             {
                 bool invertedWater = Effects.Any(ef => ef.name == "InvertedWater");
@@ -335,14 +328,14 @@ namespace Cornifer
                     if (waterFluxMin is not null && waterFluxMax is not null)
                     {
                         float waterMid = 1 - ((waterFluxMax.amount + waterFluxMin.amount) / 2 * (22f / 20f));
-                        waterLevel = (int)(waterMid * Size.Y) + 2;
+                        waterLevel = (int)(waterMid * TileSize.Y) + 2;
                     }
                 }
 
                 Region.Subregion subregion = Region.Subregions[Subregion];
 
-                for (int j = 0; j < Size.Y; j++)
-                    for (int i = 0; i < Size.X; i++)
+                for (int j = 0; j < TileSize.Y; j++)
+                    for (int i = 0; i < TileSize.X; i++)
                     {
                         Tile tile = GetTile(i, j);
 
@@ -367,19 +360,19 @@ namespace Cornifer
 
                         Color color = Color.Lerp(Color.Black, subregion.BackgroundColor, gray);
 
-                        if ((!ForceWaterBehindSolid && WaterInFrontOfTerrain || !solid) && (invertedWater ? j <= waterLevel : j >= Size.Y - waterLevel))
+                        if ((!ForceWaterBehindSolid && WaterInFrontOfTerrain || !solid) && (invertedWater ? j <= waterLevel : j >= TileSize.Y - waterLevel))
                         {
                             color = Color.Lerp(subregion.WaterColor, color, WaterTransparency);
                         }
 
-                        colors[i + j * Size.X] = color;
+                        colors[i + j * TileSize.X] = color;
                     }
 
                 foreach (Point p in Exits)
-                    colors[p.X + p.Y * Size.X] = new(255, 0, 0);
+                    colors[p.X + p.Y * TileSize.X] = new(255, 0, 0);
 
-                TileMap ??= new(Main.Instance.GraphicsDevice, Size.X, Size.Y);
-                TileMap.SetData(colors, 0, Size.X * Size.Y);
+                TileMap ??= new(Main.Instance.GraphicsDevice, TileSize.X, TileSize.Y);
+                TileMap.SetData(colors, 0, TileSize.X * TileSize.Y);
             }
             finally
             {
@@ -388,7 +381,7 @@ namespace Cornifer
             TileMapDirty = false;
         }
 
-        public void Draw(Renderer renderer)
+        protected override void DrawSelf(Renderer renderer)
         {
             if (!Loaded)
                 return;
@@ -398,28 +391,7 @@ namespace Cornifer
             else 
                 renderer.DrawTexture(GetTileMap(), WorldPos);
 
-            Main.SpriteBatch.DrawStringAligned(Content.Consolas10, Name, renderer.TransformVector(WorldPos + new Vector2(Size.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
-
-            if (DrawObjects)
-                foreach (PlacedObject obj in PlacedObjects)
-                    if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))
-                        obj.Draw(renderer);
-            foreach (SelectableIcon icon in Icons)
-                icon.Draw(renderer);
-        }
-
-        public IEnumerable<ISelectable> EnumerateSelectables()
-        {
-            foreach (SelectableIcon icon in ((IEnumerable<SelectableIcon>)Icons).Reverse())
-                yield return icon;
-
-            if (DrawObjects)
-                foreach (PlacedObject obj in PlacedObjects.Reverse())
-                    if (DrawPickUpObjects || NonPickupObjectsWhitelist.Contains(obj.Name))
-                        foreach (ISelectable selectable in obj.EnumerateSelectables())
-                            yield return selectable;
-
-            yield return this;
+            Main.SpriteBatch.DrawStringAligned(Content.Consolas10, Name, renderer.TransformVector(WorldPos + new Vector2(TileSize.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
         }
 
         public override string ToString()

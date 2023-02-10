@@ -1,5 +1,4 @@
-﻿using Cornifer.Interfaces;
-using Cornifer.Renderers;
+﻿using Cornifer.Renderers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -13,34 +12,152 @@ using System.Linq;
 
 namespace Cornifer
 {
-    public class Region : ISelectableContainer
+    public class Region
     {
         public string Id;
         public List<Room> Rooms = new();
 
-        public Subregion[] Subregions;
+        public Subregion[] Subregions = Array.Empty<Subregion>();
 
-        public HashSet<SelectableIcon> Icons = new();
+        public HashSet<MapObject> RegionIcons = new();
 
         HashSet<string> DrawnRoomConnections = new();
 
-        public Region(string id, string worldFile, string mapFile, string roomsDir)
+        string WorldString;
+        string MapString;
+
+        public Region(string id, string worldFilePath, string mapFilePath, string roomsDir)
         {
             Id = id;
 
+            WorldString = File.ReadAllText(worldFilePath);
+            MapString = File.ReadAllText(mapFilePath);
+
+            Load();
+
+            List<string> roomDirs = new();
+
+            string worldRooms = Path.Combine(Path.GetDirectoryName(worldFilePath)!, $"../{Id}-rooms");
+            if (Directory.Exists(worldRooms))
+                roomDirs.Add(worldRooms);
+
+            if (Main.TryFindParentDir(worldFilePath, "mods", out string? mods))
+            {
+                foreach (string mod in Directory.EnumerateDirectories(mods))
+                {
+                    string modRooms = Path.Combine(mod, $"world/{Id}-rooms");
+                    if (Directory.Exists(modRooms))
+                        roomDirs.Add(modRooms);
+                }
+            }
+
+            roomDirs.Add(roomsDir);
+
+            if (Main.TryFindParentDir(worldFilePath, "mergedmods", out string? mergedmods))
+            {
+                string rwworld = Path.Combine(mergedmods, "../world");
+                if (Directory.Exists(rwworld))
+                    roomDirs.Add(Path.Combine(rwworld, Id));
+            }
+
+            foreach (Room r in Rooms)
+            {
+                string? settings = null;
+                string? data = null;
+
+                string roomPath = r.IsGate ? $"../gates/{r.Id}" : r.Id;
+
+                foreach (string roomDir in roomDirs)
+                {
+                    string dataPath = Path.Combine(roomDir, $"{roomPath}.txt");
+
+                    if (data is null && File.Exists(dataPath))
+                        data = dataPath;
+
+                    if (Main.TryCheckSlugcatAltFile(dataPath, out string altDataPath))
+                        data = altDataPath;
+
+                    string settingsPath = Path.Combine(roomDir, $"{roomPath}_settings.txt");
+
+                    if (settings is null && File.Exists(settingsPath))
+                        settings = settingsPath;
+
+                    if (Main.TryCheckSlugcatAltFile(settingsPath, out string altSettingsPath))
+                        settings = altSettingsPath;
+                }
+
+                if (data is null)
+                {
+                    Main.LoadErrors.Add($"Could not find data for room {r.Id}");
+                    continue;
+                }
+
+                r.Load(File.ReadAllText(data!), settings is null ? null : File.ReadAllText(settings));
+            }
+
+            static void AddGateSymbol(Room room, string symbol, bool leftSide)
+            {
+                string? spriteName = symbol switch
+                {
+                    "1" => "smallKarmaNoRing0",
+                    "2" => "smallKarmaNoRing1",
+                    "3" => "smallKarmaNoRing2",
+                    "4" => "smallKarmaNoRing3",
+                    "5" => "smallKarmaNoRing4",
+                    "R" => "smallKarmaNoRingR",
+                    _ => null
+                };
+                if (spriteName is null)
+                    return;
+
+                Vector2 align = new(.4f, .5f);
+                if (!leftSide)
+                    align.X = 1 - align.X;
+
+                if (!GameAtlases.Sprites.TryGetValue(spriteName, out AtlasSprite? sprite))
+                    return;
+
+                room.Children.Add(new SimpleIcon(sprite)
+                {
+                    ParentPosAlign = align
+                });
+            }
+
+            HashSet<string> gatesProcessed = new();
+            foreach (string roomDir in roomDirs)
+            {
+                string locksPath = Path.Combine(roomDir, "../gates/locks.txt");
+                if (!File.Exists(locksPath))
+                    continue;
+
+                foreach (string line in File.ReadAllLines(locksPath))
+                {
+                    string[] split = line.Split(':', StringSplitOptions.TrimEntries);
+                    if (gatesProcessed.Contains(split[0]) || !TryGetRoom(split[0], out Room? gate))
+                        continue;
+
+                    AddGateSymbol(gate, split[1], true);
+                    AddGateSymbol(gate, split[2], false);
+
+                    gatesProcessed.Add(split[0]);
+                }
+            }
+        }
+
+        private void Load()
+        {
             Dictionary<string, string[]> connections = new();
 
             bool readingRooms = false;
             bool readingConditionalLinks = false;
 
-            
             List<(string room, string? target, int disconnectedTarget, string replacement)> connectionOverrides = new();
             List<(string room, int exit, string replacement)> resolvedConnectionOverrides = new();
 
             Dictionary<string, HashSet<string>> exclusiveRooms = new();
             Dictionary<string, HashSet<string>> hideRooms = new();
 
-            foreach (string line in File.ReadAllLines(worldFile))
+            foreach (string line in WorldString.Split('\n', StringSplitOptions.TrimEntries))
             {
                 if (line.StartsWith("//"))
                     continue;
@@ -107,7 +224,7 @@ namespace Cornifer
                             roomCatNames.UnionWith(slugcats);
                         }
                     }
-                    else 
+                    else
                     {
                         if (Main.SelectedSlugcat is not null)
                         {
@@ -120,7 +237,7 @@ namespace Cornifer
                                     connectionOverrides.Add((split[1], split[2], 0, split[3]));
                             }
                         }
-                        
+
                     }
                 }
             }
@@ -145,7 +262,7 @@ namespace Cornifer
                             if (roomConnections[i].Equals(target, StringComparison.InvariantCultureIgnoreCase))
                                 resolvedConnectionOverrides.Add((room, i, replacement));
                     }
-                    else 
+                    else
                     {
                         int index = 0;
                         for (int i = 0; i < roomConnections.Length; i++)
@@ -170,7 +287,7 @@ namespace Cornifer
             List<string> subregions = new() { "" };
             HashSet<Room> unmappedRooms = new(Rooms);
 
-            foreach (string line in File.ReadLines(mapFile))
+            foreach (string line in MapString.Split('\n', StringSplitOptions.TrimEntries))
             {
                 if (!line.Contains(':'))
                     continue;
@@ -222,22 +339,6 @@ namespace Cornifer
 
             Subregions = subregions.Select(s => new Subregion(s)).ToArray();
 
-            List<string> roomDirs = new();
-
-            string worldRooms = Path.Combine(Path.GetDirectoryName(worldFile)!, $"../{Id}-rooms");
-            if (Directory.Exists(worldRooms))
-                roomDirs.Add(worldRooms);
-
-            if (Main.TryFindParentDir(worldFile, "mods", out string? mods))
-            {
-                foreach (string mod in Directory.EnumerateDirectories(mods))
-                {
-                    string modRooms = Path.Combine(mod, $"world/{Id}-rooms");
-                    if (Directory.Exists(modRooms))
-                        roomDirs.Add(modRooms);
-                }
-            }
-
             foreach (var (roomName, roomConnections) in connections)
             {
                 if (!TryGetRoom(roomName, out Room? room))
@@ -259,7 +360,7 @@ namespace Cornifer
                             room.Connections[i] = new(targetRoom, i, targetExit);
                         }
                     }
-                    else 
+                    else
                     {
                         if (hideRooms.ContainsKey(roomConnections[i]))
                             Main.LoadErrors.Add($"{room.Id} connects to hidden room {roomConnections[i]}!");
@@ -268,98 +369,6 @@ namespace Cornifer
                         else
                             Main.LoadErrors.Add($"{room.Id} connects to a nonexistent room {roomConnections[i]}!");
                     }
-                }
-            }
-
-            roomDirs.Add(roomsDir);
-
-            if (Main.TryFindParentDir(worldFile, "mergedmods", out string? mergedmods))
-            {
-                string rwworld = Path.Combine(mergedmods, "../world");
-                if (Directory.Exists(rwworld))
-                    roomDirs.Add(Path.Combine(rwworld, Id));
-            }
-
-            foreach (Room r in Rooms)
-            {
-                string? settings = null;
-                string? data = null;
-
-                string roomPath = r.IsGate ? $"../gates/{r.Id}" : r.Id;
-
-                foreach (string roomDir in roomDirs)
-                {
-                    string dataPath = Path.Combine(roomDir, $"{roomPath}.txt");
-
-                    if (data is null && File.Exists(dataPath))
-                        data = dataPath;
-
-                    if (Main.TryCheckSlugcatAltFile(dataPath, out string altDataPath))
-                        data = altDataPath;
-
-                    string settingsPath = Path.Combine(roomDir, $"{roomPath}_settings.txt");
-
-                    if (settings is null && File.Exists(settingsPath))
-                        settings = settingsPath;
-
-                    if (Main.TryCheckSlugcatAltFile(settingsPath, out string altSettingsPath))
-                        settings = altSettingsPath;
-                }
-
-                if (data is null)
-                {
-                    Main.LoadErrors.Add($"Could not find data for room {r.Id}");
-                    continue;
-                }
-
-                r.Load(data!, settings);
-            }
-
-            static void AddGateSymbol(Room room, string symbol, bool leftSide)
-            {
-                string? spriteName = symbol switch
-                {
-                    "1" => "smallKarmaNoRing0",
-                    "2" => "smallKarmaNoRing1",
-                    "3" => "smallKarmaNoRing2",
-                    "4" => "smallKarmaNoRing3",
-                    "5" => "smallKarmaNoRing4",
-                    "R" => "smallKarmaNoRingR",
-                    _ => null
-                };
-                if (spriteName is null)
-                    return;
-
-                Vector2 align = new(.4f, .5f);
-                if (!leftSide)
-                    align.X = 1 - align.X;
-
-                if (!GameAtlases.Sprites.TryGetValue(spriteName, out AtlasSprite? sprite))
-                    return;
-
-                room.Icons.Add(new SimpleIcon(room, sprite)
-                {
-                    ParentPosAlign = align
-                });
-            }
-
-            HashSet<string> gatesProcessed = new();
-            foreach (string roomDir in roomDirs)
-            {
-                string locksPath = Path.Combine(roomDir, "../gates/locks.txt");
-                if (!File.Exists(locksPath))
-                    continue;
-
-                foreach (string line in File.ReadAllLines(locksPath))
-                {
-                    string[] split = line.Split(':', StringSplitOptions.TrimEntries);
-                    if (gatesProcessed.Contains(split[0]) || !TryGetRoom(split[0], out Room? gate))
-                        continue;
-
-                    AddGateSymbol(gate, split[1], true);
-                    AddGateSymbol(gate, split[2], false);
-
-                    gatesProcessed.Add(split[0]);
                 }
             }
         }
@@ -384,10 +393,6 @@ namespace Cornifer
 
         public void Draw(Renderer renderer)
         {
-            Main.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-            foreach (Room room in Rooms)
-                room.Draw(renderer);
-
             DrawnRoomConnections.Clear();
             foreach (Room room in Rooms)
             {
@@ -409,21 +414,6 @@ namespace Cornifer
                 }
                 DrawnRoomConnections.Add(room.Id);
             }
-
-            foreach (SelectableIcon icon in Icons)
-                icon.Draw(renderer);
-
-            Main.SpriteBatch.End();
-        }
-
-        public IEnumerable<ISelectable> EnumerateSelectables()
-        {
-            foreach (SelectableIcon icon in Icons.Reverse())
-                yield return icon;
-
-            foreach (Room room in ((IEnumerable<Room>)Rooms).Reverse())
-                foreach (ISelectable selectable in room.EnumerateSelectables())
-                    yield return selectable;
         }
 
         public class Subregion 

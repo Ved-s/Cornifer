@@ -1,5 +1,4 @@
-﻿using Cornifer.Interfaces;
-using Cornifer.Renderers;
+﻿using Cornifer.Renderers;
 using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Cornifer.UI.Helpers;
@@ -11,7 +10,7 @@ using System;
 
 namespace Cornifer
 {
-    public class MapText : SelectableIcon, IConfigurable
+    public class MapText : SelectableIcon
     {
         const string EmptyTextString = "[c:9](empty text)[/c]";
 
@@ -55,11 +54,8 @@ namespace Cornifer
             }
         }
 
-        public UIElement? ConfigCache { get; set; }
-
-        public MapText(ISelectable? parent, SpriteFont font, string text)
+        public MapText(SpriteFont font, string text)
         {
-            Parent = parent;
             this.font = font;
             Text = text;
         }
@@ -80,7 +76,7 @@ namespace Cornifer
             if (renderer is CaptureRenderer capture)
             {
                 capturePos = capture.Position;
-                capture.Position = Position;
+                capture.Position = WorldPosition;
                 spriteBatchState = Main.SpriteBatch.GetState();
                 Main.SpriteBatch.End();
                 capture.BeginCapture((int)Size.X, (int)Size.Y);
@@ -88,18 +84,18 @@ namespace Cornifer
             }
 
             string text = Text.Length == 0 ? EmptyTextString : Text;
-            FormattedText.Draw(Main.SpriteBatch, Font, text, renderer.TransformVector(Position + new Vector2(5)), Color, Shade ? ShadeColor : null, scale * renderer.Scale);
+            FormattedText.Draw(Main.SpriteBatch, Font, text, renderer.TransformVector(WorldPosition + new Vector2(5)), Color, Shade ? ShadeColor : null, scale * renderer.Scale);
 
             if (renderer is CaptureRenderer captureEnd)
             {
                 captureEnd.Position = capturePos;
                 Main.SpriteBatch.End();
-                captureEnd.EndCapture(Position, (int)Size.X, (int)Size.Y);
+                captureEnd.EndCapture(WorldPosition, (int)Size.X, (int)Size.Y);
                 Main.SpriteBatch.Begin(spriteBatchState);
             }
         }
 
-        public UIElement BuildConfig()
+        protected override UIElement? BuildInnerConfig()
         {
             return new UIList
             {

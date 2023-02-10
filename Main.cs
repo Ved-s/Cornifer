@@ -1,5 +1,4 @@
-﻿using Cornifer.Interfaces;
-using Cornifer.Renderers;
+﻿using Cornifer.Renderers;
 using Microsoft.Win32;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -27,7 +26,9 @@ namespace Cornifer
 
         public static CameraRenderer WorldCamera = null!;
 
-        public static HashSet<ISelectable> SelectedObjects = new();
+        public static List<MapObject> WorldObjects = new();
+        public static CompoundEnumerable<MapObject> WorldObjectLists = new();
+        public static HashSet<MapObject> SelectedObjects = new();
 
         public static string? RainWorldRoot;
 
@@ -102,13 +103,13 @@ namespace Cornifer
             if (KeyboardState.IsKeyDown(Keys.Escape) && OldKeyboardState.IsKeyUp(Keys.Escape))
                 LoadErrors.Clear();
 
-            if (Region is not null && KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete))
+            if (KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete))
             {
-                HashSet<SelectableIcon> iconsToDelete = new(SelectedObjects.OfType<SelectableIcon>());
-                iconsToDelete.IntersectWith(Region.Icons);
+                HashSet<MapObject> objectsToDelete = new(SelectedObjects);
+                objectsToDelete.IntersectWith(WorldObjects);
 
-                Region.Icons.ExceptWith(iconsToDelete);
-                SelectedObjects.ExceptWith(iconsToDelete);
+                WorldObjects.RemoveAll(x => objectsToDelete.Contains(x));
+                SelectedObjects.ExceptWith(objectsToDelete);
             }
 
             WorldCamera.Update();
@@ -122,7 +123,7 @@ namespace Cornifer
             if (drag && !oldDrag && !Interface.Hovered)
             {
                 // Clicked on already selected object
-                ISelectable? underMouse = ISelectable.FindSelectableAtPos(SelectedObjects, mouseWorld);
+                MapObject? underMouse = MapObject.FindSelectableAtPos(SelectedObjects, mouseWorld, false);
                 if (underMouse is not null)
                 {
                     if (KeyboardState.IsKeyDown(Keys.LeftControl))
@@ -138,12 +139,12 @@ namespace Cornifer
                 if (Region is not null)
                 {
                     // Clicked on not selected object
-                    ISelectable? selectable = ISelectable.FindSelectableAtPos(Region.EnumerateSelectables(), mouseWorld);
-                    if (selectable is not null)
+                    MapObject? obj = MapObject.FindSelectableAtPos(WorldObjectLists, mouseWorld, true);
+                    if (obj is not null)
                     {
                         if (!KeyboardState.IsKeyDown(Keys.LeftShift))
                             SelectedObjects.Clear();
-                        SelectedObjects.Add(selectable);
+                        SelectedObjects.Add(obj);
                         Dragging = true;
                         OldDragPos = mouseWorld;
                         return;
@@ -160,8 +161,9 @@ namespace Cornifer
                     Vector2 diff = mouseWorld - OldDragPos;
 
                     if (diff.X != 0 || diff.Y != 0)
-                        foreach (ISelectable selectable in SelectedObjects)
-                            selectable.Position += diff;
+                        foreach (MapObject obj in SelectedObjects)
+                            if (!obj.ParentSelected)
+                                obj.ParentPosition += diff;
 
                     OldDragPos = mouseWorld;
                 }
@@ -175,20 +177,20 @@ namespace Cornifer
                         SelectedObjects.Clear();
 
                     if (KeyboardState.IsKeyDown(Keys.LeftControl))
-                        SelectedObjects.ExceptWith(ISelectable.FindIntersectingSelectables(SelectedObjects, tl, br));
+                        SelectedObjects.ExceptWith(MapObject.FindIntersectingSelectables(SelectedObjects, tl, br, true));
                     else if (Region is not null)
-                        SelectedObjects.UnionWith(ISelectable.FindIntersectingSelectables(Region.EnumerateSelectables(), tl, br));
+                        SelectedObjects.UnionWith(MapObject.FindIntersectingSelectables(WorldObjectLists, tl, br, true));
                 }
             }
             else
             {
                 if (!drag && oldDrag)
                 {
-                    foreach (ISelectable selectable in SelectedObjects)
+                    foreach (MapObject obj in SelectedObjects)
                     {
-                        Vector2 pos = selectable.Position;
+                        Vector2 pos = obj.WorldPosition;
                         pos.Round();
-                        selectable.Position = pos;
+                        obj.WorldPosition = pos;
                     }
                 }
 
@@ -206,12 +208,12 @@ namespace Cornifer
             if (SelectedObjects.Count > 0)
             {
                 SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-                foreach (ISelectable selectable in SelectedObjects)
-                    SpriteBatch.DrawRect(WorldCamera.TransformVector(selectable.Position) - new Vector2(2), selectable.Size * WorldCamera.Scale + new Vector2(4), Color.White * 0.4f);
+                foreach (MapObject obj in SelectedObjects)
+                    SpriteBatch.DrawRect(WorldCamera.TransformVector(obj.WorldPosition) - new Vector2(2), obj.Size * WorldCamera.Scale + new Vector2(4), Color.White * 0.4f);
                 SpriteBatch.End();
             }
 
-            Region?.Draw(WorldCamera);
+            DrawMap(WorldCamera);
 
             if (Selecting)
             {
@@ -255,6 +257,23 @@ namespace Cornifer
             //SpriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        public static void DrawMap(Renderer renderer)
+        {
+            SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+            if (Region is not null)
+                foreach (MapObject obj in Region.Rooms)
+                    obj.Draw(renderer);
+
+            Region?.Draw(renderer);
+
+            if (Region is not null)
+                foreach (MapObject obj in WorldObjects)
+                    obj.Draw(renderer);
+
+            SpriteBatch.End();
         }
 
         public static bool SearchRainWorld()
@@ -323,11 +342,15 @@ namespace Cornifer
 
             Region = new(id, worldFile, mapFile, Path.Combine(regionPath, $"../{id}-rooms"));
 
-            foreach (ISelectable selectable in Region.EnumerateSelectables())
+            WorldObjectLists.Clear();
+            WorldObjectLists.Add(Region.Rooms);
+            WorldObjectLists.Add(WorldObjects);
+
+            foreach (MapObject obj in WorldObjectLists)
             {
-                Vector2 pos = selectable.Position;
+                Vector2 pos = obj.WorldPosition;
                 pos.Round();
-                selectable.Position = pos;
+                obj.WorldPosition = pos;
             }
 
             Interface.RegionChanged(Region);

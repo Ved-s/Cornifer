@@ -1,20 +1,18 @@
-﻿using Cornifer.Interfaces;
-using Cornifer.Renderers;
+﻿using Cornifer.Renderers;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace Cornifer
 {
-    public class SimpleIcon : SelectableIcon, IConfigurable
+    public class SimpleIcon : SelectableIcon
     {
         public SimpleIcon()
         { 
         }
 
-        public SimpleIcon(ISelectable? parent, AtlasSprite sprite, Color? color = null)
+        public SimpleIcon(AtlasSprite sprite, Color? color = null)
         {
-            Parent = parent;
             Texture = sprite.Texture;
             Frame = sprite.Frame;
             Color = color ?? sprite.Color;
@@ -28,11 +26,6 @@ namespace Cornifer
 
         public override Vector2 Size => Frame.Size.ToVector2();
 
-        public bool IconActive = true;
-        public override bool Active => IconActive;
-
-        public UIElement? ConfigCache { get; set; }
-
         public override void DrawIcon(Renderer renderer)
         {
             if (Texture is null)
@@ -40,21 +33,21 @@ namespace Cornifer
 
             if (Shade)
             {
-                renderer.DrawTexture(Texture, Position + new Vector2(-1, -1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(1, -1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(-1, 1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(1, 1), Frame, color: Color.Black);
+                renderer.DrawTexture(Texture, WorldPosition + new Vector2(-1, -1), Frame, color: Color.Black);
+                renderer.DrawTexture(Texture, WorldPosition + new Vector2(1, -1), Frame, color: Color.Black);
+                renderer.DrawTexture(Texture, WorldPosition + new Vector2(-1, 1), Frame, color: Color.Black);
+                renderer.DrawTexture(Texture, WorldPosition + new Vector2(1, 1), Frame, color: Color.Black);
 
-                renderer.DrawTexture(Texture, Position + new Vector2(0, -1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(1, 0), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(-1, 0), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, Position + new Vector2(0, 1), Frame, color: Color.Black);
+                renderer.DrawTexture(Texture, WorldPosition + new Vector2(0, -1), Frame, color: Color.Black);
+                renderer.DrawTexture(Texture, WorldPosition + new Vector2(1, 0), Frame, color: Color.Black);
+                renderer.DrawTexture(Texture, WorldPosition + new Vector2(-1, 0), Frame, color: Color.Black);
+                renderer.DrawTexture(Texture, WorldPosition + new Vector2(0, 1), Frame, color: Color.Black);
             }
 
-            renderer.DrawTexture(Texture, Position, Frame, color: Color);
+            renderer.DrawTexture(Texture, WorldPosition, Frame, color: Color);
         }
 
-        public UIElement BuildConfig()
+        protected override UIElement? BuildInnerConfig()
         {
             return new UIContainer
             {

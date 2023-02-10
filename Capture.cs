@@ -1,5 +1,4 @@
-﻿using Cornifer.Interfaces;
-using Cornifer.Renderers;
+﻿using Cornifer.Renderers;
 using Microsoft.Xna.Framework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -15,18 +14,21 @@ namespace Cornifer
 {
     public static class Capture
     {
-        public static Image<Rgba32> CaptureRegion(Region region)
+        public static Image<Rgba32> CaptureMap()
         {
             Vector2 tl = Vector2.Zero;
             Vector2 br = Vector2.Zero;
 
-            foreach (ISelectable selectable in region.EnumerateSelectables())
+            foreach (MapObject obj in Main.WorldObjectLists)
             {
-                tl.X = Math.Min(tl.X, selectable.Position.X);
-                tl.Y = Math.Min(tl.Y, selectable.Position.Y);
+                if (!obj.Active)
+                    continue;
 
-                br.X = Math.Max(br.X, selectable.Position.X + selectable.Size.X);
-                br.Y = Math.Max(br.Y, selectable.Position.Y + selectable.Size.Y);
+                tl.X = Math.Min(tl.X, obj.WorldPosition.X);
+                tl.Y = Math.Min(tl.Y, obj.WorldPosition.Y);
+
+                br.X = Math.Max(br.X, obj.WorldPosition.X + obj.Size.X);
+                br.Y = Math.Max(br.Y, obj.WorldPosition.Y + obj.Size.Y);
             }
 
             int width = (int)(br.X - tl.X);
@@ -39,7 +41,7 @@ namespace Cornifer
                 Position = tl
             };
 
-            region.Draw(renderer);
+            Main.DrawMap(renderer);
 
             return image;
         }

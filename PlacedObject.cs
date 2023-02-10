@@ -1,5 +1,4 @@
-﻿using Cornifer.Interfaces;
-using Cornifer.Renderers;
+﻿using Cornifer.Renderers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -9,44 +8,23 @@ using System.Linq;
 
 namespace Cornifer
 {
-    public class PlacedObject : SimpleIcon, ISelectableContainer
+    public class PlacedObject : SimpleIcon
     {
-        public string Name;
+        public string Type = null!;
 
-        public Vector2 ParentPosition;
-
-        public List<ISelectable> SubObjects = new();
+        public override string? Name => $"{Type}@{RoomPos.X:0},{RoomPos.Y:0}";
 
         public string[] SlugcatAvailability = Array.Empty<string>();
+        public Vector2 RoomPos;
 
         public override Vector2 Size => Frame.Size.ToVector2();
-
-        public override Vector2 ParentPosAlign => Parent is null ? Vector2.Zero : ParentPosition / Parent.Size;
-        public override bool Active => true;
-
-        public override void DrawIcon(Renderer renderer)
+        public override Vector2 ParentPosAlign => Parent is not Room ? new(.5f) : new Vector2(RoomPos.X / Parent.Size.X, 1 - (RoomPos.Y / Parent.Size.Y));
+        public override bool Active
         {
-            base.DrawIcon(renderer);
-
-            foreach (ISelectable selectable in SubObjects)
-                if (selectable is Interfaces.IDrawable drawable)
-                    drawable.Draw(renderer);
+            get => Room.DrawObjects && (Parent is not Room || Room.DrawPickUpObjects || Room.NonPickupObjectsWhitelist.Contains(Type)) && base.Active;
         }
 
-        public IEnumerable<ISelectable> EnumerateSelectables()
-        {
-            foreach (ISelectable selectable in ((IEnumerable<ISelectable>)SubObjects).Reverse())
-                if (selectable.Active)
-                {
-                    if (selectable is ISelectableContainer container)
-                        foreach (ISelectable subselectable in container.EnumerateSelectables())
-                            yield return subselectable;
-                    else yield return selectable;
-                }
-            yield return this;
-        }
-
-        public static PlacedObject? Load(ISelectable selectable, string data)
+        public static PlacedObject? Load(string data)
         {
             string[] split = data.Split("><", 4);
 
@@ -73,7 +51,7 @@ namespace Cornifer
                     objName = "GoldToken";
             }
 
-            PlacedObject? obj = Load(selectable, split[0], new Vector2(float.Parse(split[1], CultureInfo.InvariantCulture) / 20, selectable.Size.Y - (float.Parse(split[2], CultureInfo.InvariantCulture) / 20)));
+            PlacedObject? obj = Load(split[0], new Vector2(float.Parse(split[1], CultureInfo.InvariantCulture) / 20, float.Parse(split[2], CultureInfo.InvariantCulture) / 20));
             if (obj is null)
                 return null;
 
@@ -93,10 +71,10 @@ namespace Cornifer
                         int slugcatId = Array.IndexOf(Main.SlugCatNames, subname);
                         if (slugcatId >= 0)
                         {
-                            obj.SubObjects.Add(new SlugcatIcon()
+                            obj.Children.Add(new SlugcatIcon()
                             {
                                 Id = slugcatId,
-                                Offset = new(0, 8),
+                                ParentPosition = new(0, 8),
                                 Parent = obj,
                                 ForceSlugcatIcon = true,
                                 LineColor = Color.Lime
@@ -105,11 +83,11 @@ namespace Cornifer
                         break;
 
                     case "BlueToken":
-                        PlacedObject? subObject = Load(obj, subname, obj.Size / 2);
+                        PlacedObject? subObject = Load(subname, obj.Size / 2);
                         if (subObject is not null)
                         {
-                            subObject.Offset = new(0, 15);
-                            obj.SubObjects.Add(subObject);
+                            subObject.ParentPosition = new(0, 15);
+                            obj.Children.Add(subObject);
                         }
                         break;
                 }
@@ -124,7 +102,7 @@ namespace Cornifer
                     obj.Color = GetPearlColor(type);
 
                     if (split[0] == "UniqueDataPearl")
-                        obj.SubObjects.Add(new MapText(obj, Content.RodondoExt20, $"[c:{obj.Color.R:x2}{obj.Color.G:x2}{obj.Color.B:x2}]Colored[/c] pearl")
+                        obj.Children.Add(new MapText(Content.RodondoExt20, $"[c:{obj.Color.R:x2}{obj.Color.G:x2}{obj.Color.B:x2}]Colored[/c] pearl")
                         {
                             Shade = true
                         });
@@ -143,18 +121,18 @@ namespace Cornifer
                 Vector2 offset = new Vector2(MathF.Cos(currentAngle), -MathF.Sin(currentAngle)) * 15;
                 currentAngle -= iconAngle;
                 string slugcat = obj.SlugcatAvailability[i];
-                obj.SubObjects.Add(new SlugcatIcon
+                obj.Children.Add(new SlugcatIcon
                 {
                     Id = Array.IndexOf(Main.SlugCatNames, slugcat),
                     Parent = obj,
-                    Offset = offset
+                    ParentPosition = offset
                 });
             }
 
             return obj;
         }
 
-        public static PlacedObject? Load(ISelectable selectable, string name, Vector2 pos)
+        public static PlacedObject? Load(string name, Vector2 pos)
         {
             if (!GameAtlases.Sprites.TryGetValue("Object_" + name, out var atlas))
             {
@@ -163,9 +141,8 @@ namespace Cornifer
 
             return new()
             {
-                Name = name,
-                Parent = selectable,
-                ParentPosition = pos,
+                Type = name,
+                RoomPos = pos,
                 Frame = atlas.Frame,
                 Texture = atlas.Texture,
                 Color = atlas.Color,
