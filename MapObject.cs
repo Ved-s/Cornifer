@@ -121,6 +121,9 @@ namespace Cornifer
         {
             foreach (MapObject obj in objects.SmartReverse())
             {
+                if (!obj.Active)
+                    continue;
+
                 if (searchChildren)
                 {
                     MapObject? child = FindSelectableAtPos(obj.Children, pos, true);
@@ -140,6 +143,9 @@ namespace Cornifer
         {
             foreach (MapObject obj in objects.SmartReverse())
             {
+                if (!obj.Active)
+                    continue;
+
                 if (searchChildren)
                     foreach (MapObject child in FindIntersectingSelectables(obj.Children, tl, br, true))
                         yield return child;

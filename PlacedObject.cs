@@ -100,7 +100,7 @@ namespace Cornifer
 
                 if (subsplit.TryGet(4, out string type))
                 {
-                    obj.Color = GetPearlColor(type);
+                    obj.Color = GetPearlHighlightColor(type) ?? GetPearlMainColor(type);
 
                     if (split[0] == "UniqueDataPearl")
                         obj.Children.Add(new MapText("PearlText", Content.RodondoExt20, $"[c:{obj.Color.R:x2}{obj.Color.G:x2}{obj.Color.B:x2}]Colored[/c] pearl")
@@ -190,7 +190,7 @@ namespace Cornifer
             return slugcats.ToArray();
         }
 
-        static Color GetPearlColor(string type)
+        static Color GetPearlMainColor(string type)
         {
             return type switch
             {
@@ -228,6 +228,33 @@ namespace Cornifer
                 "SL_chimney" => new Color(1f, 0f, 0.55f),
                 "Red_stomach" => new Color(0.6f, 1f, 0.9f),
                 _ => new Color(0.7f, 0.7f, 0.7f),
+            };
+        }
+        static Color? GetPearlHighlightColor(string type)
+        {
+            return type switch
+            {
+                "SI_chat3" => new(0.4f, 0.1f, 0.6f),
+                "SI_chat4" => new(0.4f, 0.6f, 0.1f),
+                "SI_chat5" => new(0.6f, 0.1f, 0.4f),
+                "Spearmasterpearl" => new(0.95f, 0f, 0f),
+                "RM" => new(1f, 0f, 0f),
+                "LC_second" => new(0.8f, 0.8f, 0f),
+                "CL" => new(1f, 0f, 0f),
+                "VS" => new(1f, 0f, 1f),
+                //"BroadcastMisc" => new(0.4f, 0.9f, 0.4f),
+                "CC" => new(1f, 1f, 0f),
+                "GW" => new(0.5f, 1f, 0.5f),
+                "HI" => new(0.5f, 0.8f, 1f),
+                "SH" => new(1f, 0.2f, 0.6f),
+                "SI_top" => new(0.1f, 0.4f, 0.6f),
+                "SI_west" => new(0.1f, 0.6f, 0.4f),
+                "SL_bridge" => new(1f, 0.4f, 1f),
+                "SB_ravine" => new(0.6f, 0.1f, 0.4f),
+                "UW" => new(1f, 0.7f, 1f),
+                "SL_chimney" => new(0.8f, 0.3f, 1f),
+                "Red_stomach" => new(1f, 1f, 1f),
+                _ => null
             };
         }
     }
