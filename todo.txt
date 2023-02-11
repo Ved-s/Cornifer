@@ -1,2 +1,4 @@
 MapObject proper config
+Scavenger toll and merchants
+Shcolar pearl icons
 Shortcut graphics
