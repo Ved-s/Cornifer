@@ -116,30 +116,30 @@ namespace Cornifer.UI.Elements
 
                     if (GrabbedTop && SizingChangesPosition)
                     {
-                        float max = MaxSize.Y - ScreenRect.Height;
-                        float min = MinSize.Y - ScreenRect.Height;
-                        Top.Value += Math.Clamp(-diff.Y, min, max);
+                        float max = MaxSize.Y;
+                        float min = MinSize.Y;
+                        Top.Value += Math.Clamp(Top.Value - diff.Y, min, max);
                     }
 
                     if (GrabbedLeft && SizingChangesPosition)
                     {
-                        float max = MaxSize.X - ScreenRect.Width;
-                        float min = MinSize.X - ScreenRect.Width;
-                        Left.Value += Math.Clamp(diff.X, min, max);
+                        float max = MaxSize.X;
+                        float min = MinSize.X;
+                        Left.Value = Math.Clamp(diff.X + Left.Value, min, max);
                     }
 
                     if (GrabbedRight || GrabbedLeft && !SizingChangesPosition)
                     {
-                        float max = MaxSize.X - ScreenRect.Width;
-                        float min = MinSize.X - ScreenRect.Width;
-                        Width.Value += Math.Clamp(-diff.X, min, max);
+                        float max = MaxSize.X;
+                        float min = MinSize.X;
+                        Width.Value = Math.Clamp(Width.Value - diff.X, min, max);
                     }
 
                     if (GrabbedBottom || GrabbedTop && !SizingChangesPosition)
                     {
-                        float max = MaxSize.Y - ScreenRect.Height;
-                        float min = MinSize.Y - ScreenRect.Height;
-                        Height.Value += Math.Clamp(diff.Y, min, max);
+                        float max = MaxSize.Y;
+                        float min = MinSize.Y;
+                        Height.Value = Math.Clamp(diff.Y + Height.Value, min, max);
                     }
 
                     Recalculate();

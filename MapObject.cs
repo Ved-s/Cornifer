@@ -5,12 +5,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Cornifer
 {
@@ -19,7 +21,9 @@ namespace Cornifer
         public bool ParentSelected => Parent != null && (Parent.Selected || Parent.ParentSelected);
         public bool Selected => Main.SelectedObjects.Contains(this);
 
-        public virtual bool Active { get; set; } = true;
+        private bool InternalActive = true;
+
+        public virtual bool Active { get => InternalActive; set => InternalActive = value; }
         public virtual Vector2 ParentPosition { get; set; }
         public virtual Vector2 Size { get; }
 
@@ -63,12 +67,133 @@ namespace Cornifer
 
         public UIElement? Config
         {
-            get => ConfigCache ??= BuildConfig();
+            get
+            {
+                ConfigCache ??= BuildConfig();
+                UpdateConfig();
+                return ConfigCache;
+            }
         }
+
+        private UIList? ConfigChildrenList;
 
         private UIElement? BuildConfig()
         {
-            return BuildInnerConfig();
+            UIList list = new()
+            {
+                ElementSpacing = 4,
+
+                Elements =
+                {
+                    new UILabel
+                    {
+                        Height = 20,
+                        Text = Name,
+                        WordWrap = false,
+                        TextAlign = new(.5f)
+                    },
+
+                    new UIResizeablePanel
+                    {
+                        BorderColor = new(100, 100, 100),
+                        Padding = 4,
+                        Height = 100,
+
+                        CanGrabLeft = false,
+                        CanGrabRight = false,
+                        CanGrabTop = false,
+
+                        MinHeight = 30,
+
+                        Elements = 
+                        {
+                            new UILabel
+                            {
+                                Height = 15,
+                                Text = "Children",
+                                WordWrap = false,
+                                TextAlign = new(.5f)
+                            },
+                            new UIPanel
+                            {
+                                BackColor = new(40, 40, 40),
+
+                                Top = 18,
+                                Height = new(-18, 1),
+                                Padding = 4,
+                                Elements = 
+                                {
+                                    new UIList
+                                    {
+                                        ElementSpacing = 4
+                                    }.Assign(out ConfigChildrenList)
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            BuildInnerConfig(list);
+            return list;
+        }
+        private void UpdateConfig()
+        {
+            if (ConfigChildrenList is not null)
+            {
+                ConfigChildrenList.Elements.Clear();
+
+                if (Children.Count == 0)
+                {
+                    ConfigChildrenList.Elements.Add(new UILabel
+                    {
+                        Text = "Empty",
+                        Height = 20,
+                        TextAlign = new(.5f)
+                    });
+                }
+                else
+                {
+                    foreach (MapObject obj in Children)
+                    {
+                        UIPanel panel = new()
+                        {
+                            Padding = 2,
+                            Height = 22,
+
+                            Elements =
+                            {
+                                new UILabel
+                                {
+                                    Text = obj.Name,
+                                    Top = 2,
+                                    Left = 2,
+                                    Height = 16,
+                                    WordWrap = false,
+                                    AutoSize = false,
+                                    Width = new(-22, 1)
+                                },
+                                new UIButton
+                                {
+                                    Text = "A",
+
+                                    Selectable = true,
+                                    Selected = obj.InternalActive,
+                                    
+                                    SelectedBackColor = Color.White,
+                                    SelectedTextColor = Color.Black,
+
+                                    Left = new(0, 1, -1),
+                                    Width = 18,
+                                }.OnEvent(UIElement.ClickEvent, (btn, _) => obj.InternalActive = btn.Selected),
+                            }
+                        };
+
+                        ConfigChildrenList.Elements.Add(panel);
+                    }
+                }
+            }
+
+            UpdateInnerConfig();
         }
 
         public JsonObject? SaveJson()
@@ -83,7 +208,7 @@ namespace Cornifer
                         $"Parent: {Parent?.Name ?? Parent?.GetType().Name ?? "null"}"),
                 ["type"] = GetType().FullName,
                 ["pos"] = JsonTypes.SaveVector2(ParentPosition),
-                ["active"] = Active,
+                ["active"] = InternalActive,
             };
             if (inner is not null)
                 json["data"] = inner;
@@ -104,7 +229,7 @@ namespace Cornifer
                 ParentPosition = JsonTypes.LoadVector2(pos);
 
             if (json.TryGet("active", out bool active))
-                Active = active;
+                InternalActive = active;
 
             if (json.TryGet("children", out JsonArray? children))
                 foreach (JsonNode? childNode in children)
@@ -115,7 +240,8 @@ namespace Cornifer
         protected virtual JsonNode? SaveInnerJson() => null;
         protected virtual void LoadInnerJson(JsonNode node) { }
 
-        protected virtual UIElement? BuildInnerConfig() => null;
+        protected virtual void BuildInnerConfig(UIList list) { }
+        protected virtual void UpdateInnerConfig() { }
 
         public static MapObject? FindSelectableAtPos(IEnumerable<MapObject> objects, Vector2 pos, bool searchChildren)
         {

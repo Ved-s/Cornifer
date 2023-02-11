@@ -58,7 +58,7 @@ namespace Cornifer.UI.Elements
         public bool AllowNegative = true;
         public bool AllowDecimal = true;
 
-        public ValueValidatorDelegate? ValueValidator;
+        public ValueValidatorDelegate? ValueValidator = null;
         bool UseValidatorInValue = true;
 
         public UINumberInput()

@@ -5,7 +5,6 @@ using Cornifer.UI.Helpers;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using SixLabors.ImageSharp.ColorSpaces.Conversion;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +21,6 @@ namespace Cornifer
         private SpriteFont font;
         private float scale = 1;
 
-        public override bool Active => true;
         public override Vector2 Size => size + new Vector2(10);
 
         public Color Color = Color.White;
@@ -57,7 +55,7 @@ namespace Cornifer
             }
         }
 
-        public MapText() 
+        public MapText()
         {
             font = Content.RodondoExt20;
         }
@@ -104,120 +102,113 @@ namespace Cornifer
             }
         }
 
-        protected override UIElement? BuildInnerConfig()
+        protected override void BuildInnerConfig(UIList list)
         {
-            return new UIList
+            list.Elements.Add(new UIResizeablePanel
             {
-                ElementSpacing = 4,
+                Height = 100,
+
+                CanGrabTop = false,
+                CanGrabLeft = false,
+                CanGrabRight = false,
+                CanGrabBottom = true,
+
+                BackColor = Color.Transparent,
+                BorderColor = Color.Transparent,
+
                 Elements =
                 {
-                    new UIResizeablePanel
+                    new UIInput
                     {
-                        Height = 100,
-
-                        CanGrabTop = false,
-                        CanGrabLeft = false,
-                        CanGrabRight = false,
-                        CanGrabBottom = true,
-
-                        BackColor = Color.Transparent,
-                        BorderColor = Color.Transparent,
-
-                        Elements =
-                        {
-                            new UIInput
-                            {
-                                Text = Text,
-                            }.OnEvent(UIInput.TextChangedEvent, (inp, _) => { if (inp.Active) Text = inp.Text; })
-                        }
-                    },
-                    new UIButton
-                    {
-                        Text = "View formatting guide",
-                        Height = 20
-                    }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.TextFormattingVisible = true),
-                    new UIElement { Height = 10 },
-                    new UIButton
-                    {
-                        Text = "Set text color",
-                        Height = 20
-                    }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Text color", Color, (_, c) => Color = c)),
-                    new UIButton
-                    {
-                        Text = "Set shade color",
-                        Height = 20
-                    }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Text shade color", ShadeColor, (_, c) => ShadeColor = c)),
-                    new UIButton
-                    {
-                        Text = "Shade enabled",
-                        Height = 20,
-
-                        Selectable = true,
-                        Selected = Shade,
-
-                        SelectedTextColor = Color.Black,
-                        SelectedBackColor = Color.White,
-
-                    }.OnEvent(UIElement.ClickEvent, (btn, _) => Shade = btn.Selected),
-                    new UIPanel
-                    {
-                        Height = 27,
-                        Padding = 4,
-
-                        Elements =
-                        {
-                            new UILabel
-                            {
-                                Top = 3,
-                                Width = 50,
-                                Height = 20,
-                                Text = "Scale:",
-                            },
-                            new UINumberInput
-                            {
-                                AllowNegative = false,
-
-                                Width = new(-50, 1),
-                                Left = 50,
-                                Value = Scale,
-
-                            }.OnEvent(UINumberInput.ValueChanged, (inp, _) => Scale = Math.Max(0.1f, (float)inp.Value))
-                            .OnEvent(UIElement.ActiveChangedEvent, (inp, act) => 
-                            {
-                                if (!act && inp.Value < 0.1f)
-                                    inp.Value = 0.1f;
-                            }),
-                        }
-                    },
-                    new UIResizeablePanel
-                    {
-                        Height = 100,
-
-                        Padding = 4,
-
-                        CanGrabTop = false,
-                        CanGrabLeft = false,
-                        CanGrabRight = false,
-                        CanGrabBottom = true,
-
-                        Elements = 
-                        {
-                            new UILabel
-                            {
-                                Text = "Font",
-                                Height = 15,
-                                TextAlign = new(.5f)
-                            },
-                            new UIList
-                            {
-                                Top = 20,
-                                Height = new(-20, 1),
-                                ElementSpacing = 4
-                            }.Execute(FillFontList)
-                        }
-                    }
+                        Text = Text,
+                    }.OnEvent(UIInput.TextChangedEvent, (inp, _) => { if (inp.Active) Text = inp.Text; })
                 }
-            };
+            });
+            list.Elements.Add(new UIButton
+            {
+                Text = "View formatting guide",
+                Height = 20
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.TextFormattingVisible = true));
+            list.Elements.Add(new UIElement { Height = 10 });
+            list.Elements.Add(new UIButton
+            {
+                Text = "Set text color",
+                Height = 20
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Text color", Color, (_, c) => Color = c)));
+            list.Elements.Add(new UIButton
+            {
+                Text = "Set shade color",
+                Height = 20
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Text shade color", ShadeColor, (_, c) => ShadeColor = c)));
+            list.Elements.Add(new UIButton
+            {
+                Text = "Shade enabled",
+                Height = 20,
+
+                Selectable = true,
+                Selected = Shade,
+
+                SelectedTextColor = Color.Black,
+                SelectedBackColor = Color.White,
+
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Shade = btn.Selected));
+            list.Elements.Add(new UIPanel
+            {
+                Height = 27,
+                Padding = 4,
+
+                Elements =
+                {
+                    new UILabel
+                    {
+                        Top = 3,
+                        Width = 50,
+                        Height = 20,
+                        Text = "Scale:",
+                    },
+                    new UINumberInput
+                    {
+                        AllowNegative = false,
+
+                        Width = new(-50, 1),
+                        Left = 50,
+                        Value = Scale,
+
+                    }.OnEvent(UINumberInput.ValueChanged, (inp, _) => Scale = Math.Max(0.1f, (float)inp.Value))
+                    .OnEvent(UIElement.ActiveChangedEvent, (inp, act) =>
+                    {
+                        if (!act && inp.Value < 0.1f)
+                            inp.Value = 0.1f;
+                    }),
+                }
+            });
+            list.Elements.Add(new UIResizeablePanel
+            {
+                Height = 100,
+
+                Padding = 4,
+
+                CanGrabTop = false,
+                CanGrabLeft = false,
+                CanGrabRight = false,
+                CanGrabBottom = true,
+
+                Elements =
+                {
+                    new UILabel
+                    {
+                        Text = "Font",
+                        Height = 15,
+                        TextAlign = new(.5f)
+                    },
+                    new UIList
+                    {
+                        Top = 20,
+                        Height = new(-20, 1),
+                        ElementSpacing = 4
+                    }.Execute(FillFontList)
+                }
+            });
         }
 
         void FillFontList(UIList list)

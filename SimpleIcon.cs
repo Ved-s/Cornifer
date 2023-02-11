@@ -5,14 +5,13 @@ using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
-using System.Xml.Linq;
 
 namespace Cornifer
 {
     public class SimpleIcon : SelectableIcon
     {
         public SimpleIcon()
-        { 
+        {
         }
 
         public SimpleIcon(string name, AtlasSprite sprite, Color? color = null)
@@ -54,41 +53,35 @@ namespace Cornifer
             renderer.DrawTexture(Texture, WorldPosition, Frame, color: Color);
         }
 
-        protected override UIElement? BuildInnerConfig()
+        protected override void BuildInnerConfig(UIList list)
         {
-            return new UIContainer
+            list.Elements.Add(new UIButton
             {
-                Elements = 
-                {
-                    new UIButton
-                    {
-                        Height = 20,
-                        Text = "Set icon color",
-                        TextAlign = new(.5f),
-                    }.OnEvent(UIElement.ClickEvent, (_, _) => 
-                    {
-                        Interface.ColorSelector.Show("Icon color", Color, (_, color) => Color = color);
-                    }),
+                Height = 20,
+                Text = "Set icon color",
+                TextAlign = new(.5f),
+            }.OnEvent(UIElement.ClickEvent, (_, _) =>
+            {
+                Interface.ColorSelector.Show("Icon color", Color, (_, color) => Color = color);
+            }));
 
-                    new UIButton
-                    {
-                        Top = 25,
-                        Height = 20,
+            list.Elements.Add(new UIButton
+            {
+                Top = 25,
+                Height = 20,
 
-                        Selectable = true,
-                        Selected = Shade,
+                Selectable = true,
+                Selected = Shade,
 
-                        SelectedBackColor = Color.White,
-                        SelectedTextColor = Color.Black,
+                SelectedBackColor = Color.White,
+                SelectedTextColor = Color.Black,
 
-                        Text = "Icon shade",
-                        TextAlign = new(.5f),
-                    }.OnEvent(UIElement.ClickEvent, (btn, _) =>
-                    {
-                        Shade = btn.Selected;
-                    }),
-                }
-            };
+                Text = "Icon shade",
+                TextAlign = new(.5f),
+            }.OnEvent(UIElement.ClickEvent, (btn, _) =>
+            {
+                Shade = btn.Selected;
+            }));
         }
 
         protected override JsonNode? SaveInnerJson()

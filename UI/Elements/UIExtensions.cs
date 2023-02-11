@@ -6,7 +6,7 @@ namespace Cornifer.UI.Elements
 {
     public static class UIExtensions
     {
-        public static T Assign<T>(this T element, out T value) where T : UIElement?
+        public static T Assign<T>(this T element, [NotNullIfNotNull(nameof(element))] out T? value) where T : UIElement?
         {
             value = element;
             return element;

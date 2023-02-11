@@ -30,6 +30,7 @@ namespace Cornifer.UI.Elements
         public Color TextShadowColor = Color.Transparent;
 
         public bool WordWrap = true;
+        public bool AutoSize = true;
 
         private string[]? Lines;
         private float MaxLineWidth;
@@ -57,8 +58,11 @@ namespace Cornifer.UI.Elements
 
         public override void Recalculate()
         {
-            MinWidth = 0;
-            MinHeight = 0;
+            if (AutoSize)
+            {
+                MinWidth = 0;
+                MinHeight = 0;
+            }
 
             base.Recalculate();
 
@@ -117,11 +121,14 @@ namespace Cornifer.UI.Elements
 
             Lines = lines.ToArray();
 
-            MinWidth = maxLineWidth;
-            MinHeight = lines.Count * Font.LineSpacing;
-            MaxLineWidth = maxLineWidth;
+            if (AutoSize)
+            {
+                MinWidth = maxLineWidth;
+                MinHeight = lines.Count * Font.LineSpacing;
+                MaxLineWidth = maxLineWidth;
 
-            base.Recalculate();
+                base.Recalculate();
+            }
         }
 
         public IEnumerable<string> EnumerateWords(string text)
