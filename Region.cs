@@ -6,12 +6,16 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace Cornifer
 {
     public class Region
     {
+        static Regex GateNameRegex = new("GATE_(.+)?_(.+)", RegexOptions.Compiled);
+
         public string Id = "";
         public List<Room> Rooms = new();
 
@@ -23,6 +27,9 @@ namespace Cornifer
         string? MapString;
         string? PropertiesString;
         string? GateLockString;
+
+        // room name -> region name 
+        Dictionary<string, string> GateTargetRegions = new();
 
         public Region()
         {
@@ -68,7 +75,7 @@ namespace Cornifer
                 string? settings = null;
                 string? data = null;
 
-                string roomPath = r.IsGate ? $"../gates/{r.Id}" : r.Id;
+                string roomPath = r.IsGate ? $"../gates/{r.Name}" : r.Name;
 
                 foreach (string roomDir in roomDirs)
                 {
@@ -91,14 +98,12 @@ namespace Cornifer
 
                 if (data is null)
                 {
-                    Main.LoadErrors.Add($"Could not find data for room {r.Id}");
+                    Main.LoadErrors.Add($"Could not find data for room {r.Name}");
                     continue;
                 }
 
                 r.Load(File.ReadAllText(data!), settings is null ? null : File.ReadAllText(settings));
             }
-
-
 
             HashSet<string> gatesProcessed = new();
             List<string> lockLines = new();
@@ -113,6 +118,38 @@ namespace Cornifer
 
             if (lockLines.Count > 0)
                 GateLockString = string.Join("\n", lockLines);
+
+            Dictionary<string, string> regionNames = GetSlugcatSpecificRegionNames(worldFilePath);
+            if (regionNames.Count > 0)
+            {
+                foreach (Room room in Rooms)
+                {
+                    if (!room.IsGate)
+                        continue;
+
+                    Match match = GateNameRegex.Match(room.Name);
+                    if (!match.Success)
+                        continue;
+
+                    string otherRegionId;
+
+                    string rgLeft = match.Groups[1].Value;
+                    string rgRight = match.Groups[2].Value;
+
+                    if (id.Equals(rgLeft, StringComparison.InvariantCultureIgnoreCase))
+                        otherRegionId = rgRight;
+                    else if (id.Equals(rgRight, StringComparison.InvariantCultureIgnoreCase))
+                        otherRegionId = rgLeft;
+                    else
+                        continue;
+
+                    if (!regionNames.TryGetValue(otherRegionId, out string? otherRegionName))
+                        continue;
+
+                    GateTargetRegions[room.Name] = otherRegionName;
+                }
+            }
+            AddGateTexts();
         }
 
         private void Load()
@@ -153,7 +190,7 @@ namespace Cornifer
                         Room room = new(this, split[0]);
 
                         if (split.Length >= 2)
-                            connections[room.Id] = split[1].Split(',', StringSplitOptions.TrimEntries);
+                            connections[room.Name] = split[1].Split(',', StringSplitOptions.TrimEntries);
 
                         if (split.Length >= 3)
                             switch (split[2])
@@ -222,11 +259,11 @@ namespace Cornifer
             {
                 foreach (var (room, slugcats) in exclusiveRooms)
                     if (!slugcats.Contains(Main.SelectedSlugcat))
-                        Rooms.RemoveAll(r => r.Id.Equals(room, StringComparison.InvariantCultureIgnoreCase));
+                        Rooms.RemoveAll(r => r.Name.Equals(room, StringComparison.InvariantCultureIgnoreCase));
 
                 foreach (var (room, slugcats) in hideRooms)
                     if (slugcats.Contains(Main.SelectedSlugcat))
-                        Rooms.RemoveAll(r => r.Id.Equals(room, StringComparison.InvariantCultureIgnoreCase));
+                        Rooms.RemoveAll(r => r.Name.Equals(room, StringComparison.InvariantCultureIgnoreCase));
             }
 
             foreach (var (room, target, disconnectedTarget, replacement) in connectionOverrides)
@@ -329,7 +366,7 @@ namespace Cornifer
                     if (TryGetRoom(roomConnections[i], out Room? targetRoom))
                     {
                         string[] targetConnections = connections[roomConnections[i]];
-                        int targetExit = Array.IndexOf(targetConnections, room.Id);
+                        int targetExit = Array.IndexOf(targetConnections, room.Name);
 
                         if (targetExit >= 0)
                         {
@@ -339,11 +376,11 @@ namespace Cornifer
                     else
                     {
                         if (hideRooms.ContainsKey(roomConnections[i]))
-                            Main.LoadErrors.Add($"{room.Id} connects to hidden room {roomConnections[i]}!");
+                            Main.LoadErrors.Add($"{room.Name} connects to hidden room {roomConnections[i]}!");
                         else if (exclusiveRooms.ContainsKey(roomConnections[i]))
-                            Main.LoadErrors.Add($"{room.Id} connects to excluded room {roomConnections[i]}!");
+                            Main.LoadErrors.Add($"{room.Name} connects to excluded room {roomConnections[i]}!");
                         else
-                            Main.LoadErrors.Add($"{room.Id} connects to a nonexistent room {roomConnections[i]}!");
+                            Main.LoadErrors.Add($"{room.Name} connects to a nonexistent room {roomConnections[i]}!");
                     }
                 }
             }
@@ -403,11 +440,21 @@ namespace Cornifer
                 lockLines?.Add(line);
             }
         }
+        private void AddGateTexts()
+        {
+            foreach (var (roomName, targetRegion) in GateTargetRegions)
+            {
+                if (!TryGetRoom(roomName, out Room? room))
+                    continue;
+
+                room.Children.Add(new MapText("TargetRegionText", Content.RodondoExt20, $"To {targetRegion}") { Shade = true });
+            }
+        }
 
         public bool TryGetRoom(string id, [NotNullWhen(true)] out Room? room)
         {
             foreach (Room r in Rooms)
-                if (r.Id.Equals(id, StringComparison.InvariantCultureIgnoreCase))
+                if (r.Name.Equals(id, StringComparison.InvariantCultureIgnoreCase))
                 {
                     room = r;
                     return true;
@@ -429,7 +476,7 @@ namespace Cornifer
             {
                 foreach (Room.Connection? connection in room.Connections)
                 {
-                    if (connection is null || DrawnRoomConnections.Contains(connection.Target.Id) || room.Exits.Length <= connection.Exit)
+                    if (connection is null || DrawnRoomConnections.Contains(connection.Target.Name) || room.Exits.Length <= connection.Exit)
                         continue;
 
                     Vector2 start = renderer.TransformVector(room.WorldPos + room.Exits[connection.Exit].ToVector2() + new Vector2(.5f));
@@ -443,7 +490,7 @@ namespace Cornifer
                     Main.SpriteBatch.DrawRect(start - new Vector2(2), new(3), Color.White);
                     Main.SpriteBatch.DrawRect(end - new Vector2(2), new(3), Color.White);
                 }
-                DrawnRoomConnections.Add(room.Id);
+                DrawnRoomConnections.Add(room.Name);
             }
         }
 
@@ -455,10 +502,11 @@ namespace Cornifer
                 ["world"] = WorldString,
                 ["properties"] = PropertiesString,
                 ["map"] = MapString,
+                ["gateTargets"] = JsonSerializer.SerializeToNode(GateTargetRegions),
                 ["locks"] = GateLockString,
                 ["rooms"] = new JsonArray(Rooms.Select(r => new JsonObject()
                 {
-                    ["id"] = r.Id,
+                    ["id"] = r.Name,
                     ["data"] = r.DataString,
                     ["settings"] = r.SettingsString
                 }).ToArray())
@@ -479,6 +527,9 @@ namespace Cornifer
             if (node.TryGet("map", out string? map))
                 MapString = map;
 
+            if (node.TryGet("gateTargets", out JsonNode? gateTargets))
+                GateTargetRegions = JsonSerializer.Deserialize<Dictionary<string, string>>(gateTargets) ?? new();
+
             if (node.TryGet("locks", out string? locks))
                 GateLockString = locks;
 
@@ -486,6 +537,7 @@ namespace Cornifer
 
             if (GateLockString is not null)
                 AddGateLocks(GateLockString, null, null);
+            AddGateTexts();
 
             if (node.TryGet("rooms", out JsonArray? rooms))
             {
@@ -500,6 +552,55 @@ namespace Cornifer
                         room.Loaded = true;
                     }
             }
+        }
+
+        static Dictionary<string, string> GetSlugcatSpecificRegionNames(string path)
+        {
+            Dictionary<string, string> names = new();
+            if (!Main.TryFindParentDir(path, "mergedmods", out string? mergedmods))
+                return names;
+
+            string basePath = Path.GetDirectoryName(mergedmods)!;
+
+            List<string> worlds = new();
+            worlds.Add(Path.Combine(basePath, "world"));
+
+            if (Main.DirExists(basePath, "mods", out string mods))
+                foreach (string mod in Directory.EnumerateDirectories(mods)) 
+                    worlds.Add(Path.Combine(mod, "world"));
+
+            foreach (string world in worlds)
+            {
+                if (!Directory.Exists(world))
+                    continue;
+
+                foreach (string possibleRegion in Directory.EnumerateDirectories(world))
+                {
+                    string? displayname = null;
+                    bool specific = false;
+                    if (Main.SelectedSlugcat is not null && Main.FileExists(possibleRegion, $"displayname-{Main.SelectedSlugcat}.txt", out string specificDisplayname))
+                    {
+                        displayname = specificDisplayname;
+                        specific = true;
+                    }
+
+                    if (displayname is null && Main.FileExists(possibleRegion, $"displayname.txt", out string mainDisplayname))
+                    {
+                        displayname = mainDisplayname;
+                        specific = false;
+                    }
+
+                    if (displayname is null)
+                        continue;
+
+                    string regionId = Path.GetFileName(possibleRegion).ToUpper();
+
+                    if (specific || !names.ContainsKey(regionId))
+                        names[regionId] = File.ReadAllText(displayname);
+                }
+            }
+
+            return names;
         }
 
         public class Subregion

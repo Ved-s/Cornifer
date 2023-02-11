@@ -81,8 +81,6 @@ namespace Cornifer
 
         public static float WaterTransparency = .3f;
 
-        public string Id;
-
         public bool IsGate;
         public bool IsShelter;
         public bool IsAncientShelter;
@@ -121,10 +119,12 @@ namespace Cornifer
         public override Vector2 ParentPosition { get => WorldPos; set => WorldPos = value; }
         public override Vector2 Size => TileSize.ToVector2();
 
+        public Room() { }
+
         public Room(Region region, string id)
         {
             Region = region;
-            Id = id;
+            Name = id;
         }
         public Point TraceShotrcut(Point pos)
         {
@@ -187,9 +187,6 @@ namespace Cornifer
             SettingsString = settings;
 
             string[] lines = data.Split('\n', StringSplitOptions.TrimEntries);
-
-            if (lines.TryGet(0, out string displayname))
-                Name = displayname;
 
             if (lines.TryGet(1, out string sizeWater))
             {
@@ -387,7 +384,7 @@ namespace Cornifer
                     Children.Add(new SimpleIcon("TraderIcon", tollIcon));
             }
 
-            if (VistaRooms.TryGetValue(Id, out Vector2 vistaPoint))
+            if (VistaRooms.TryGetValue(Name, out Vector2 vistaPoint))
             {
                 Vector2 rel = (vistaPoint / 20) / Size;
 
@@ -499,20 +496,20 @@ namespace Cornifer
             else 
                 renderer.DrawTexture(GetTileMap(), WorldPos);
 
-            if (Name is not null)
-                Main.SpriteBatch.DrawStringAligned(Content.Consolas10, Name, renderer.TransformVector(WorldPos + new Vector2(TileSize.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
+            if (base.Name is not null)
+                Main.SpriteBatch.DrawStringAligned(Content.Consolas10, base.Name, renderer.TransformVector(WorldPos + new Vector2(TileSize.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
         }
 
         public override string ToString()
         {
-            return Id;
+            return Name;
         }
 
         public record class Connection(Room Target, int Exit, int TargetExit)
         {
             public override string ToString()
             {
-                return $"{Exit} -> {Target.Id}[{TargetExit}]";
+                return $"{Exit} -> {Target.Name}[{TargetExit}]";
             }
         }
         public record class Shortcut(Point entrance, Point target, Tile.ShortcutType type);

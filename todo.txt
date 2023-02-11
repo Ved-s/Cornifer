@@ -1,4 +1,4 @@
-Shcolar pearl icons
-Scavenger toll and merchants
+Remove font transparency
 Shortcut graphics
 Better state saving - track if values were changed by user
+Room subregion switch

@@ -457,6 +457,10 @@ namespace Cornifer
                     if (objNode is not null && !MapObject.LoadObject(objNode, WorldObjectLists))
                     {
                         MapObject? obj = MapObject.CreateObject(objNode);
+
+                        if (obj is Room)
+                            continue;
+
                         if (obj is not null)
                             WorldObjects.Add(obj);
                     }
@@ -600,6 +604,11 @@ namespace Cornifer
         {
             filepath = Path.Combine(dir, file);
             return File.Exists(filepath);
+        }
+        public static bool DirExists(string dir, string name, out string dirpath)
+        {
+            dirpath = Path.Combine(dir, name);
+            return File.Exists(dirpath);
         }
         public static string CheckSlugcatAltFile(string filepath)
         {
