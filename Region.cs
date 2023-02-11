@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -15,7 +16,7 @@ namespace Cornifer
 {
     public class Region
     {
-        public string Id;
+        public string Id = "";
         public List<Room> Rooms = new();
 
         public Subregion[] Subregions = Array.Empty<Subregion>();
@@ -24,6 +25,7 @@ namespace Cornifer
 
         string? WorldString;
         string? MapString;
+        string? GateLockString;
 
         public Region()
         {
@@ -98,53 +100,21 @@ namespace Cornifer
                 r.Load(File.ReadAllText(data!), settings is null ? null : File.ReadAllText(settings));
             }
 
-            static void AddGateSymbol(Room room, string symbol, bool leftSide)
-            {
-                string? spriteName = symbol switch
-                {
-                    "1" => "smallKarmaNoRing0",
-                    "2" => "smallKarmaNoRing1",
-                    "3" => "smallKarmaNoRing2",
-                    "4" => "smallKarmaNoRing3",
-                    "5" => "smallKarmaNoRing4",
-                    "R" => "smallKarmaNoRingR",
-                    _ => null
-                };
-                if (spriteName is null)
-                    return;
-
-                Vector2 align = new(.4f, .5f);
-                if (!leftSide)
-                    align.X = 1 - align.X;
-
-                if (!GameAtlases.Sprites.TryGetValue(spriteName, out AtlasSprite? sprite))
-                    return;
-
-                room.Children.Add(new SimpleIcon($"GateSymbol{(leftSide? "Left" : "Right")}", sprite)
-                {
-                    ParentPosAlign = align
-                });
-            }
+            
 
             HashSet<string> gatesProcessed = new();
+            List<string> lockLines = new();
             foreach (string roomDir in roomDirs)
             {
                 string locksPath = Path.Combine(roomDir, "../gates/locks.txt");
                 if (!File.Exists(locksPath))
                     continue;
 
-                foreach (string line in File.ReadAllLines(locksPath))
-                {
-                    string[] split = line.Split(':', StringSplitOptions.TrimEntries);
-                    if (gatesProcessed.Contains(split[0]) || !TryGetRoom(split[0], out Room? gate))
-                        continue;
-
-                    AddGateSymbol(gate, split[1], true);
-                    AddGateSymbol(gate, split[2], false);
-
-                    gatesProcessed.Add(split[0]);
-                }
+                AddGateLocks(File.ReadAllText(locksPath), gatesProcessed, lockLines);
             }
+
+            if (lockLines.Count > 0)
+                GateLockString = string.Join("\n", lockLines);
         }
 
         private void Load()
@@ -379,6 +349,50 @@ namespace Cornifer
             }
         }
 
+        private void AddGateLocks(string data, HashSet<string>? processed, List<string>? lockLines)
+        {
+            static void AddGateSymbol(Room room, string symbol, bool leftSide)
+            {
+                string? spriteName = symbol switch
+                {
+                    "1" => "smallKarmaNoRing0",
+                    "2" => "smallKarmaNoRing1",
+                    "3" => "smallKarmaNoRing2",
+                    "4" => "smallKarmaNoRing3",
+                    "5" => "smallKarmaNoRing4",
+                    "R" => "smallKarmaNoRingR",
+                    _ => null
+                };
+                if (spriteName is null)
+                    return;
+
+                Vector2 align = new(.4f, .5f);
+                if (!leftSide)
+                    align.X = 1 - align.X;
+
+                if (!GameAtlases.Sprites.TryGetValue(spriteName, out AtlasSprite? sprite))
+                    return;
+
+                room.Children.Add(new SimpleIcon($"GateSymbol{(leftSide ? "Left" : "Right")}", sprite)
+                {
+                    ParentPosAlign = align
+                });
+            }
+
+            foreach (string line in data.Split('\n', StringSplitOptions.TrimEntries))
+            {
+                string[] split = line.Split(':', StringSplitOptions.TrimEntries);
+                if (processed is not null && processed.Contains(split[0]) || !TryGetRoom(split[0], out Room? gate))
+                    continue;
+
+                AddGateSymbol(gate, split[1], true);
+                AddGateSymbol(gate, split[2], false);
+
+                processed?.Add(split[0]);
+                lockLines?.Add(line);
+            }
+        }
+
         public bool TryGetRoom(string id, [NotNullWhen(true)] out Room? room)
         {
             foreach (Room r in Rooms)
@@ -429,6 +443,7 @@ namespace Cornifer
                 ["id"] = Id,
                 ["world"] = WorldString,
                 ["map"] = MapString,
+                ["locks"] = GateLockString,
                 ["rooms"] = new JsonArray(Rooms.Select(r => new JsonObject() 
                 {
                     ["id"] = r.Id,
@@ -449,7 +464,13 @@ namespace Cornifer
             if (node.TryGet("map", out string? map))
                 MapString = map;
 
+            if (node.TryGet("locks", out string? locks))
+                GateLockString = locks;
+
             Load();
+
+            if (GateLockString is not null)
+                AddGateLocks(GateLockString, null, null);
 
             if (node.TryGet("rooms", out JsonArray? rooms))
             {
