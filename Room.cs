@@ -104,6 +104,7 @@ namespace Cornifer
 
         public Effect[] Effects = Array.Empty<Effect>();
         public Connection?[] Connections = Array.Empty<Connection>();
+        public List<string> BrokenForSlugcats = new();
 
         public Texture2D? TileMap;
         public bool TileMapDirty = false;
@@ -377,6 +378,15 @@ namespace Cornifer
                 });
             }
 
+            if (BrokenForSlugcats.Count > 0)
+            {
+                string text = "Broken for [a:.5]" + string.Join(' ', BrokenForSlugcats.Select(s => $"[ic:Slugcat_{s}]"));
+                Children.Add(new MapText("BrokenShelterText", Content.RodondoExt20, text)
+                {
+                    Shade = true,
+                });
+            }
+
             Loaded = true;
         }
 
@@ -467,7 +477,8 @@ namespace Cornifer
             else 
                 renderer.DrawTexture(GetTileMap(), WorldPos);
 
-            Main.SpriteBatch.DrawStringAligned(Content.Consolas10, Name, renderer.TransformVector(WorldPos + new Vector2(TileSize.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
+            if (Name is not null)
+                Main.SpriteBatch.DrawStringAligned(Content.Consolas10, Name, renderer.TransformVector(WorldPos + new Vector2(TileSize.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
         }
 
         public override string ToString()

@@ -1,10 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using CommunityToolkit.HighPerformance.Buffers;
+using Cornifer.UI.Structures;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using SixLabors.ImageSharp.Metadata.Profiles.Iptc;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Globalization;
 
 namespace Cornifer
@@ -13,6 +12,14 @@ namespace Cornifer
     {
         static readonly Vector2[] Offsets = new Vector2[] { new(-1, -1), new(-1, 0), new(-1, 1), new(0, -1), new(0, 1), new(1, -1), new(1, 0), new(1, 1) };
         static Dictionary<SpriteFont, FontCache> Cache = new();
+        static StringPool StringPool = new();
+        static StringPool NoContentTags = new();
+
+        static FormattedText()
+        {
+            NoContentTags.Add("ic");
+        }
+
         public static Dictionary<SpriteFont, float> FontSpaceOverride = new();
 
         public static void Draw(SpriteBatch spriteBatch, SpriteFont font, ReadOnlySpan<char> text, Vector2 position, Color color, Color? shadeColor = null, float scale = 1)
@@ -143,7 +150,7 @@ namespace Cornifer
                 if (tagBeginStart == text.Length - 1)
                     return -1;
 
-                if (text[tagBeginStart+1] != '/' && (tagBeginStart == 0 || text[tagBeginStart-1] != '\\' ))
+                if (text[tagBeginStart + 1] != '/' && (tagBeginStart == 0 || text[tagBeginStart - 1] != '\\'))
                     break;
 
                 tagReadPos = tagBeginStart + 1;
@@ -160,13 +167,14 @@ namespace Cornifer
                 return -1;
 
             tagBeginEnd += tagBeginStart;
+            
 
             ReadOnlySpan<char> tag = text.Slice(tagBeginStart, tagBeginEnd - tagBeginStart);
 
             int tagDataDelimeter = tag.IndexOf(':');
             if (tagDataDelimeter < 0)
                 tagName = tag;
-            else 
+            else
             {
                 tagName = tag.Slice(0, tagDataDelimeter);
                 tagData = tag.Slice(tagDataDelimeter + 1);
@@ -174,7 +182,10 @@ namespace Cornifer
 
             tagBeginEnd++;
 
-            tagLength = tagBeginEnd - tagBeginStart;
+            tagLength = (tagBeginEnd - tagBeginStart) + 1;
+
+            if (NoContentTags.TryGet(tagName, out _))
+                return tagBeginStart - 1;
 
             Span<char> endingSeq = stackalloc char[tagName.Length + 3];
 
@@ -205,6 +216,7 @@ namespace Cornifer
                 {
                     ReadOnlySpan<char> next = text.Slice(tagReadPos);
                     int nextTag = FindNextTag(next, out _, out _, out _, out int nextTagLength);
+
                     if (nextTag < 0)
                         break;
                     else
@@ -220,7 +232,7 @@ namespace Cornifer
                                 tagContentEnd = text.Length;
                                 tagEnd = text.Length;
                             }
-                            else 
+                            else
                             {
                                 tagContentEnd = endingPos;
                                 tagEnd = endingPos + endingSeq.Length;
@@ -231,41 +243,10 @@ namespace Cornifer
                     tagReadPos = nextTag + nextTagLength;
                 }
             }
-            //while (true)
-            //{
-            //    int tagEndStart = text.Slice(tagReadPos).IndexOf(endingSeq);
-            //    if (tagEndStart < 0)
-            //    {
-            //        tagContentEnd = text.Length;
-            //        tagEnd = text.Length;
-            //        break;
-            //    }
-            //    tagEndStart += tagReadPos;
-            //    tagEndStart += 2;
-            //    tagReadPos = tagEndStart;
-            //
-            //    int tagEndEnd = text.Slice(tagReadPos).IndexOf(']');
-            //    if (tagEndEnd < 0)
-            //    {
-            //        tagContentEnd = text.Length;
-            //        tagEnd = text.Length;
-            //        break;
-            //    }
-            //
-            //    tagEndEnd += tagReadPos;
-            //
-            //    ReadOnlySpan<char> endTagName = text.Slice(tagEndStart, tagEndEnd - tagEndStart);
-            //    if (endTagName.Equals(tagName, StringComparison.InvariantCulture))
-            //    {
-            //        tagContentEnd = tagEndStart - 2;
-            //        tagEnd = (tagEndEnd + 1);
-            //        break;
-            //    }
-            //}
 
             tagContent = text.Slice(tagBeginEnd, tagContentEnd - tagBeginEnd);
             tagLength = tagEnd - (tagBeginStart - 1);
-            return tagBeginStart-1;
+            return tagBeginStart - 1;
         }
 
         static void DrawTaggedText(ReadOnlySpan<char> text, ref TextDrawPos pos, DrawContext context)
@@ -341,7 +322,7 @@ namespace Cornifer
                     if (float.TryParse(scaleData, NumberStyles.Float, CultureInfo.InvariantCulture, out float scale))
                     {
                         if (relative)
-                            DrawTaggedText(tagContent, ref pos, context with { Scale = context.Scale * scale * context.OriginalScale});
+                            DrawTaggedText(tagContent, ref pos, context with { Scale = context.Scale * scale * context.OriginalScale });
                         else
                             DrawTaggedText(tagContent, ref pos, context with { Scale = scale * context.OriginalScale });
                         tagHandled = true;
@@ -353,6 +334,44 @@ namespace Cornifer
                     {
                         DrawTaggedText(tagContent, ref pos, context with { LineHeightAlign = align });
                         tagHandled = true;
+                    }
+                }
+                //[ic:NAME:COLOR], optional COLOR
+                else if (tagName.Equals("ic", StringComparison.InvariantCultureIgnoreCase) && tagData.Length > 0)
+                {
+                    int colorDelimeter = tagData.IndexOf(':');
+                    ReadOnlySpan<char> name = colorDelimeter < 0 ? tagData : tagData.Slice(0, colorDelimeter);
+                    ReadOnlySpan<char> color = colorDelimeter < 0 ? ReadOnlySpan<char>.Empty : tagData.Slice(colorDelimeter + 1);
+
+                    string nameStr = StringPool.GetOrAdd(name);
+                    if (GameAtlases.Sprites.TryGetValue(nameStr, out AtlasSprite? sprite))
+                    {
+                        Color? iconColor = color.Length == 0 ? sprite.Color : ParseColor(color);
+
+                        if (iconColor.HasValue)
+                        {
+                            Vector2 size = sprite.Frame.Size.ToVector2() * context.Scale;
+                            if (context.SpriteBatch is not null && !context.MeasuringSize)
+                            {
+                                Vector2 iconPos = pos.GetPos(size.Y, context);
+
+                                if (context.ShadeRun && context.ShadeColor.HasValue && sprite.Shade)
+                                {
+                                    for (int i = 0; i < Offsets.Length; i++)
+                                    {
+                                        Vector2 off = Offsets[i] * context.Scale;
+                                        context.SpriteBatch.Draw(sprite.Texture, iconPos + off, sprite.Frame, context.ShadeColor.Value, 0f, Vector2.Zero, context.Scale, SpriteEffects.None, 0f);
+                                    }
+
+                                }
+                                else if (!context.ShadeRun)
+                                {
+                                    context.SpriteBatch.Draw(sprite.Texture, iconPos, sprite.Frame, iconColor.Value, 0f, Vector2.Zero, context.Scale, SpriteEffects.None, 0f);
+                                }
+                            }
+                            pos.Advance(size);
+                            tagHandled = true;
+                        }
                     }
                 }
 
@@ -405,7 +424,7 @@ namespace Cornifer
                 }
                 escaped = false;
 
-                if (!context.FontCache.Glyphs.TryGetValue(c, out SpriteFont.Glyph glyph) 
+                if (!context.FontCache.Glyphs.TryGetValue(c, out SpriteFont.Glyph glyph)
                  && (context.Font.DefaultCharacter is null || !context.FontCache.Glyphs.TryGetValue(context.Font.DefaultCharacter.Value, out glyph)))
                 {
                     continue;
@@ -440,7 +459,7 @@ namespace Cornifer
                 if (context.ShadeRun)
                 {
                     if (context.ShadeColor.HasValue)
-                        context.SpriteBatch.DrawRect(new(linePos.X-1, lineY-1), new(drawPos.X + 2, 3), context.ShadeColor);
+                        context.SpriteBatch.DrawRect(new(linePos.X - 1, lineY - 1), new(drawPos.X + 2, 3), context.ShadeColor);
                 }
                 else
                 {
@@ -490,7 +509,7 @@ namespace Cornifer
         {
             for (int i = 0; i < text.Length; i++)
             {
-                char c  = text[i];
+                char c = text[i];
                 if (!char.IsDigit(c) && (c < 'A' || c > 'F') && (c < 'a' || c > 'f'))
                     return null;
             }

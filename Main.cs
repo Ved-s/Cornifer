@@ -16,7 +16,8 @@ namespace Cornifer
 {
     public class Main : Game
     {
-        public static string[] SlugCatNames = new[] { "White", "Yellow", "Red", "Night", "Gourmand", "Artificer", "Rivulet", "Spear", "Saint", "Inv" };
+        public static string[] SlugCatNames = new string[] { "White", "Yellow", "Red", "Night", "Gourmand", "Artificer", "Rivulet", "Spear", "Saint", "Inv" };
+        public static Color[] SlugCatColors = new Color[] { new(255, 255, 255), new(255, 255, 115), new(255, 115, 115), new(25, 15, 48), new(240, 193, 151), new(112, 35, 60), new(145, 204, 240), new(79, 46, 105), new(170, 241, 86), new(0, 19, 58) };
 
         public static GraphicsDeviceManager GraphicsManager = null!;
         public static SpriteBatch SpriteBatch = null!;
@@ -135,7 +136,7 @@ namespace Cornifer
             if (KeyboardState.IsKeyDown(Keys.Escape) && OldKeyboardState.IsKeyUp(Keys.Escape))
                 LoadErrors.Clear();
 
-            if (KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete))
+            if (!Interface.Active && KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete))
             {
                 HashSet<MapObject> objectsToDelete = new(SelectedObjects);
                 objectsToDelete.IntersectWith(WorldObjects);
@@ -352,11 +353,13 @@ namespace Cornifer
 
             string worldFile = Path.Combine(regionPath, $"world_{id}.txt");
             string mapFile = Path.Combine(regionPath, $"map_{id}.txt");
+            string? propertiesFile = Path.Combine(regionPath, $"properties.txt");
 
             bool altWorld = TryCheckSlugcatAltFile(worldFile, out worldFile);
-            bool altMap = TryCheckSlugcatAltFile(mapFile, out mapFile); ;
+            bool altMap = TryCheckSlugcatAltFile(mapFile, out mapFile);
+            bool altProperties = TryCheckSlugcatAltFile(propertiesFile, out propertiesFile);
 
-            if (!altWorld || !altMap)
+            if (!altWorld || !altMap || !altProperties)
                 if (TryFindParentDir(regionPath, "mods", out string? mods))
                 {
                     foreach (string mod in Directory.EnumerateDirectories(mods))
@@ -375,11 +378,17 @@ namespace Cornifer
                                 mapFile = modAltMap;
                                 altMap = true;
                             }
+
+                            if (!altProperties && TryCheckSlugcatAltFile(Path.Combine(modRegion, $"properties.txt"), out string modAltProperties))
+                            {
+                                propertiesFile = modAltProperties;
+                                altProperties = true;
+                            }
                         }
                     }
                 }
 
-            if (!altWorld || !altMap)
+            if (!altWorld || !altMap || !altProperties)
                 if (TryFindParentDir(regionPath, "mergedmods", out string? mergedmods))
                 {
                     if (!altWorld && FileExists(mergedmods, $"world/{id}/world_{id}.txt", out string mergedworld))
@@ -387,9 +396,15 @@ namespace Cornifer
 
                     if (!altMap && FileExists(mergedmods, $"world/{id}/map_{id}.txt", out string mergedmap))
                         mapFile = mergedmap;
+
+                    if (!altProperties && FileExists(mergedmods, $"world/{id}/properties.txt", out string mergedproperties))
+                        propertiesFile = mergedproperties;
                 }
 
-            Region = new(id, worldFile, mapFile, Path.Combine(regionPath, $"../{id}-rooms"));
+            if (!File.Exists(propertiesFile))
+                propertiesFile = null;
+
+            Region = new(id, worldFile, mapFile, propertiesFile, Path.Combine(regionPath, $"../{id}-rooms"));
             RegionLoaded(Region);
         }
         public static void RegionLoaded(Region region)

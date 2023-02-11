@@ -1,11 +1,7 @@
 ﻿using Cornifer.Renderers;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
@@ -25,17 +21,19 @@ namespace Cornifer
 
         string? WorldString;
         string? MapString;
+        string? PropertiesString;
         string? GateLockString;
 
         public Region()
         {
-            
+
         }
 
-        public Region(string id, string worldFilePath, string mapFilePath, string roomsDir)
+        public Region(string id, string worldFilePath, string mapFilePath, string? propertiesFilePath, string roomsDir)
         {
             Id = id;
             WorldString = File.ReadAllText(worldFilePath);
+            PropertiesString = propertiesFilePath is null ? null : File.ReadAllText(propertiesFilePath);
             MapString = File.ReadAllText(mapFilePath);
 
             Load();
@@ -100,7 +98,7 @@ namespace Cornifer
                 r.Load(File.ReadAllText(data!), settings is null ? null : File.ReadAllText(settings));
             }
 
-            
+
 
             HashSet<string> gatesProcessed = new();
             List<string> lockLines = new();
@@ -347,6 +345,17 @@ namespace Cornifer
                     }
                 }
             }
+
+            if (PropertiesString is not null)
+                foreach (string line in PropertiesString.Split('\n', StringSplitOptions.TrimEntries))
+                {
+                    string[] split = line.Split(':', StringSplitOptions.TrimEntries);
+
+                    if (split[0] == "Broken Shelters" && split.Length >= 3)
+                        foreach (string roomName in split[2].Split(',', StringSplitOptions.TrimEntries))
+                            if (TryGetRoom(roomName, out Room? room))
+                                room.BrokenForSlugcats.Add(split[1]);
+                }
         }
 
         private void AddGateLocks(string data, HashSet<string>? processed, List<string>? lockLines)
@@ -442,9 +451,10 @@ namespace Cornifer
             {
                 ["id"] = Id,
                 ["world"] = WorldString,
+                ["properties"] = PropertiesString,
                 ["map"] = MapString,
                 ["locks"] = GateLockString,
-                ["rooms"] = new JsonArray(Rooms.Select(r => new JsonObject() 
+                ["rooms"] = new JsonArray(Rooms.Select(r => new JsonObject()
                 {
                     ["id"] = r.Id,
                     ["data"] = r.DataString,
@@ -461,6 +471,9 @@ namespace Cornifer
             if (node.TryGet("world", out string? world))
                 WorldString = world;
 
+            if (node.TryGet("properties", out string? properties))
+                PropertiesString = properties;
+
             if (node.TryGet("map", out string? map))
                 MapString = map;
 
@@ -475,8 +488,8 @@ namespace Cornifer
             if (node.TryGet("rooms", out JsonArray? rooms))
             {
                 foreach (JsonNode? roomNode in rooms)
-                    if (roomNode is JsonObject roomObj 
-                        && roomObj.TryGet("id", out string? roomId) 
+                    if (roomNode is JsonObject roomObj
+                        && roomObj.TryGet("id", out string? roomId)
                         && TryGetRoom(roomId, out Room? room)
                         && roomObj.TryGet("data", out string? roomData))
                     {
@@ -487,7 +500,7 @@ namespace Cornifer
             }
         }
 
-        public class Subregion 
+        public class Subregion
         {
             public string Name;
 

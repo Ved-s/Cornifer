@@ -33,6 +33,7 @@ namespace Cornifer
         public static UIList SubregionColorList = null!;
 
         public static bool Hovered => Root?.Hover is not null;
+        public static bool Active => Root?.Active is not null;
         public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.MouseState.RightButton == ButtonState.Pressed && !Hovered;
 
         static bool regionSelectVisible = false;
@@ -98,7 +99,7 @@ namespace Cornifer
         {
             (false,
             "Cornifer supports text formatting similar to BBCode.\n" +
-            "Format consists of tags, formatted [tagName:tagData]tagContent[/tagName].\n" +
+            "Format consists of tags, formatted [tagName:tagData]tagContent[/tagName] or just [tagName:tagData].\n" +
             "Tags can be inside other tags. If tag is never closed, it will apply to the rest of the text.\n" +
             "Current tag list:\n"),
 
@@ -149,6 +150,12 @@ namespace Cornifer
             "[a:float] Aligned text\n" +
             "Makes text aligned with text before by some value."),
             (true, "\\[sc:2\\]Big text,\\[/sc\\] normal \\[a:.6\\]and aligned\\[/a\\] - [sc:2]Big text,[/sc] normal [a:.6]and aligned[/a]"),
+
+            (false, ""),
+            (false,
+            "[ic:name] [ic:name:color] Icon (this tag does not need to be closed)\n" +
+            "Draws icons, found in \"Add icons to map\" menu."),
+            (true, "Slugcat \\[ic:Slugcat_White\\] and their bat \\[ic:batSymbol:0\\] - Slugcat [ic:Slugcat_White] and their bat [ic:batSymbol:0]"),
         };
 
         public static void Init()

@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Policy;
 using System.Text.Json.Nodes;
 
 namespace Cornifer
@@ -12,7 +13,6 @@ namespace Cornifer
 
         static Dictionary<string, (string Atlas, Color Color)> ObjectSprites = new()
         {
-            {"Slugcat", ("Kill_Slugcat", new(255, 255, 255))},
             {"GreenLizard", ("Kill_Green_Lizard", new(51, 255, 0))},
             {"PinkLizard", ("Kill_Standard_Lizard", new(255, 0, 255))},
             {"BlueLizard", ("Kill_Standard_Lizard", new(0, 128, 255))},
@@ -104,16 +104,17 @@ namespace Cornifer
 
         static Dictionary<string, (Rectangle Frame, Color Color)> ObjectSpriteFrames = new()
         {
-            { "KarmaFlower",     (new(76, 0, 23, 23),  new(255, 255, 255, 255)) },
-            { "SeedCob",         (new(40, 0, 35, 38),  new(255, 255, 255, 255)) },
-            { "GhostSpot",       (new(0, 0, 38, 48),   new(255, 255, 255, 255)) },
+            { "KarmaFlower",     (new(76, 0,  23, 23), new(255, 255, 255, 255)) },
+            { "SeedCob",         (new(40, 0,  35, 38), new(255, 255, 255, 255)) },
+            { "GhostSpot",       (new(0,  0,  38, 48), new(255, 255, 255, 255)) },
             { "BlueToken",       (new(76, 24, 10, 20), new(255, 255, 255, 150)) },
             { "GoldToken",       (new(87, 24, 10, 20), new(255, 255, 255, 150)) },
             { "RedToken",        (new(100, 0, 10, 20), new(255, 255, 255, 150)) },
             { "DevToken",        (new(98, 24, 10, 20), new(255, 255, 255, 150)) },
             { "GreenToken",      (new(111, 0, 10, 20), new(255, 255, 255, 150)) },
-            { "DataPearl",       (new(39, 39, 11, 10), new(255, 255, 255, 255)) },
-            { "UniqueDataPearl", (new(39, 39, 11, 10), new(255, 255, 255, 255)) },
+            { "DataPearl",       (new(39, 39, 11, 11), new(255, 255, 255, 255)) },
+            { "UniqueDataPearl", (new(39, 39, 11, 11), new(255, 255, 255, 255)) },
+            { "Slugcat",         (new(51, 39, 20, 19), new(255, 255, 255, 255)) },
         };
 
         public static void Load()
@@ -172,6 +173,26 @@ namespace Cornifer
                     string name = "Object_" + spriteName;
                     Sprites[name] = new(name, sprite.Texture, sprite.Frame, spriteData.Color, true);
                 }
+
+            if (Sprites.TryGetValue("Object_Slugcat", out AtlasSprite? slugcat))
+            {
+                for (int i = 0; i < Main.SlugCatNames.Length; i++)
+                {
+                    string name = "Slugcat_" + Main.SlugCatNames[i];
+                    Sprites[name] = new(name, slugcat.Texture, slugcat.Frame, Main.SlugCatColors[i], false);
+                }
+            }
+
+            for (int i = 0; i < Main.SlugCatNames.Length; i++)
+            {
+                string name = "SlugcatIcon_" + Main.SlugCatNames[i];
+                Rectangle frame = new(i * 8, 0, 8, 8);
+                Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
+
+                name = "SlugcatDiamond_" + Main.SlugCatNames[i];
+                frame = new(i * 9, 8, 9, 9);
+                Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
+            }
         }
     }
 
