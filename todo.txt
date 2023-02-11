@@ -1,4 +1,4 @@
-MapObject proper config
-Scavenger toll and merchants
 Shcolar pearl icons
+Scavenger toll and merchants
 Shortcut graphics
+Better state saving - track if values were changed by user

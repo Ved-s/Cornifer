@@ -86,6 +86,8 @@ namespace Cornifer
         public bool IsGate;
         public bool IsShelter;
         public bool IsAncientShelter;
+        public bool IsScavengerTrader;
+        public bool IsScavengerOutpost;
 
         public Point TileSize;
         public int WaterLevel;
@@ -364,6 +366,26 @@ namespace Cornifer
 
             if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
                 Children.Add(new SimpleIcon("ShelterMarker", shelterMarker));
+
+            if (IsScavengerOutpost)
+            {
+                Children.Add(new MapText("TollText", Content.RodondoExt20, "Scavenger toll")
+                {
+                    Shade = true
+                });
+                if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
+                    Children.Add(new SimpleIcon("TollIcon", tollIcon));
+            }
+
+            if (IsScavengerTrader)
+            {
+                Children.Add(new MapText("TraderText", Content.RodondoExt20, "Scavenger trader")
+                {
+                    Shade = true
+                });
+                if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
+                    Children.Add(new SimpleIcon("TraderIcon", tollIcon));
+            }
 
             if (VistaRooms.TryGetValue(Id, out Vector2 vistaPoint))
             {

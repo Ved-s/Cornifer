@@ -103,10 +103,17 @@ namespace Cornifer
                     obj.Color = GetPearlHighlightColor(type) ?? GetPearlMainColor(type);
 
                     if (split[0] == "UniqueDataPearl")
+                    {
                         obj.Children.Add(new MapText("PearlText", Content.RodondoExt20, $"[c:{obj.Color.R:x2}{obj.Color.G:x2}{obj.Color.B:x2}]Colored[/c] pearl")
                         {
                             Shade = true
                         });
+                        if (GameAtlases.Sprites.TryGetValue("ScholarA", out AtlasSprite? sprite))
+                            obj.Children.Add(new SimpleIcon("PearlText", sprite)
+                            {
+                                Shade = true
+                            });
+                    }
                 }
                 obj.Color.A = 165;
             }
