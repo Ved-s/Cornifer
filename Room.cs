@@ -15,6 +15,63 @@ namespace Cornifer
     {
         static Point[] Directions = new Point[] { new Point(0, -1), new Point(1, 0), new Point(0, 1), new Point(-1, 0) };
         public static HashSet<string> NonPickupObjectsWhitelist = new() { "GhostSpot", "BlueToken", "GoldToken", "RedToken", "WhiteToken", "DevToken", "DataPearl", "UniqueDataPearl" };
+        public static Dictionary<string, Vector2> VistaRooms = new()
+        {
+            ["HI_B04"] = new(214f, 615f),
+            ["HI_D01"] = new(1765f, 655f),
+            ["HI_C04"] = new(800f, 768f),
+            ["SU_B12"] = new(1180f, 382f),
+            ["SU_A04"] = new(265f, 415f),
+            ["SU_C01"] = new(450f, 1811f),
+            ["GW_D01"] = new(1603f, 595f),
+            ["GW_E02"] = new(2608f, 621f),
+            ["GW_C09"] = new(607f, 595f),
+            ["UW_A07"] = new(805f, 616f),
+            ["UW_J01"] = new(860f, 1534f),
+            ["UW_C02"] = new(493f, 490f),
+            ["CC_B12"] = new(455f, 1383f),
+            ["CC_A10"] = new(734f, 506f),
+            ["CC_C05"] = new(449f, 2330f),
+            ["DS_A19"] = new(467f, 545f),
+            ["DS_A05"] = new(172f, 490f),
+            ["DS_C02"] = new(541f, 1305f),
+            ["SI_C07"] = new(539f, 2354f),
+            ["SI_D07"] = new(200f, 400f),
+            ["SI_D05"] = new(1045f, 1258f),
+            ["SH_A14"] = new(273f, 556f),
+            ["SH_C08"] = new(2159f, 481f),
+            ["SH_B05"] = new(733f, 453f),
+            ["SL_B04"] = new(390f, 2258f),
+            ["SL_B01"] = new(389f, 1448f),
+            ["SL_C04"] = new(542f, 1295f),
+            ["LF_C01"] = new(2792f, 423f),
+            ["LF_A10"] = new(421f, 412f),
+            ["LF_D02"] = new(1220f, 631f),
+            ["SB_H02"] = new(1559f, 472f),
+            ["SB_E04"] = new(1668f, 567f),
+            ["SB_D04"] = new(483f, 1045f),
+            ["VS_H02"] = new(603f, 3265f),
+            ["VS_C03"] = new(82f, 983f),
+            ["VS_F02"] = new(1348f, 533f),
+            ["OE_RUINCourtYard"] = new(2133f, 1397f),
+            ["OE_TREETOP"] = new(468f, 1782f),
+            ["OE_RAIL01"] = new(2420f, 1378f),
+            ["LC_FINAL"] = new(2700f, 500f),
+            ["LC_SUBWAY01"] = new(1693f, 564f),
+            ["LC_tallestconnection"] = new(153f, 242f),
+            ["RM_CONVERGENCE"] = new(1860f, 670f),
+            ["RM_I03"] = new(276f, 2270f),
+            ["RM_ASSEMBLY"] = new(1550f, 586f),
+            ["DM_LEG06"] = new(400f, 388f),
+            ["DM_O06"] = new(2178f, 2159f),
+            ["DM_LAB1"] = new(486f, 324f),
+            ["UG_GUTTER02"] = new(163f, 241f),
+            ["UG_A16"] = new(640f, 354f),
+            ["UG_D03"] = new(857f, 1826f),
+            ["CL_C05"] = new(540f, 1213f),
+            ["CL_H02"] = new(2407f, 1649f),
+            ["CL_CORE"] = new(471f, 373f),
+        };
 
         public static bool DrawTileWalls = true;
         public static bool ForceWaterBehindSolid = false;
@@ -306,7 +363,20 @@ namespace Cornifer
 
             if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
                 Children.Add(new SimpleIcon("ShelterMarker", shelterMarker));
-            
+
+            if (VistaRooms.TryGetValue(Id, out Vector2 vistaPoint))
+            {
+                Vector2 rel = (vistaPoint / 20) / Size;
+
+                rel.Y = 1 - rel.Y;
+
+                Children.Add(new MapText("VistaMarker", Content.RodondoExt20, "Expedition\nvista\npoint") 
+                {
+                    ParentPosAlign = rel,
+                    Shade = true,
+                });
+            }
+
             Loaded = true;
         }
 

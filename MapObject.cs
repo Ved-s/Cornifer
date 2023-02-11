@@ -94,17 +94,17 @@ namespace Cornifer
         }
         public void LoadJson(JsonNode json)
         {
+            if (json.TryGet("data", out JsonNode? data))
+                LoadInnerJson(data);
+
             if (json.TryGet("name", out string? name))
                 Name = name;
 
             if (json.TryGet("pos", out JsonNode? pos))
                 ParentPosition = JsonTypes.LoadVector2(pos);
-            
+
             if (json.TryGet("active", out bool active))
                 Active = active;
-            
-            if (json.TryGet("data", out JsonNode? data))
-                LoadInnerJson(data);
 
             if (json.TryGet("children", out JsonArray? children))
                 foreach (JsonNode? childNode in children)

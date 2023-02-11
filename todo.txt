@@ -1,4 +1,2 @@
-MapObject, like Unity GameObject
-State file
-
+MapObject proper config
 Shortcut graphics
