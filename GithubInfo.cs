@@ -46,31 +46,38 @@ namespace Cornifer
 
         static async void GetGithubInfo(object? _)
         {
-            HttpClient client = new();
-
-            HttpRequestMessage request = new(HttpMethod.Get, $"https://api.github.com/repos/Ved-s/Cornifer/compare/master...{Commit}");
-
-            request.Headers.TryAddWithoutValidation("Accept", "application/vnd.github+json");
-            request.Headers.TryAddWithoutValidation("User-Agent", "Cornifer HttpClient (https://github.com/Ved-s/Cornifer)");
-
-            HttpResponseMessage response = await client.SendAsync(request);
-
-            if (response.StatusCode == HttpStatusCode.OK)
+            try
             {
-                GithubResponse ghResp = JsonSerializer.Deserialize<GithubResponse>(await response.Content.ReadAsStreamAsync())!;
+                HttpClient client = new();
 
-                if (ghResp.Status == "identical")
-                    Status = "This is the latest version";
-                else if (ghResp.AheadBy == 0 && ghResp.BehindBy == 0)
-                    Status = "Unknown version";
-                else if (ghResp.AheadBy == 0)
-                    Status = $"This version is behind by {ghResp.BehindBy} commit{(ghResp.BehindBy == 1 ? "" : "s")}";
+                HttpRequestMessage request = new(HttpMethod.Get, $"https://api.github.com/repos/Ved-s/Cornifer/compare/master...{Commit}");
+
+                request.Headers.TryAddWithoutValidation("Accept", "application/vnd.github+json");
+                request.Headers.TryAddWithoutValidation("User-Agent", "Cornifer HttpClient (https://github.com/Ved-s/Cornifer)");
+
+                HttpResponseMessage response = await client.SendAsync(request);
+
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    GithubResponse ghResp = JsonSerializer.Deserialize<GithubResponse>(await response.Content.ReadAsStreamAsync())!;
+
+                    if (ghResp.Status == "identical")
+                        Status = "This is the latest version";
+                    else if (ghResp.AheadBy == 0 && ghResp.BehindBy == 0)
+                        Status = "Unknown version";
+                    else if (ghResp.AheadBy == 0)
+                        Status = $"This version is behind by {ghResp.BehindBy} commit{(ghResp.BehindBy == 1 ? "" : "s")}";
+                    else
+                        Status = $"This version is ahead by {ghResp.AheadBy} commit{(ghResp.AheadBy == 1 ? "" : "s")}";
+                }
                 else
-                    Status = $"This version is ahead by {ghResp.AheadBy} commit{(ghResp.AheadBy == 1 ? "" : "s")}";
+                {
+                    Status = $"Error {(int)response.StatusCode} {response.StatusCode}";
+                }
             }
-            else 
+            catch (Exception ex)
             {
-                Status = $"Error {(int)response.StatusCode} {response.StatusCode}";
+                Status = $"Error {ex.GetType().Name}";
             }
         }
 
