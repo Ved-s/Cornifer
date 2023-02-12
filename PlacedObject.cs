@@ -102,7 +102,7 @@ namespace Cornifer
                 {
                     obj.Color = GetPearlHighlightColor(type) ?? GetPearlMainColor(type);
 
-                    if (split[0] == "UniqueDataPearl")
+                    if (type != "Misc" && type != "BroadcastMisc")
                     {
                         obj.Children.Add(new MapText("PearlText", Content.RodondoExt20, $"[c:{obj.Color.R:x2}{obj.Color.G:x2}{obj.Color.B:x2}]Colored[/c] pearl")
                         {
