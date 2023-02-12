@@ -10,12 +10,16 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using System.Threading;
 
 namespace Cornifer
 {
     public class Main : Game
     {
+        static Regex SteamLibraryPath = new(@"""path""[ \t]*""([^""]+)""", RegexOptions.Compiled);
+        static Regex SteamManifestInstallDir = new(@"""installdir""[ \t]*""([^""]+)""", RegexOptions.Compiled);
+
         public static string[] SlugCatNames = new string[] { "White", "Yellow", "Red", "Night", "Gourmand", "Artificer", "Rivulet", "Spear", "Saint", "Inv" };
         public static Color[] SlugCatColors = new Color[] { new(255, 255, 255), new(255, 255, 115), new(255, 115, 115), new(25, 15, 48), new(240, 193, 151), new(112, 35, 60), new(145, 204, 240), new(79, 46, 105), new(170, 241, 86), new(0, 19, 58) };
 
@@ -29,7 +33,7 @@ namespace Cornifer
         public static Texture2D Pixel = null!;
 
         public static CameraRenderer WorldCamera = null!;
-
+        
         public static List<MapObject> WorldObjects = new();
         public static CompoundEnumerable<MapObject> WorldObjectLists = new();
         public static HashSet<MapObject> SelectedObjects = new();
@@ -361,15 +365,39 @@ namespace Cornifer
             object? steampathobj =
                     Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam", "InstallPath", null) ??
                     Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Valve\\Steam", "InstallPath", null);
-            if (steampathobj is string steampath)
+            if (steampathobj is not string steampath)
+                return false;
+            
+            if (!FileExists(steampath, "steamapps/libraryfolders.vdf", out string libraryfolders))
             {
-                string rwpath = Path.Combine(steampath, "steamapps/common/Rain World");
-                if (Directory.Exists(rwpath))
+                if (DirExists(steampath, "steamapps/common/Rain World", out string rainworld))
                 {
-                    RainWorldRoot = rwpath;
+                    RainWorldRoot = rainworld;
+                    return true;
+                }
+                return false;
+            }
+
+            foreach (Match libmatch in SteamLibraryPath.Matches(File.ReadAllText(libraryfolders)))
+            {
+                string libpath = Regex.Unescape(libmatch.Groups[1].Value);
+
+                if (!FileExists(libpath, "steamapps/appmanifest_312520.acf", out string manifest))
+                    continue;
+
+                Match manmatch = SteamManifestInstallDir.Match(File.ReadAllText(manifest));
+                if (!manmatch.Success)
+                    continue;
+
+                string appdir = Regex.Unescape(manmatch.Groups[1].Value);
+
+                if (DirExists(libpath, $"steamapps/common/{appdir}", out string rainworld))
+                {
+                    RainWorldRoot = rainworld;
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -634,7 +662,7 @@ namespace Cornifer
         public static bool DirExists(string dir, string name, out string dirpath)
         {
             dirpath = Path.Combine(dir, name);
-            return File.Exists(dirpath);
+            return Directory.Exists(dirpath);
         }
         public static string CheckSlugcatAltFile(string filepath)
         {
