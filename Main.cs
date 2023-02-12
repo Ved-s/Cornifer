@@ -66,6 +66,7 @@ namespace Cornifer
         {
             base.Initialize();
 
+            GithubInfo.Load();
             SearchRainWorld();
 
             Window.AllowUserResizing = true;
@@ -194,6 +195,11 @@ namespace Cornifer
 
                 SpriteBatch.End();
             }
+
+            SpriteBatch.Begin();
+            SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, GithubInfo.Desc, new(5, vp.Height - Cornifer.Content.Consolas10.LineSpacing * 2 - 5), Color.White);
+            SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, GithubInfo.Status, new(5, vp.Height - Cornifer.Content.Consolas10.LineSpacing - 5), Color.White);
+            SpriteBatch.End();
 
             SpriteBatch.Begin();
             Interface.Draw();
