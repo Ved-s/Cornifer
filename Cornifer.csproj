@@ -54,4 +54,11 @@
     </Exec>
     <WriteLinesToFile File="$(OutDir)/gitinfo" Lines="$(GitCommit)%0a$(GitBranch)" Overwrite="true" />
   </Target>
+  <Target Name="DeleteRuntimes" AfterTargets="AfterBuild">
+	<ItemGroup>
+	  <UnusedRuntimes Include="$(OutDir)/runtimes/**"/>
+	  <UnusedRuntimes Remove="$(OutDir)runtimes/win*/**"/>
+	</ItemGroup>
+    <Delete Files="@(UnusedRuntimes)" />
+  </Target>
 </Project>
