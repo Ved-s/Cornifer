@@ -509,6 +509,12 @@ namespace Cornifer
                     ["id"] = r.Name,
                     ["data"] = r.DataString,
                     ["settings"] = r.SettingsString
+                }).ToArray()),
+                ["subregions"] = new JsonArray(Subregions.Select(s => new JsonObject
+                {
+                    ["name"] = s.Name,
+                    ["background"] = s.BackgroundColor.PackedValue,
+                    ["water"] = s.WaterColor.PackedValue,
                 }).ToArray())
             };
         }
@@ -552,6 +558,26 @@ namespace Cornifer
                         room.Loaded = true;
                     }
             }
+
+            if (node.TryGet("subregions", out JsonArray? subregions))
+            {
+                foreach (JsonNode? subNode in subregions)
+                    if (subNode is JsonObject subObj
+                        && subObj.TryGet("name", out string? name))
+                    {
+                        Subregion? subregion = Subregions.FirstOrDefault(s => s.Name == name);
+                        if (subregion is null)
+                            continue;
+
+                        if (subObj.TryGet("background", out uint background))
+                            subregion.BackgroundColor.PackedValue = background;
+
+                        if (subObj.TryGet("water", out uint water))
+                            subregion.WaterColor.PackedValue = water;
+                    }
+            }
+
+            MarkRoomTilemapsDirty();
         }
 
         static Dictionary<string, string> GetSlugcatSpecificRegionNames(string path)
