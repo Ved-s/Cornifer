@@ -1,4 +1,3 @@
-Remove font transparency
 Shortcut graphics
 Better state saving - track if values were changed by user
 Room subregion switch

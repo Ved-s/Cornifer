@@ -19,17 +19,26 @@ namespace Cornifer
             Vector2 tl = Vector2.Zero;
             Vector2 br = Vector2.Zero;
 
-            foreach (MapObject obj in Main.WorldObjectLists)
+            void ProcessObjectRect(MapObject obj)
             {
                 if (!obj.Active)
-                    continue;
+                    return;
 
                 tl.X = Math.Min(tl.X, obj.WorldPosition.X);
                 tl.Y = Math.Min(tl.Y, obj.WorldPosition.Y);
 
                 br.X = Math.Max(br.X, obj.WorldPosition.X + obj.Size.X);
                 br.Y = Math.Max(br.Y, obj.WorldPosition.Y + obj.Size.Y);
+
+                foreach (MapObject child in obj.Children)
+                    ProcessObjectRect(child);
             }
+
+            foreach (MapObject obj in Main.WorldObjectLists)
+                ProcessObjectRect(obj);
+
+            tl -= new Vector2(10);
+            br += new Vector2(10);
 
             int width = (int)(br.X - tl.X);
             int height = (int)(br.Y - tl.Y);

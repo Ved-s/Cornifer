@@ -199,13 +199,6 @@ namespace Cornifer
             Interface.Draw();
             SpriteBatch.End();
 
-            //SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-            //Vector2 pos = new(10, 10);
-            //Vector2 size = FormattedText.DrawAndMeasure(SpriteBatch, Cornifer.Content.RodondoExt20, "[sc:1.5]Big name[/sc][sc:.8][a:.6] small subscript", pos, Color.White);
-            //SpriteBatch.DrawRect(pos, size, null, Color.Red);
-            //
-            //SpriteBatch.End();
-
             base.Draw(gameTime);
         }
 
