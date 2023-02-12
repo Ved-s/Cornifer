@@ -109,7 +109,7 @@ namespace Cornifer
                             Shade = true
                         });
                         if (GameAtlases.Sprites.TryGetValue("ScholarA", out AtlasSprite? sprite))
-                            obj.Children.Add(new SimpleIcon("PearlText", sprite)
+                            obj.Children.Add(new SimpleIcon("PearlIcon", sprite)
                             {
                                 Shade = true
                             });
