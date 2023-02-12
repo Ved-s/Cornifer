@@ -1,4 +1,3 @@
-Move objects with arrow keys
 Save subregion colors in state
 Room subregion switch
 Shortcut graphics

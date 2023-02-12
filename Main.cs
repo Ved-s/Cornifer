@@ -72,7 +72,9 @@ namespace Cornifer
             Window.AllowUserResizing = true;
             Window.ClientSizeChanged += (_, _) => Interface.Root?.Recalculate();
 
-            if (File.Exists("state.json"))
+            FileInfo stateFile = new("state.json");
+
+            if (stateFile.Exists && stateFile.Length > 0)
             {
                 try
                 {
@@ -251,6 +253,7 @@ namespace Cornifer
             FileStream fs = File.Create("state.json");
             ms.Position = 0;
             ms.CopyTo(fs);
+            fs.Flush();
         }
 
         private void UpdateSelectionAndDrag(bool drag, bool oldDrag)
