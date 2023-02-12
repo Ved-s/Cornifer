@@ -628,7 +628,9 @@ namespace Cornifer
 
             public Vector2 GetPos(float height, DrawContext context)
             {
-                return Origin + new Vector2(Offset.X, Offset.Y + Math.Max(0, (LineHeight - height) * context.LineHeightAlign));
+                Vector2 vec = Origin + new Vector2(Offset.X, Offset.Y + Math.Max(0, (LineHeight - height) * context.LineHeightAlign));
+                vec.Floor();
+                return vec;
             }
         }
     }

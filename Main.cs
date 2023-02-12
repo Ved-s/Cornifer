@@ -147,33 +147,37 @@ namespace Cornifer
             if (KeyboardState.IsKeyDown(Keys.LeftShift))
                 keyMoveMultiplier = 10;
 
-            if (KeyboardState.IsKeyDown(Keys.Up) && OldKeyboardState.IsKeyUp(Keys.Up))
-                foreach (MapObject obj in SelectedObjects)
-                    if (obj.Active && !obj.ParentSelected)
-                        obj.ParentPosition += new Vector2(0, -1) * keyMoveMultiplier;
-
-            if (KeyboardState.IsKeyDown(Keys.Down) && OldKeyboardState.IsKeyUp(Keys.Down))
-                foreach (MapObject obj in SelectedObjects)
-                    if (obj.Active && !obj.ParentSelected)
-                        obj.ParentPosition += new Vector2(0, 1) * keyMoveMultiplier;
-
-            if (KeyboardState.IsKeyDown(Keys.Left) && OldKeyboardState.IsKeyUp(Keys.Left))
-                foreach (MapObject obj in SelectedObjects)
-                    if (obj.Active && !obj.ParentSelected)
-                        obj.ParentPosition += new Vector2(-1, 0) * keyMoveMultiplier;
-
-            if (KeyboardState.IsKeyDown(Keys.Right) && OldKeyboardState.IsKeyUp(Keys.Right))
-                foreach (MapObject obj in SelectedObjects)
-                    if (obj.Active && !obj.ParentSelected)
-                        obj.ParentPosition += new Vector2(1, 0) * keyMoveMultiplier;
-
-            if (!Interface.Active && KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete))
+            if (active && !Interface.Active)
             {
-                HashSet<MapObject> objectsToDelete = new(SelectedObjects);
-                objectsToDelete.IntersectWith(WorldObjects);
 
-                WorldObjects.RemoveAll(x => objectsToDelete.Contains(x));
-                SelectedObjects.ExceptWith(objectsToDelete);
+                if (KeyboardState.IsKeyDown(Keys.Up) && OldKeyboardState.IsKeyUp(Keys.Up))
+                    foreach (MapObject obj in SelectedObjects)
+                        if (obj.Active && !obj.ParentSelected)
+                            obj.ParentPosition += new Vector2(0, -1) * keyMoveMultiplier;
+
+                if (KeyboardState.IsKeyDown(Keys.Down) && OldKeyboardState.IsKeyUp(Keys.Down))
+                    foreach (MapObject obj in SelectedObjects)
+                        if (obj.Active && !obj.ParentSelected)
+                            obj.ParentPosition += new Vector2(0, 1) * keyMoveMultiplier;
+
+                if (KeyboardState.IsKeyDown(Keys.Left) && OldKeyboardState.IsKeyUp(Keys.Left))
+                    foreach (MapObject obj in SelectedObjects)
+                        if (obj.Active && !obj.ParentSelected)
+                            obj.ParentPosition += new Vector2(-1, 0) * keyMoveMultiplier;
+
+                if (KeyboardState.IsKeyDown(Keys.Right) && OldKeyboardState.IsKeyUp(Keys.Right))
+                    foreach (MapObject obj in SelectedObjects)
+                        if (obj.Active && !obj.ParentSelected)
+                            obj.ParentPosition += new Vector2(1, 0) * keyMoveMultiplier;
+
+                if (KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete))
+                {
+                    HashSet<MapObject> objectsToDelete = new(SelectedObjects);
+                    objectsToDelete.IntersectWith(WorldObjects);
+
+                    WorldObjects.RemoveAll(x => objectsToDelete.Contains(x));
+                    SelectedObjects.ExceptWith(objectsToDelete);
+                }
             }
 
             WorldCamera.Update();

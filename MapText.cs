@@ -7,6 +7,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.Json.Nodes;
 
@@ -82,6 +83,9 @@ namespace Cornifer
 
             if (renderer is CaptureRenderer capture)
             {
+                //if (Text.Contains("[ic"))
+                //    Debugger.Break();
+
                 capturePos = capture.Position;
                 capture.Position = WorldPosition;
                 spriteBatchState = Main.SpriteBatch.GetState();
