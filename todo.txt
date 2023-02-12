@@ -1,3 +1,5 @@
+Move objects with arrow keys
+Save subregion colors in state
+Room subregion switch
 Shortcut graphics
 Better state saving - track if values were changed by user
-Room subregion switch

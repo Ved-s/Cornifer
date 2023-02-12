@@ -306,7 +306,7 @@ namespace Cornifer
                     continue;
 
                 string[] split = line.Split(':', 2, StringSplitOptions.TrimEntries);
-                if (split[0] == "Connection")
+                if (split[0] == "Connection" || split[0].StartsWith("OffScreenDen", StringComparison.InvariantCultureIgnoreCase))
                     continue;
 
                 if (!TryGetRoom(split[0], out Room? room))
