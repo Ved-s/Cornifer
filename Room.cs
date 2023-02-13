@@ -1,13 +1,14 @@
 ﻿using Cornifer.Renderers;
+using Cornifer.UI.Elements;
+using Cornifer.UI.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Linq;
+using System.Text.Json.Nodes;
 
 namespace Cornifer
 {
@@ -390,7 +391,7 @@ namespace Cornifer
 
                 rel.Y = 1 - rel.Y;
 
-                Children.Add(new MapText("VistaMarker", Content.RodondoExt20, "Expedition\nvista\npoint") 
+                Children.Add(new MapText("VistaMarker", Content.RodondoExt20, "Expedition\nvista\npoint")
                 {
                     ParentPosAlign = rel,
                     Shade = true,
@@ -493,11 +494,90 @@ namespace Cornifer
 
             if (DrawCropped && NonSolidRect.HasValue)
                 renderer.DrawTexture(GetTileMap(), WorldPos + NonSolidRect.Value.Location.ToVector2(), NonSolidRect.Value);
-            else 
+            else
                 renderer.DrawTexture(GetTileMap(), WorldPos);
 
             if (base.Name is not null)
                 Main.SpriteBatch.DrawStringAligned(Content.Consolas10, base.Name, renderer.TransformVector(WorldPos + new Vector2(TileSize.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
+        }
+        protected override void BuildInnerConfig(UIList list)
+        {
+            if (Region is not null)
+            {
+                list.Elements.Add(new UIResizeablePanel
+                {
+                    Height = 100,
+
+                    Padding = 4,
+
+                    CanGrabTop = false,
+                    CanGrabLeft = false,
+                    CanGrabRight = false,
+                    CanGrabBottom = true,
+
+                    Elements =
+                    {
+                        new UILabel
+                        {
+                            Text = "Subregion",
+                            Height = 15,
+                            TextAlign = new(.5f)
+                        },
+                        new UIList
+                        {
+                            Top = 20,
+                            Height = new(-20, 1),
+                            ElementSpacing = 4
+                        }.Assign(out UIList subregionList)
+                    }
+                });
+
+                RadioButtonGroup group = new();
+
+                for (int i = 0; i < Region.Subregions.Length; i++)
+                {
+                    Region.Subregion subregion = Region.Subregions[i];
+                    UIButton button = new()
+                    {
+                        Text = subregion.Name.Length == 0 ? "Main region" : subregion.Name,
+                        Height = 20,
+                        TextAlign = new(.5f),
+                        RadioGroup = group,
+                        Selectable = true,
+                        Selected = i == Subregion,
+                        RadioTag = i,
+                        SelectedTextColor = Color.Black,
+                        SelectedBackColor = Color.White,
+                    };
+
+                    subregionList.Elements.Add(button);
+                }
+
+                group.ButtonClicked += (_, tag) =>
+                {
+                    if (tag is not int index)
+                        return;
+                    Subregion = index;
+                    TileMapDirty = true;
+                };
+            }
+        }
+
+        protected override JsonNode? SaveInnerJson()
+        {
+            return new JsonObject
+            {
+                ["subregion"] = Region?.Subregions[Subregion].Name,
+            };
+        }
+        protected override void LoadInnerJson(JsonNode node)
+        {
+            if (node.TryGet("subregion", out string? subregion) && Region is not null)
+                for (int i = 0; i < Region.Subregions.Length; i++)
+                    if (Region.Subregions[i].Name == subregion)
+                        Subregion = i;
+
+            TileMapDirty = true;
         }
 
         public override string ToString()

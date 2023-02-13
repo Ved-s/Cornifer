@@ -1,5 +1,7 @@
 Implement Placeable filter object
-Save subregion colors in state
+Per-type visibility toggles
 Room subregion switch
+Shading
 Shortcut graphics
 Better state saving - track if values were changed by user
+Undos
