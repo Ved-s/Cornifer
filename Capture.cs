@@ -24,11 +24,11 @@ namespace Cornifer
                 if (!obj.Active)
                     return;
 
-                tl.X = Math.Min(tl.X, obj.WorldPosition.X);
-                tl.Y = Math.Min(tl.Y, obj.WorldPosition.Y);
+                tl.X = Math.Min(tl.X, obj.WorldPosition.X + obj.VisualOffset.X);
+                tl.Y = Math.Min(tl.Y, obj.WorldPosition.Y + obj.VisualOffset.Y);
 
-                br.X = Math.Max(br.X, obj.WorldPosition.X + obj.Size.X);
-                br.Y = Math.Max(br.Y, obj.WorldPosition.Y + obj.Size.Y);
+                br.X = Math.Max(br.X, obj.WorldPosition.X + obj.VisualOffset.X + obj.VisualSize.X);
+                br.Y = Math.Max(br.Y, obj.WorldPosition.Y + obj.VisualOffset.Y + obj.VisualSize.Y);
 
                 foreach (MapObject child in obj.Children)
                     ProcessObjectRect(child);

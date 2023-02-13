@@ -1,23 +1,21 @@
 ﻿using Cornifer.Renderers;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.ComponentModel.Design;
 using System.Linq;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace Cornifer
 {
     public abstract class MapObject
     {
+        static ShadeRenderer? ShadeTextureRenderer;
+        internal static RenderTarget2D? ShadeRenderTarget;
+
         public bool ParentSelected => Parent != null && (Parent.Selected || Parent.ParentSelected);
         public bool Selected => Main.SelectedObjects.Contains(this);
 
@@ -27,11 +25,21 @@ namespace Cornifer
         public virtual Vector2 ParentPosition { get; set; }
         public virtual Vector2 Size { get; }
 
+        public virtual Vector2 VisualSize => Size + new Vector2(ShadeSize * 2);
+        public virtual Vector2 VisualOffset => new Vector2(-ShadeSize);
+
+        public virtual int? ShadeCornerRadius { get; set; }
+        public virtual int ShadeSize { get; set; }
+
         public MapObject? Parent { get; set; }
 
         public virtual string? Name { get; set; }
 
         internal UIElement? ConfigCache { get; set; }
+        internal Texture2D? ShadeTexture;
+
+        public bool ShadeTextureDirty { get; set; }
+        protected bool Shading { get; private set; }
 
         public Vector2 WorldPosition
         {
@@ -50,6 +58,20 @@ namespace Cornifer
         public MapObject()
         {
             Children = new(this);
+        }
+
+        public void DrawShade(Renderer renderer)
+        {
+            if (!Active)
+                return;
+
+            EnsureCorrectShadeTexture();
+
+            if (ShadeSize > 0 && ShadeTexture is not null)
+                renderer.DrawTexture(ShadeTexture, WorldPosition - new Vector2(ShadeSize));
+
+            foreach (MapObject child in Children)
+                child.DrawShade(renderer);
         }
 
         public void Draw(Renderer renderer)
@@ -105,7 +127,7 @@ namespace Cornifer
 
                         MinHeight = 30,
 
-                        Elements = 
+                        Elements =
                         {
                             new UILabel
                             {
@@ -121,7 +143,7 @@ namespace Cornifer
                                 Top = 18,
                                 Height = new(-18, 1),
                                 Padding = 4,
-                                Elements = 
+                                Elements =
                                 {
                                     new UIList
                                     {
@@ -178,7 +200,7 @@ namespace Cornifer
 
                                     Selectable = true,
                                     Selected = obj.InternalActive,
-                                    
+
                                     SelectedBackColor = Color.White,
                                     SelectedTextColor = Color.Black,
 
@@ -214,7 +236,7 @@ namespace Cornifer
                 json["data"] = inner;
             if (Children.Count > 0)
                 json["children"] = new JsonArray(Children.Select(c => c.SaveJson()).OfType<JsonNode>().ToArray());
-            
+
             return json;
         }
         public void LoadJson(JsonNode json)
@@ -237,11 +259,156 @@ namespace Cornifer
                         LoadObject(childNode, Children);
         }
 
+        public void EnsureCorrectShadeTexture()
+        {
+            if ((ShadeTexture is null || ShadeTextureDirty) && ShadeSize > 0)
+            {
+                Shading = true;
+                GenerateShadeTexture();
+                Shading = false;
+            }
+            ShadeTextureDirty = false;
+        }
+
+        protected virtual void GenerateShadeTexture()
+        {
+            GenerateDefaultShadeTexture(ref ShadeTexture, this, ShadeSize, ShadeCornerRadius);
+        }
+
+        protected static void GenerateDefaultShadeTexture(ref Texture2D? texture, MapObject obj, int shade, int? cornerRadius)
+        {
+            obj.Shading = true;
+            ShadeTextureRenderer ??= new(Main.SpriteBatch);
+
+            Vector2 shadeSize = obj.Size + new Vector2(shade * 2);
+
+            int shadeWidth = (int)Math.Ceiling(shadeSize.X);
+            int shadeHeight = (int)Math.Ceiling(shadeSize.Y);
+
+            if (ShadeRenderTarget is null || ShadeRenderTarget.Width < shadeWidth || ShadeRenderTarget.Height < shadeHeight)
+            {
+                int targetWidth = shadeWidth;
+                int targetHeight = shadeHeight;
+
+                if (ShadeRenderTarget is not null)
+                {
+                    targetWidth = Math.Max(targetWidth, ShadeRenderTarget.Width);
+                    targetHeight = Math.Max(targetHeight, ShadeRenderTarget.Height);
+
+                    ShadeRenderTarget?.Dispose();
+                }
+                ShadeRenderTarget = new(Main.Instance.GraphicsDevice, targetWidth, targetHeight, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            }
+
+            ShadeTextureRenderer.TargetNeedsClear = true;
+            ShadeTextureRenderer.Position = obj.WorldPosition - new Vector2(shade);
+
+            obj.DrawSelf(ShadeTextureRenderer);
+
+            int shadePixels = shadeWidth * shadeHeight;
+            Color[] pixels = ArrayPool<Color>.Shared.Rent(shadePixels);
+
+            // no texture draw calls
+            if (ShadeTextureRenderer.TargetNeedsClear)
+            {
+                Array.Clear(pixels);
+            }
+            else
+            {
+                ShadeRenderTarget.GetData(0, new(0, 0, shadeWidth, shadeHeight), pixels, 0, shadePixels);
+                ProcessShade(pixels, shadeWidth, shadeHeight, shade, cornerRadius);
+            }
+            if (texture is null || texture.Width != shadeWidth || texture.Height != shadeHeight)
+            {
+                texture?.Dispose();
+                texture = new(Main.Instance.GraphicsDevice, shadeWidth, shadeHeight);
+            }
+            texture.SetData(pixels, 0, shadePixels);
+            ArrayPool<Color>.Shared.Return(pixels);
+            obj.Shading = false;
+        }
+
         protected virtual JsonNode? SaveInnerJson() => null;
         protected virtual void LoadInnerJson(JsonNode node) { }
 
         protected virtual void BuildInnerConfig(UIList list) { }
         protected virtual void UpdateInnerConfig() { }
+
+        protected static void ProcessShade(Color[] colors, int width, int height, int size, int? cornerRadius)
+        {
+            int arraysize = width * height;
+            bool[] shade = ArrayPool<bool>.Shared.Rent(arraysize);
+
+            int patternSide = size * 2 + 1;
+
+            bool[] shadePattern = null!;
+
+            if (cornerRadius.HasValue)
+            {
+                shadePattern = ArrayPool<bool>.Shared.Rent(patternSide * patternSide);
+
+                int patternRadSq = cornerRadius.Value * cornerRadius.Value;
+
+                for (int j = 0; j < patternSide; j++)
+                    for (int i = 0; i < patternSide; i++)
+                    {
+                        float lengthsq = (size - i) * (size - i) + (size - j) * (size - j);
+                        shadePattern[i + patternSide * j] = lengthsq <= patternRadSq;
+                    }
+            }
+
+            for (int j = 0; j < height; j++)
+                for (int i = 0; i < width; i++)
+                {
+                    int index = width * j + i;
+
+                    shade[index] = false;
+
+                    if (colors[index].A > 0)
+                    {
+                        shade[index] = true;
+                        continue;
+                    }
+
+                    if (size <= 0)
+                        continue;
+
+                    bool probing = true;
+                    for (int l = -size; l <= size && probing; l++)
+                        for (int k = -size; k <= size && probing; k++)
+                        {
+                            if (cornerRadius.HasValue)
+                            {
+                                int patternIndex = (l + size) * patternSide + k + size;
+                                if (!shadePattern[patternIndex])
+                                    continue;
+                            }
+
+                            int x = i + k;
+                            int y = j + l;
+
+                            if (x < 0 || y < 0 || x >= width || y >= height || (k == 0 && l == 0))
+                                continue;
+
+                            int testIndex = width * y + x;
+
+                            if (colors[testIndex].A > 0)
+                            {
+                                shade[index] = true;
+                                probing = false;
+                                continue;
+                            }
+                        }
+                }
+
+            for (int i = 0; i < arraysize; i++)
+                if (shade[i])
+                    colors[i] = Color.Black;
+
+            ArrayPool<bool>.Shared.Return(shade);
+            if (cornerRadius.HasValue)
+                ArrayPool<bool>.Shared.Return(shadePattern);
+        }
 
         public static MapObject? FindSelectableAtPos(IEnumerable<MapObject> objects, Vector2 pos, bool searchChildren)
         {
@@ -303,7 +470,7 @@ namespace Cornifer
                 return null;
 
             Type? type = Type.GetType(typeName);
-            if (type is null || !type.IsAssignableTo(typeof(MapObject))) 
+            if (type is null || !type.IsAssignableTo(typeof(MapObject)))
                 return null;
 
             MapObject instance = (MapObject)Activator.CreateInstance(type)!;

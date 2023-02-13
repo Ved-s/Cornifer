@@ -45,7 +45,7 @@ namespace Cornifer.UI.Elements
 
             Vec2 textPos = ScreenRect.Position + (ScreenRect.Size - TextSize) * TextAlign;
             
-            FormattedText.Draw(spriteBatch, Font, Text, textPos.Rounded(), TextColor, TextShadowColor, TextScale);
+            FormattedText.Draw(spriteBatch, Font, Text, textPos.Rounded(), TextColor, TextShadowColor ?? default, TextShadowColor.HasValue ? 1 : 0, TextScale);
 
             spriteBatch.End();
             spriteBatch.Begin(state);

@@ -20,6 +20,8 @@ namespace Cornifer
 
         public bool RemoveByAvailability = true;
 
+        public override int ShadeSize => 2;
+
         public override Vector2 Size => Frame.Size.ToVector2();
         public override Vector2 ParentPosAlign => Parent is not Room ? new(.5f) : new Vector2(RoomPos.X / Parent.Size.X, 1 - (RoomPos.Y / Parent.Size.Y));
         public override bool Active

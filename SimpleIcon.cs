@@ -1,4 +1,5 @@
 ﻿using Cornifer.Renderers;
+using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -24,30 +25,31 @@ namespace Cornifer
             Sprite = sprite;
         }
 
+        public override int ShadeSize => 5;
+        public override int? ShadeCornerRadius => 6;
+
+        public Texture2D? IconShadeTexture;
         public Texture2D? Texture;
         public Rectangle Frame;
         public Color Color = Color.White;
         public bool Shade = true;
         public AtlasSprite? Sprite;
 
-        public override Vector2 Size => Frame.Size.ToVector2();
+        public override Vector2 Size => Frame.Size.ToVector2() + (Shade ? new Vector2(2) : Vector2.Zero);
 
         public override void DrawIcon(Renderer renderer)
         {
             if (Texture is null)
                 return;
 
-            if (Shade)
+            if (!Shading && Shade && IconShadeTexture is null)
             {
-                renderer.DrawTexture(Texture, WorldPosition + new Vector2(-1, -1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, WorldPosition + new Vector2(1, -1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, WorldPosition + new Vector2(-1, 1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, WorldPosition + new Vector2(1, 1), Frame, color: Color.Black);
+                GenerateDefaultShadeTexture(ref IconShadeTexture, this, 1, null);
+            }
 
-                renderer.DrawTexture(Texture, WorldPosition + new Vector2(0, -1), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, WorldPosition + new Vector2(1, 0), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, WorldPosition + new Vector2(-1, 0), Frame, color: Color.Black);
-                renderer.DrawTexture(Texture, WorldPosition + new Vector2(0, 1), Frame, color: Color.Black);
+            if (Shade && IconShadeTexture is not null && !Shading)
+            {
+                renderer.DrawTexture(IconShadeTexture, WorldPosition - Vector2.One);
             }
 
             renderer.DrawTexture(Texture, WorldPosition, Frame, color: Color);

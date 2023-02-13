@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Cornifer.Renderers
 {
-    public abstract class ScreenRenderer : Renderer
+    public class ScreenRenderer : Renderer
     {
         public SpriteBatch SpriteBatch { get; }
 

@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.HighPerformance.Buffers;
-using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -22,7 +21,35 @@ namespace Cornifer
 
         public static Dictionary<SpriteFont, float> FontSpaceOverride = new();
 
-        public static void Draw(SpriteBatch spriteBatch, SpriteFont font, ReadOnlySpan<char> text, Vector2 position, Color color, Color? shadeColor = null, float scale = 1)
+        public static Vector2 Draw(ReadOnlySpan<char> text, DrawContext context)
+        {
+            if (context.SpaceOverride is null && FontSpaceOverride.TryGetValue(context.Font, out float spaceOverrideValue))
+                context.SpaceOverride = spaceOverrideValue;
+
+            if (context.FontCache is null)
+            {
+                if (!Cache.TryGetValue(context.Font, out FontCache? cache))
+                {
+                    context.FontCache = new(context.Font);
+                    Cache.Add(context.Font, context.FontCache);
+                }
+                else
+                {
+                    context.FontCache = cache;
+                }
+            }
+
+            TextDrawPos drawPos = new()
+            {
+                Origin = context.OriginalPos,
+            };
+
+            DrawTaggedText(text, ref drawPos, context);
+
+            return drawPos.Size;
+        }
+
+        public static void Draw(SpriteBatch spriteBatch, SpriteFont font, ReadOnlySpan<char> text, Vector2 position, Color color, Color shadeColor = default, int shade = 0, float scale = 1)
         {
             float? spaceOverride = null;
             if (FontSpaceOverride.TryGetValue(font, out float spaceOverrideValue))
@@ -44,6 +71,7 @@ namespace Cornifer
                 OriginalScale = scale,
                 Color = color,
                 ShadeColor = shadeColor,
+                Shade = shade,
                 Scale = scale,
                 MeasuringSize = false,
             };
@@ -77,7 +105,7 @@ namespace Cornifer
                 OriginalPos = Vector2.Zero,
                 OriginalScale = scale,
                 Color = Color.Transparent,
-                ShadeColor = null,
+                Shade = 0,
                 Scale = scale,
                 MeasuringSize = true,
             };
@@ -92,7 +120,7 @@ namespace Cornifer
             return drawPos.Size;
         }
 
-        public static Vector2 DrawAndMeasure(SpriteBatch spriteBatch, SpriteFont font, ReadOnlySpan<char> text, Vector2 position, Color color, Color? shadeColor = null, float scale = 1)
+        public static Vector2 DrawAndMeasure(SpriteBatch spriteBatch, SpriteFont font, ReadOnlySpan<char> text, Vector2 position, Color color, Color shadeColor = default, int shade = 0, float scale = 1)
         {
             float? spaceOverride = null;
             if (FontSpaceOverride.TryGetValue(font, out float spaceOverrideValue))
@@ -113,6 +141,7 @@ namespace Cornifer
                 OriginalPos = position,
                 Color = color,
                 ShadeColor = shadeColor,
+                Shade = shade,
                 Scale = scale,
                 MeasuringSize = false,
             };
@@ -167,7 +196,7 @@ namespace Cornifer
                 return -1;
 
             tagBeginEnd += tagBeginStart;
-            
+
 
             ReadOnlySpan<char> tag = text.Slice(tagBeginStart, tagBeginEnd - tagBeginStart);
 
@@ -253,11 +282,11 @@ namespace Cornifer
         {
             int textPos = 0;
 
-            if (context.ShadeColor.HasValue && !context.ShadeRun)
+            if (context.Shade > 0 && !context.ShadeRun)
             {
                 TextDrawPos posCopy = pos;
                 DrawTaggedText(text, ref posCopy, context with { ShadeRun = true });
-                context.ShadeColor = null;
+                context.Shade = 0;
             }
 
             while (true)
@@ -285,19 +314,25 @@ namespace Cornifer
                         tagHandled = true;
                     }
                 }
+                // [c:COLOR:RAD]
                 else if (tagName.Equals("s", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    Color? tagColor = tagData.Length == 0 ? Color.Black : ParseColor(tagData);
+                    int colorDelimeter = tagData.IndexOf(':');
+                    ReadOnlySpan<char> color = colorDelimeter < 0 ? tagData : tagData.Slice(0, colorDelimeter);
+                    ReadOnlySpan<char> rad = colorDelimeter < 0 ? ReadOnlySpan<char>.Empty : tagData.Slice(colorDelimeter + 1);
 
-                    if (tagColor.HasValue)
+                    Color? tagColor = color.Length == 0 ? Color.Black : ParseColor(color);
+                    int? shade = rad.Length == 0 ? 1 : (int.TryParse(rad, out int radv) ? radv : null);
+
+                    if (tagColor.HasValue && shade.HasValue)
                     {
-                        DrawTaggedText(tagContent, ref pos, context with { ShadeColor = tagColor.Value });
+                        DrawTaggedText(tagContent, ref pos, context with { ShadeColor = tagColor.Value, Shade = shade.Value });
                         tagHandled = true;
                     }
                 }
                 else if (tagName.Equals("ns", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    DrawTaggedText(tagContent, ref pos, context with { ShadeColor = null });
+                    DrawTaggedText(tagContent, ref pos, context with { Shade = 0 });
                     tagHandled = true;
                 }
                 else if (tagName.Equals("i", StringComparison.InvariantCultureIgnoreCase))
@@ -355,13 +390,14 @@ namespace Cornifer
                             {
                                 Vector2 iconPos = pos.GetPos(size.Y, context);
 
-                                if (context.ShadeRun && context.ShadeColor.HasValue && sprite.Shade)
+                                if (context.ShadeRun && context.Shade > 0 && sprite.Shade)
                                 {
                                     for (int i = 0; i < Offsets.Length; i++)
-                                    {
-                                        Vector2 off = Offsets[i] * context.Scale;
-                                        context.SpriteBatch.Draw(sprite.Texture, iconPos + off, sprite.Frame, context.ShadeColor.Value, 0f, Vector2.Zero, context.Scale, SpriteEffects.None, 0f);
-                                    }
+                                        for (int j = 1; j <= context.Shade; j++)
+                                        {
+                                            Vector2 off = Offsets[i] * context.Scale * j;
+                                            context.SpriteBatch.Draw(sprite.Texture, iconPos + off, sprite.Frame, context.ShadeColor, 0f, Vector2.Zero, context.Scale, SpriteEffects.None, 0f);
+                                        }
 
                                 }
                                 else if (!context.ShadeRun)
@@ -456,12 +492,11 @@ namespace Cornifer
             {
                 float lineY = linePos.Y + (context.Font.LineSpacing - 4) * context.Scale;
 
-                if (context.ShadeRun)
+                if (context.ShadeRun && context.Shade > 0)
                 {
-                    if (context.ShadeColor.HasValue)
-                        context.SpriteBatch.DrawRect(new(linePos.X - 1, lineY - 1), new(drawPos.X + 2, 3), context.ShadeColor);
+                    context.SpriteBatch.DrawRect(new(linePos.X - context.Shade, lineY - context.Shade), new(drawPos.X + context.Shade * 2, context.Shade * 2 + 1), context.ShadeColor);
                 }
-                else
+                else if (!context.ShadeRun)
                 {
                     context.SpriteBatch.DrawLine(new(linePos.X, lineY), new(linePos.X + drawPos.X, lineY), context.Color);
                 }
@@ -488,18 +523,16 @@ namespace Cornifer
                 tr.X += 2 * context.Scale;
             }
 
-            if (context.ShadeRun)
+            if (context.ShadeRun && context.Shade > 0)
             {
-                if (!context.ShadeColor.HasValue)
-                    return;
-
                 for (int i = 0; i < Offsets.Length; i++)
-                {
-                    Vector2 off = Offsets[i] * context.Scale;
-                    context.SpriteBatch.Draw(context.Font.Texture, tl + off, tr + off, bl + off, br + off, glyph.BoundsInTexture, context.ShadeColor.Value);
-                }
+                    for (int j = 1; j <= context.Shade; j++)
+                    {
+                        Vector2 off = Offsets[i] * context.Scale * j;
+                        context.SpriteBatch.Draw(context.Font.Texture, tl + off, tr + off, bl + off, br + off, glyph.BoundsInTexture, context.ShadeColor);
+                    }
             }
-            else
+            else if (!context.ShadeRun)
             {
                 context.SpriteBatch.Draw(context.Font.Texture, tl, tr, bl, br, glyph.BoundsInTexture, context.Color);
             }
@@ -569,7 +602,7 @@ namespace Cornifer
             return 0;
         }
 
-        class FontCache
+        public class FontCache
         {
             public Dictionary<char, SpriteFont.Glyph> Glyphs;
 
@@ -579,7 +612,7 @@ namespace Cornifer
             }
         }
 
-        struct DrawContext
+        public struct DrawContext
         {
             public SpriteBatch? SpriteBatch;
             public SpriteFont Font;
@@ -591,7 +624,8 @@ namespace Cornifer
             public float? SpaceOverride;
 
             public Color Color;
-            public Color? ShadeColor;
+            public Color ShadeColor;
+            public int Shade;
             public bool ShadeRun;
 
             public bool Italic;

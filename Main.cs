@@ -75,6 +75,7 @@ namespace Cornifer
             GithubInfo.Load();
             SearchRainWorld();
 
+            GraphicsDevice.PresentationParameters.RenderTargetUsage = RenderTargetUsage.PreserveContents;
             Window.AllowUserResizing = true;
             Window.ClientSizeChanged += (_, _) => Interface.Root?.Recalculate();
 
@@ -196,7 +197,7 @@ namespace Cornifer
             {
                 SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
                 foreach (MapObject obj in SelectedObjects)
-                    SpriteBatch.DrawRect(WorldCamera.TransformVector(obj.WorldPosition) - new Vector2(2), obj.Size * WorldCamera.Scale + new Vector2(4), Color.White * 0.4f);
+                    SpriteBatch.DrawRect(WorldCamera.TransformVector(obj.WorldPosition + obj.VisualOffset) - new Vector2(2), obj.VisualSize * WorldCamera.Scale + new Vector2(4), Color.White * 0.4f);
                 SpriteBatch.End();
             }
 
@@ -354,8 +355,13 @@ namespace Cornifer
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
             if (Region is not null)
+            {
+                foreach (MapObject obj in WorldObjectLists)
+                    obj.DrawShade(renderer);
+
                 foreach (MapObject obj in Region.Rooms)
                     obj.Draw(renderer);
+            }
 
             Region?.Draw(renderer);
 

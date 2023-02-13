@@ -116,10 +116,14 @@ namespace Cornifer
         public string? DataString;
         public string? SettingsString;
 
-        public readonly Region Region;
+        public readonly Region Region = null!;
 
+        public override int ShadeSize => 5;
+        public override int? ShadeCornerRadius => 6;
         public override Vector2 ParentPosition { get => WorldPos; set => WorldPos = value; }
         public override Vector2 Size => TileSize.ToVector2();
+
+        bool[,]? CutOutSolidTiles = null;
 
         public Room() { }
 
@@ -318,6 +322,8 @@ namespace Cornifer
 
                 Shortcuts = tracedShortcuts.ToArray();
                 Exits = exitEntrances;
+
+                ProcessCutouts();
             }
 
             for (int i = 0; i < lines.Length; i++)
@@ -415,7 +421,7 @@ namespace Cornifer
 
             if (IsScavengerTrader)
             {
-                Children.Add(new MapText("TraderText", Content.RodondoExt20, "Scavenger trader")
+                Children.Add(new MapText("TraderText", Content.RodondoExt20, "Scavenger merchant")
                 {
                     Shade = true
                 });
@@ -423,7 +429,7 @@ namespace Cornifer
                     Children.Add(new SimpleIcon("TraderIcon", tollIcon));
             }
 
-            if (VistaRooms.TryGetValue(Name, out Vector2 vistaPoint))
+            if (VistaRooms.TryGetValue(Name!, out Vector2 vistaPoint))
             {
                 Vector2 rel = (vistaPoint / 20) / Size;
 
@@ -481,6 +487,12 @@ namespace Cornifer
                 for (int j = 0; j < TileSize.Y; j++)
                     for (int i = 0; i < TileSize.X; i++)
                     {
+                        if (CutOutSolidTiles is not null && CutOutSolidTiles[i, j])
+                        {
+                            colors[i + j * TileSize.X] = Color.Transparent;
+                            continue;
+                        }
+
                         Tile tile = GetTile(i, j);
 
                         float gray = 1;
@@ -523,6 +535,44 @@ namespace Cornifer
                 ArrayPool<Color>.Shared.Return(colors);
             }
             TileMapDirty = false;
+        }
+
+        void ProcessCutouts()
+        {
+            Queue<Point> queue = new();
+            CutOutSolidTiles = new bool[TileSize.X, TileSize.Y];
+
+            for (int i = 0; i < TileSize.X - 1; i++)
+                queue.Enqueue(new(i, 0));
+
+            for (int i = 1; i < TileSize.Y; i++)
+                queue.Enqueue(new(0, i));
+
+            for (int i = 0; i < TileSize.Y - 1; i++)
+                queue.Enqueue(new(TileSize.X - 1, i));
+
+            for (int i = 1; i < TileSize.X; i++)
+                queue.Enqueue(new(i, TileSize.Y - 1));
+
+            while (queue.TryDequeue(out Point point))
+            {
+                if (CutOutSolidTiles[point.X, point.Y] || Tiles[point.X, point.Y].Terrain != Tile.TerrainType.Solid)
+                    continue;
+
+                CutOutSolidTiles[point.X, point.Y] = true;
+
+                if (point.X > 0)
+                    queue.Enqueue(new(point.X - 1, point.Y));
+
+                if (point.X < TileSize.X - 1)
+                    queue.Enqueue(new(point.X + 1, point.Y));
+
+                if (point.Y > 0)
+                    queue.Enqueue(new(point.X, point.Y - 1));
+
+                if (point.Y < TileSize.Y - 1)
+                    queue.Enqueue(new(point.X, point.Y + 1));
+            }
         }
 
         protected override void DrawSelf(Renderer renderer)
@@ -620,7 +670,7 @@ namespace Cornifer
 
         public override string ToString()
         {
-            return Name;
+            return Name!;
         }
 
         public record class Connection(Room Target, int Exit, int TargetExit)

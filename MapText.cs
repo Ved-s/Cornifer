@@ -5,7 +5,9 @@ using Cornifer.UI.Helpers;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SixLabors.Fonts;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -56,6 +58,11 @@ namespace Cornifer
             }
         }
 
+        public override int ShadeSize => 5;
+
+        Texture2D? TextShadeTexture;
+        bool TextShadeTextureDirty;
+
         public MapText()
         {
             font = Content.RodondoExt20;
@@ -74,6 +81,8 @@ namespace Cornifer
             size = Font is null ? Vector2.Zero : FormattedText.Measure(Font, text, Scale);
 
             IconPosAlign = new(Math.Min((Size.Y / 2) / Size.X, .5f), .5f);
+            TextShadeTextureDirty = true;
+            ShadeTextureDirty = true;
         }
 
         public override void DrawIcon(Renderer renderer)
@@ -81,11 +90,14 @@ namespace Cornifer
             Vector2 capturePos = Vector2.Zero;
             SpriteBatchState spriteBatchState = default;
 
+            if (TextShadeTextureDirty && Shade)
+            {
+                UpdateShadeTexture(ref TextShadeTexture, 1, new(5), Vector2.Zero);
+                TextShadeTextureDirty = false;
+            }
+
             if (renderer is CaptureRenderer capture)
             {
-                //if (Text.Contains("[ic"))
-                //    Debugger.Break();
-
                 capturePos = capture.Position;
                 capture.Position = WorldPosition;
                 spriteBatchState = Main.SpriteBatch.GetState();
@@ -94,8 +106,19 @@ namespace Cornifer
                 Main.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
             }
 
+            if (Shade && !Shading && TextShadeTexture is not null)
+                renderer.DrawTexture(TextShadeTexture, WorldPosition);
+
             string text = Text.Length == 0 ? EmptyTextString : Text;
-            FormattedText.Draw(Main.SpriteBatch, Font, text, renderer.TransformVector(WorldPosition + new Vector2(5)), Color, Shade ? ShadeColor : null, scale * renderer.Scale);
+
+            FormattedText.Draw(text, new()
+            {
+                Font = Font,
+                OriginalPos = renderer.TransformVector(WorldPosition + new Vector2(5)),
+                SpriteBatch = Main.SpriteBatch,
+                Scale = scale * renderer.Scale,
+                Color = Color,
+            });
 
             if (renderer is CaptureRenderer captureEnd)
             {
@@ -213,6 +236,70 @@ namespace Cornifer
                     }.Execute(FillFontList)
                 }
             });
+        }
+
+        protected override void GenerateShadeTexture()
+        {
+            UpdateShadeTexture(ref ShadeTexture, ShadeSize, new(ShadeSize + 5), new(ShadeSize));
+        }
+
+        void UpdateShadeTexture(ref Texture2D? texture, int shade, Vector2 textpos, Vector2 size)
+        {
+            Vector2 shadeSize = Size + size * 2;
+
+            int shadeWidth = (int)Math.Ceiling(shadeSize.X);
+            int shadeHeight = (int)Math.Ceiling(shadeSize.Y);
+
+            if (ShadeRenderTarget is null || ShadeRenderTarget.Width < shadeWidth || ShadeRenderTarget.Height < shadeHeight)
+            {
+                int targetWidth = shadeWidth;
+                int targetHeight = shadeHeight;
+
+                if (ShadeRenderTarget is not null)
+                {
+                    targetWidth = Math.Max(targetWidth, ShadeRenderTarget.Width);
+                    targetHeight = Math.Max(targetHeight, ShadeRenderTarget.Height);
+
+                    ShadeRenderTarget?.Dispose();
+                }
+                ShadeRenderTarget = new(Main.Instance.GraphicsDevice, targetWidth, targetHeight, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            }
+
+            UI.Structures.SpriteBatchState state = Main.SpriteBatch.GetState();
+
+            Main.SpriteBatch.End();
+            RenderTargetBinding[] targets = Main.Instance.GraphicsDevice.GetRenderTargets();
+            Main.Instance.GraphicsDevice.SetRenderTarget(MapObject.ShadeRenderTarget);
+            Main.Instance.GraphicsDevice.Clear(Color.Transparent);
+            Main.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+            string text = Text.Length == 0 ? EmptyTextString : Text;
+            FormattedText.Draw(text, new()
+            {
+                Font = Font,
+                SpriteBatch = Main.SpriteBatch,
+                OriginalPos = textpos,
+                Scale = scale,
+                Color = Color.Black
+            });
+
+            Main.SpriteBatch.End();
+            Main.Instance.GraphicsDevice.SetRenderTargets(targets);
+            Main.SpriteBatch.Begin(state);
+
+            int shadePixels = shadeWidth * shadeHeight;
+            Color[] pixels = ArrayPool<Color>.Shared.Rent(shadePixels);
+
+            ShadeRenderTarget.GetData(0, new(0, 0, shadeWidth, shadeHeight), pixels, 0, shadePixels);
+            ProcessShade(pixels, shadeWidth, shadeHeight, shade, shade + 1);
+            
+            if (texture is null || texture.Width != shadeWidth || texture.Height != shadeHeight)
+            {
+                texture?.Dispose();
+                texture = new(Main.Instance.GraphicsDevice, shadeWidth, shadeHeight);
+            }
+            texture.SetData(pixels, 0, shadePixels);
+            ArrayPool<Color>.Shared.Return(pixels);
         }
 
         void FillFontList(UIList list)
