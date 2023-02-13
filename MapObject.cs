@@ -25,6 +25,7 @@ namespace Cornifer
         public virtual Vector2 ParentPosition { get; set; }
         public virtual Vector2 Size { get; }
 
+        public Vector2 VisualPosition => WorldPosition + VisualOffset;
         public virtual Vector2 VisualSize => Size + new Vector2(ShadeSize * 2);
         public virtual Vector2 VisualOffset => new Vector2(-ShadeSize);
 
@@ -424,10 +425,10 @@ namespace Cornifer
                         return child;
                 }
 
-                if (obj.WorldPosition.X <= pos.X
-                 && obj.WorldPosition.Y <= pos.Y
-                 && obj.WorldPosition.X + obj.Size.X > pos.X
-                 && obj.WorldPosition.Y + obj.Size.Y > pos.Y)
+                if (obj.VisualPosition.X <= pos.X
+                 && obj.VisualPosition.Y <= pos.Y
+                 && obj.VisualPosition.X + obj.VisualSize.X > pos.X
+                 && obj.VisualPosition.Y + obj.VisualSize.Y > pos.Y)
                     return obj;
             }
             return null;
@@ -443,10 +444,10 @@ namespace Cornifer
                     foreach (MapObject child in FindIntersectingSelectables(obj.Children, tl, br, true))
                         yield return child;
 
-                bool intersects = obj.WorldPosition.X < br.X
-                    && tl.X < obj.WorldPosition.X + obj.Size.X
-                    && obj.WorldPosition.Y < br.Y
-                    && tl.Y < obj.WorldPosition.Y + obj.Size.Y;
+                bool intersects = obj.VisualPosition.X < br.X
+                    && tl.X < obj.VisualPosition.X + obj.VisualSize.X
+                    && obj.VisualPosition.Y < br.Y
+                    && tl.Y < obj.VisualPosition.Y + obj.VisualSize.Y;
                 if (intersects)
                     yield return obj;
             }
