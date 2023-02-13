@@ -14,8 +14,11 @@ namespace Cornifer
 
         public override string? Name => $"{Type}@{RoomPos.X:0},{RoomPos.Y:0}";
 
-        public string[] SlugcatAvailability = Array.Empty<string>();
+        public HashSet<string> SlugcatAvailability = new();
         public Vector2 RoomPos;
+        public Vector2 HandlePos;
+
+        public bool RemoveByAvailability = true;
 
         public override Vector2 Size => Frame.Size.ToVector2();
         public override Vector2 ParentPosAlign => Parent is not Room ? new(.5f) : new Vector2(RoomPos.X / Parent.Size.X, 1 - (RoomPos.Y / Parent.Size.Y));
@@ -32,11 +35,10 @@ namespace Cornifer
                 return null;
 
             string objName = split[0];
+            string[] subsplit = split[3].Split('~');
 
             if (objName.EndsWith("Token"))
             {
-                string[] subsplit = split[3].Split('~');
-
                 if (subsplit[4] == "1")
                     objName = "BlueToken";
                 else if (subsplit.Length > 7 && subsplit[7] == "1")
@@ -51,18 +53,20 @@ namespace Cornifer
                     objName = "GoldToken";
             }
 
-            PlacedObject? obj = Load(split[0], new Vector2(float.Parse(split[1], CultureInfo.InvariantCulture) / 20, float.Parse(split[2], CultureInfo.InvariantCulture) / 20));
+            PlacedObject? obj = Load(objName, new Vector2(float.Parse(split[1], CultureInfo.InvariantCulture) / 20, float.Parse(split[2], CultureInfo.InvariantCulture) / 20));
             if (obj is null)
                 return null;
 
             if (objName.EndsWith("Token"))
             {
-                string[] subsplit = split[3].Split('~');
-
                 string subname = subsplit[5];
-                
-                if (objName != "DevToken")
-                    obj.SlugcatAvailability = GetTokenSlugcats(subsplit[6]);
+
+                if (objName == "WhiteToken")
+                    obj.SlugcatAvailability = new() { "Spear" };
+                else if (objName == "DevToken")
+                    obj.RemoveByAvailability = false;
+                else
+                    obj.SlugcatAvailability = ParseSlugcats(subsplit[6]);
                 obj.Color.A = 150;
                 obj.Shade = false;
 
@@ -94,10 +98,17 @@ namespace Cornifer
                 }
             }
 
+            if (objName == "Filter" && subsplit.Length >= 5)
+            {
+                float x = float.Parse(subsplit[0], NumberStyles.Float, CultureInfo.InvariantCulture);
+                float y = float.Parse(subsplit[1], NumberStyles.Float, CultureInfo.InvariantCulture);
+
+                obj.HandlePos = new(x, y);
+                obj.SlugcatAvailability = ParseSlugcats(subsplit[4]);
+            }
+
             if (split[0].Contains("DataPearl"))
             {
-                string[] subsplit = data.Split('~');
-
                 if (subsplit.TryGet(4, out string type))
                 {
                     obj.Color = GetPearlHighlightColor(type) ?? GetPearlMainColor(type);
@@ -118,30 +129,22 @@ namespace Cornifer
                 obj.Color.A = 165;
             }
 
-            if (Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Length > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat))
+            if (obj.RemoveByAvailability && Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Count > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat))
                 return null;
-
-            float iconAngle = 0.5f;
-            float totalAngle = Math.Max(0, obj.SlugcatAvailability.Length - 1) * iconAngle;
-            float currentAngle = (MathF.PI / 2) + totalAngle / 2;
-            for (int i = 0; i < obj.SlugcatAvailability.Length; i++)
-            {
-                Vector2 offset = new Vector2(MathF.Cos(currentAngle), -MathF.Sin(currentAngle)) * 15;
-                currentAngle -= iconAngle;
-                string slugcat = obj.SlugcatAvailability[i];
-                obj.Children.Add(new SlugcatIcon($"Availability_{slugcat}")
-                {
-                    Id = Array.IndexOf(Main.SlugCatNames, slugcat),
-                    Parent = obj,
-                    ParentPosition = offset
-                });
-            }
 
             return obj;
         }
 
         public static PlacedObject? Load(string name, Vector2 pos)
         {
+            if (name == "Filter")
+                return new()
+                {
+                    Type = name,
+                    RoomPos = pos,
+                    RemoveByAvailability = false,
+                };
+
             if (!GameAtlases.Sprites.TryGetValue("Object_" + name, out var atlas))
             {
                 return null;
@@ -158,9 +161,29 @@ namespace Cornifer
             };
         }
 
-        static string[] GetTokenSlugcats(string availability)
+        public void AddAvailabilityIcons()
         {
-            List<string> slugcats = new();
+            if (Type == "DevToken")
+                return;
+
+            float iconAngle = 0.5f;
+            float totalAngle = Math.Max(0, SlugcatAvailability.Count - 1) * iconAngle;
+            float currentAngle = (MathF.PI / 2) + totalAngle / 2;
+            foreach (string slugcat in SlugcatAvailability)
+            {
+                Vector2 offset = new Vector2(MathF.Cos(currentAngle), -MathF.Sin(currentAngle)) * 15;
+                currentAngle -= iconAngle;
+                Children.Add(new SlugcatIcon($"Availability_{slugcat}")
+                {
+                    Id = Array.IndexOf(Main.SlugCatNames, slugcat),
+                    ParentPosition = offset
+                });
+            }
+        }
+
+        static HashSet<string> ParseSlugcats(string availability)
+        {
+            HashSet<string> slugcats = new();
             if (availability.All(char.IsDigit))
             {
                 for (int i = 0; i < availability.Length; i++)
@@ -185,16 +208,14 @@ namespace Cornifer
                             break;
                     }
                 }
-                return slugcats.ToArray();
+                return slugcats;
             }
 
-            slugcats.AddRange(Main.SlugCatNames);
-            slugcats.Remove("Night");
-            slugcats.Remove("Inv");
+            slugcats.UnionWith(Main.AvailableSlugCatNames);
             foreach (string name in availability.Split('|'))
                 slugcats.Remove(name);
 
-            return slugcats.ToArray();
+            return slugcats;
         }
 
         static Color GetPearlMainColor(string type)

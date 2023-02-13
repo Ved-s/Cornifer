@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text.Json.Nodes;
@@ -333,12 +334,49 @@ namespace Cornifer
 
                     if (split[0] == "PlacedObjects")
                     {
-                        string[] objects = split[1].Split(',', StringSplitOptions.TrimEntries);
-                        foreach (string str in objects)
+                        HashSet<PlacedObject> objects = new();
+                        List<PlacedObject> filters = new();
+                        string[] objectStrings = split[1].Split(',', StringSplitOptions.TrimEntries);
+                        foreach (string str in objectStrings)
                         {
                             PlacedObject? obj = PlacedObject.Load(str);
                             if (obj is not null)
-                                Children.Add(obj);
+                            {
+                                if (obj.Type == "Filter")
+                                    filters.Add(obj);
+                                else 
+                                    objects.Add(obj);
+                            }
+                        }
+                        List<PlacedObject> remove = new();
+
+                        foreach (PlacedObject filter in filters)
+                        {
+                            Vector2 filterPos = filter.RoomPos;
+                            float filterRad = filter.HandlePos.Length() / 20;
+
+                            foreach (PlacedObject obj in objects)
+                            {
+                                Vector2 diff = obj.RoomPos - filterPos;
+                                if (diff.Length() > filterRad)
+                                    continue;
+
+                                if (obj.SlugcatAvailability.Count == 0)
+                                    obj.SlugcatAvailability.UnionWith(Main.AvailableSlugCatNames);
+
+                                obj.SlugcatAvailability.IntersectWith(filter.SlugcatAvailability);
+
+                                if (obj.RemoveByAvailability && Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Count > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat))
+                                    remove.Add(obj);
+                            }
+                        }
+
+                        objects.ExceptWith(remove);
+
+                        foreach (PlacedObject obj in objects)
+                        {
+                            obj.AddAvailabilityIcons();
+                            Children.Add(obj);
                         }
                     }
                     else if (split[0] == "Effects")

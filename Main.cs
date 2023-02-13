@@ -20,6 +20,8 @@ namespace Cornifer
         static Regex SteamLibraryPath = new(@"""path""[ \t]*""([^""]+)""", RegexOptions.Compiled);
         static Regex SteamManifestInstallDir = new(@"""installdir""[ \t]*""([^""]+)""", RegexOptions.Compiled);
 
+        public static string[] AvailableSlugCatNames = new string[] { "White", "Yellow", "Red", "Gourmand", "Artificer", "Rivulet", "Spear", "Saint" };
+
         public static string[] SlugCatNames = new string[] { "White", "Yellow", "Red", "Night", "Gourmand", "Artificer", "Rivulet", "Spear", "Saint", "Inv" };
         public static Color[] SlugCatColors = new Color[] { new(255, 255, 255), new(255, 255, 115), new(255, 115, 115), new(25, 15, 48), new(240, 193, 151), new(112, 35, 60), new(145, 204, 240), new(79, 46, 105), new(170, 241, 86), new(0, 19, 58) };
 
