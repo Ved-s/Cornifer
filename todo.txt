@@ -1,6 +1,9 @@
-Implement Placeable filter object
+UIInput clipboard actions
+Check GATE_SL_MS
+Border visibility toggle
+Remove solid tracing and just cut all solid tiles
+Fix spearmaster unlock (DM)
+Hack fonts
 Per-type visibility toggles
-Shading
-Shortcut graphics
 Better state saving - track if values were changed by user
 Undos

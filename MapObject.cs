@@ -16,12 +16,16 @@ namespace Cornifer
         static ShadeRenderer? ShadeTextureRenderer;
         internal static RenderTarget2D? ShadeRenderTarget;
 
-        public bool ParentSelected => Parent != null && (Parent.Selected || Parent.ParentSelected);
+        public virtual bool ParentSelected => Parent != null && (Parent.Selected || Parent.ParentSelected);
         public bool Selected => Main.SelectedObjects.Contains(this);
 
         private bool InternalActive = true;
 
         public virtual bool Active { get => InternalActive; set => InternalActive = value; }
+        public virtual bool Selectable { get; set; } = true;
+        public virtual bool LoadCreationForbidden { get; set; } = false;
+        public virtual bool NeedsSaving { get; set; } = true;
+
         public virtual Vector2 ParentPosition { get; set; }
         public virtual Vector2 Size { get; }
 
@@ -229,10 +233,11 @@ namespace Cornifer
                         $"MapObject doesn't have a name and can't be saved.\n" +
                         $"Type: {GetType().Name}\n" +
                         $"Parent: {Parent?.Name ?? Parent?.GetType().Name ?? "null"}"),
-                ["type"] = GetType().FullName,
                 ["pos"] = JsonTypes.SaveVector2(ParentPosition),
                 ["active"] = InternalActive,
             };
+            if (!LoadCreationForbidden)
+                json["type"] = GetType().FullName;
             if (inner is not null)
                 json["data"] = inner;
             if (Children.Count > 0)
@@ -411,6 +416,14 @@ namespace Cornifer
                 ArrayPool<bool>.Shared.Return(shadePattern);
         }
 
+        public bool ContainsPoint(Vector2 worldPoint)
+        {
+            return VisualPosition.X <= worldPoint.X
+                 && VisualPosition.Y <= worldPoint.Y
+                 && VisualPosition.X + VisualSize.X > worldPoint.X
+                 && VisualPosition.Y + VisualSize.Y > worldPoint.Y;
+        }
+
         public static MapObject? FindSelectableAtPos(IEnumerable<MapObject> objects, Vector2 pos, bool searchChildren)
         {
             foreach (MapObject obj in objects.SmartReverse())
@@ -425,10 +438,7 @@ namespace Cornifer
                         return child;
                 }
 
-                if (obj.VisualPosition.X <= pos.X
-                 && obj.VisualPosition.Y <= pos.Y
-                 && obj.VisualPosition.X + obj.VisualSize.X > pos.X
-                 && obj.VisualPosition.Y + obj.VisualSize.Y > pos.Y)
+                if (obj.ContainsPoint(pos))
                     return obj;
             }
             return null;

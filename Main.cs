@@ -35,7 +35,7 @@ namespace Cornifer
         public static Texture2D Pixel = null!;
 
         public static CameraRenderer WorldCamera = null!;
-        
+
         public static List<MapObject> WorldObjects = new();
         public static CompoundEnumerable<MapObject> WorldObjectLists = new();
         public static HashSet<MapObject> SelectedObjects = new();
@@ -83,13 +83,16 @@ namespace Cornifer
 
             if (stateFile.Exists && stateFile.Length > 0)
             {
+#if !DEBUG
                 try
                 {
+#endif
                     using FileStream fs = File.OpenRead("state.json");
 
                     JsonNode? node = JsonSerializer.Deserialize<JsonNode>(fs);
                     if (node is not null)
                         LoadJson(node);
+#if !DEBUG
                 }
                 catch (Exception ex)
                 {
@@ -107,6 +110,7 @@ namespace Cornifer
                     File.Delete("state.json");
                     Region = null;
                 }
+#endif
             }
 
             Interface.Init();
@@ -141,6 +145,9 @@ namespace Cornifer
 
             bool active = OldActive && IsActive;
 
+            if (active)
+                Region?.Connections?.Update();
+
             UpdateSelectionAndDrag(active && MouseState.LeftButton == ButtonState.Pressed, active && OldMouseState.LeftButton == ButtonState.Pressed);
 
             if (KeyboardState.IsKeyDown(Keys.Escape) && OldKeyboardState.IsKeyUp(Keys.Escape))
@@ -152,7 +159,6 @@ namespace Cornifer
 
             if (active && !Interface.Active)
             {
-
                 if (KeyboardState.IsKeyDown(Keys.Up) && OldKeyboardState.IsKeyUp(Keys.Up))
                     foreach (MapObject obj in SelectedObjects)
                         if (obj.Active && !obj.ParentSelected)
@@ -271,7 +277,9 @@ namespace Cornifer
         {
             Vector2 mouseWorld = WorldCamera.InverseTransformVector(MouseState.Position.ToVector2());
 
-            if (drag && !oldDrag && !Interface.Hovered)
+            bool prevented = !Dragging && !Selecting && (Interface.Hovered || (Region?.Connections?.Hovered ?? false));
+
+            if (drag && !oldDrag && !prevented)
             {
                 // Clicked on already selected object
                 MapObject? underMouse = MapObject.FindSelectableAtPos(SelectedObjects, mouseWorld, false);
@@ -356,18 +364,20 @@ namespace Cornifer
 
             if (Region is not null)
             {
+                Region.Connections?.DrawShadows(renderer);
                 foreach (MapObject obj in WorldObjectLists)
                     obj.DrawShade(renderer);
 
                 foreach (MapObject obj in Region.Rooms)
                     obj.Draw(renderer);
-            }
 
-            Region?.Draw(renderer);
+                Region.Connections?.DrawConnections(renderer);
 
-            if (Region is not null)
                 foreach (MapObject obj in WorldObjects)
                     obj.Draw(renderer);
+
+                Region.Connections?.DrawGuideLines(renderer);
+            }
 
             SpriteBatch.End();
         }
@@ -379,7 +389,7 @@ namespace Cornifer
                     Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Valve\\Steam", "InstallPath", null);
             if (steampathobj is not string steampath)
                 return false;
-            
+
             if (!FileExists(steampath, "steamapps/libraryfolders.vdf", out string libraryfolders))
             {
                 if (DirExists(steampath, "steamapps/common/Rain World", out string rainworld))
@@ -482,6 +492,8 @@ namespace Cornifer
             WorldObjectLists.Clear();
             WorldObjectLists.Add(region.Rooms);
             WorldObjectLists.Add(WorldObjects);
+            if (region.Connections is not null)
+                WorldObjectLists.Add(region.Connections.PointObjectLists);
             WorldObjects.Clear();
 
             foreach (MapObject obj in WorldObjectLists)
@@ -503,32 +515,35 @@ namespace Cornifer
             {
                 ["slugcat"] = SelectedSlugcat,
                 ["region"] = Region?.SaveJson(),
+                ["connections"] = Region?.Connections?.SaveJson(),
                 ["objects"] = new JsonArray(WorldObjectLists.Enumerate().Select(o => o.SaveJson()).ToArray())
             };
         }
         public static void LoadJson(JsonNode node)
         {
             if (node.TryGet("slugcat", out string? slugcat))
-            { 
+            {
                 SelectedSlugcat = slugcat;
             }
             if (node.TryGet("region", out JsonNode? region))
             {
                 Region = new();
                 Region.LoadJson(region);
-                Main.RegionLoaded(Region);
+                RegionLoaded(Region);
             }
+            if (node.TryGet("connections", out JsonNode? connections))
+                Region?.Connections?.LoadJson(connections);
+
             if (node.TryGet("objects", out JsonArray? objects))
                 foreach (JsonNode? objNode in objects)
                     if (objNode is not null && !MapObject.LoadObject(objNode, WorldObjectLists))
                     {
                         MapObject? obj = MapObject.CreateObject(objNode);
 
-                        if (obj is Room)
+                        if (obj is null || obj.LoadCreationForbidden)
                             continue;
 
-                        if (obj is not null)
-                            WorldObjects.Add(obj);
+                        WorldObjects.Add(obj);
                     }
         }
 
@@ -610,7 +625,7 @@ namespace Cornifer
                     $"\n" +
                     $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
             }
-            
+
         }
         public static void SaveStateAs()
         {

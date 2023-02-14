@@ -20,8 +20,7 @@ namespace Cornifer
         public List<Room> Rooms = new();
 
         public Subregion[] Subregions = Array.Empty<Subregion>();
-
-        HashSet<string> DrawnRoomConnections = new();
+        public RegionConnections? Connections;
 
         string? WorldString;
         string? MapString;
@@ -150,6 +149,7 @@ namespace Cornifer
                 }
             }
             AddGateTexts();
+            LoadConnections();
         }
 
         private void Load()
@@ -397,6 +397,11 @@ namespace Cornifer
                 }
         }
 
+        public void LoadConnections()
+        {
+            Connections = new(this);
+        }
+
         private void AddGateLocks(string data, HashSet<string>? processed, List<string>? lockLines)
         {
             static void AddGateSymbol(Room room, string symbol, bool leftSide)
@@ -467,31 +472,6 @@ namespace Cornifer
         {
             foreach (Room room in Rooms)
                 room.TileMapDirty = true;
-        }
-
-        public void Draw(Renderer renderer)
-        {
-            DrawnRoomConnections.Clear();
-            foreach (Room room in Rooms)
-            {
-                foreach (Room.Connection? connection in room.Connections)
-                {
-                    if (connection is null || DrawnRoomConnections.Contains(connection.Target.Name) || room.Exits.Length <= connection.Exit)
-                        continue;
-
-                    Vector2 start = renderer.TransformVector(room.WorldPos + room.Exits[connection.Exit].ToVector2() + new Vector2(.5f));
-                    Vector2 end = renderer.TransformVector(connection.Target.WorldPos + connection.Target.Exits[connection.TargetExit].ToVector2() + new Vector2(.5f));
-
-                    Main.SpriteBatch.DrawLine(start, end, Color.Black, 3);
-                    Main.SpriteBatch.DrawRect(start - new Vector2(3), new(5), Color.Black);
-                    Main.SpriteBatch.DrawRect(end - new Vector2(3), new(5), Color.Black);
-
-                    Main.SpriteBatch.DrawLine(start, end, Color.White, 1);
-                    Main.SpriteBatch.DrawRect(start - new Vector2(2), new(3), Color.White);
-                    Main.SpriteBatch.DrawRect(end - new Vector2(2), new(3), Color.White);
-                }
-                DrawnRoomConnections.Add(room.Name);
-            }
         }
 
         public JsonObject SaveJson()
@@ -577,6 +557,7 @@ namespace Cornifer
                     }
             }
 
+            LoadConnections();
             MarkRoomTilemapsDirty();
         }
 
