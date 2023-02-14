@@ -225,6 +225,9 @@ namespace Cornifer
 
         public JsonObject? SaveJson()
         {
+            if (!NeedsSaving)
+                return null;
+
             JsonNode? inner = SaveInnerJson();
 
             JsonObject json = new()

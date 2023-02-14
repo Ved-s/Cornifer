@@ -396,7 +396,9 @@ namespace Cornifer
         {
             return new JsonObject(Connections
                 .Where(kvp => kvp.Value.Points.Count > 0)
-                .Select(kvp => new KeyValuePair<string, JsonNode?>($"{kvp.Key.src}~{kvp.Key.dst}", kvp.Value.Points.Count))
+                .Select(kvp => new KeyValuePair<string, JsonNode?>($"{kvp.Key.src}~{kvp.Key.dst}", 
+                    new JsonArray(kvp.Value.Points.Select(p => JsonTypes.SaveVector2(p.WorldPosition)).ToArray())
+                    ))
                 );
         }
         public void LoadJson(JsonNode json)
@@ -406,11 +408,6 @@ namespace Cornifer
 
             foreach (var (name, con) in obj)
             {
-                if (con is not JsonValue value)
-                    continue;
-
-                int pointCount = value.Deserialize<int>();
-
                 string[] split = name.Split('~', 2);
                 if (split.Length != 2)
                     continue;
@@ -420,23 +417,41 @@ namespace Cornifer
 
                 connection.Points.Clear();
 
-                if (pointCount == 0)
-                    continue;
-
-                Vector2 start = connection.Source.WorldPosition + connection.SourcePoint;
-                Vector2 end = connection.Destination.WorldPosition + connection.DestinationPoint;
-
-                float tpp = 1 / (pointCount + 1);
-                float t = tpp;
-                for (int i = 0; i < pointCount; i++)
+                if (con is JsonValue value)
                 {
-                    ConnectionPoint newPoint = new(connection)
+
+                    int pointCount = value.Deserialize<int>();
+                    if (pointCount == 0)
+                        continue;
+
+                    Vector2 start = connection.Source.WorldPosition + connection.SourcePoint;
+                    Vector2 end = connection.Destination.WorldPosition + connection.DestinationPoint;
+
+                    float tpp = 1 / (pointCount + 1);
+                    float t = tpp;
+                    for (int i = 0; i < pointCount; i++)
                     {
-                        WorldPosition = Vector2.Lerp(start, end, t),
-                    };
-                    connection.Points.Add(newPoint);
-                    t += tpp;
+                        ConnectionPoint newPoint = new(connection)
+                        {
+                            WorldPosition = Vector2.Lerp(start, end, t),
+                        };
+                        connection.Points.Add(newPoint);
+                        t += tpp;
+                    }
                 }
+                else if (con is JsonArray points)
+                    foreach (JsonNode? posNode in points)
+                    {
+                        if (posNode is null)
+                            continue;
+
+                        ConnectionPoint newPoint = new(connection)
+                        {
+                            WorldPosition = JsonTypes.LoadVector2(posNode)
+                        };
+                        connection.Points.Add(newPoint);
+                    }
+                
             }
         }
 
@@ -465,6 +480,7 @@ namespace Cornifer
             public override string? Name => $"Connection_{Connection.Source.Name}_{Connection.Destination.Name}_{Connection.Points.IndexOf(this)}";
 
             public override bool LoadCreationForbidden => true;
+            public override bool NeedsSaving => false;
 
             public Connection Connection = null!;
 
