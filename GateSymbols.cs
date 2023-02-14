@@ -50,7 +50,7 @@ namespace Cornifer
                 "3" => "karma2",
                 "4" => "karma3",
                 "5" => "karma4",
-                "R" => "smallKarmaNoRingR",
+                "R" => "Misc_KarmaR",
                 _ => null
             };
 
