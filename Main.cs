@@ -554,7 +554,7 @@ namespace Cornifer
             {
                 System.Windows.Forms.OpenFileDialog ofd = new();
 
-                ofd.Filter = "JSON Files|*.json";
+                ofd.Filter = "Cornifer map files|*.json;*.cornimap";
 
                 if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     fileName = ofd.FileName;
@@ -592,7 +592,7 @@ namespace Cornifer
                 {
                     System.Windows.Forms.SaveFileDialog sfd = new();
 
-                    sfd.Filter = "JSON Files|*.json";
+                    sfd.Filter = "Cornifer map files|*.cornimap";
 
                     if (sfd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                         CurrentStatePath = sfd.FileName;
@@ -634,7 +634,7 @@ namespace Cornifer
             {
                 System.Windows.Forms.SaveFileDialog sfd = new();
 
-                sfd.Filter = "JSON Files|*.json";
+                sfd.Filter = "Cornifer map files|*.cornimap";
 
                 if (sfd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     CurrentStatePath = sfd.FileName;
