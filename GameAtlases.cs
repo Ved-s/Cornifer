@@ -117,6 +117,12 @@ namespace Cornifer
             { "Slugcat",         (new(51, 39, 20, 19), new(255, 255, 255, 255)) },
         };
 
+        static Dictionary<string, (Rectangle Frame, Color Color)> MiscSpriteFrames = new()
+        {
+            { "ArrowLeft",     (new(0, 0,  22, 13), new(255, 255, 255, 255)) },
+            { "ArrowRight",    (new(0, 13, 22, 13), new(255, 255, 255, 255)) },
+        };
+
         public static void Load()
         {
             foreach (var (objectName, objectSprite) in ObjectSpriteFrames)
@@ -124,7 +130,13 @@ namespace Cornifer
                 string name = "Object_" + objectName;
                 Sprites[name] = new(name, Content.Objects, objectSprite.Frame, objectSprite.Color, false);
             }
-            
+
+            foreach (var (objectName, objectSprite) in MiscSpriteFrames)
+            {
+                string name = "Misc_" + objectName;
+                Sprites[name] = new(name, Content.MiscSprites, objectSprite.Frame, objectSprite.Color, false);
+            }
+
             if (!Directory.Exists("Atlases"))
                 return;
 
@@ -193,6 +205,13 @@ namespace Cornifer
                 frame = new(i * 9, 8, 9, 9);
                 Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
             }
+        }
+
+        public static AtlasSprite? GetSpriteOrNull(string name)
+        {
+            if (!Sprites.TryGetValue(name, out AtlasSprite? sprite))
+                sprite = null;
+            return sprite;
         }
     }
 

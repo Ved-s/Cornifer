@@ -1,9 +1,12 @@
 UIInput clipboard actions
 Check GATE_SL_MS
+Scavenger storage (LF_A17)
+Change file extension
 Border visibility toggle
 Remove solid tracing and just cut all solid tiles
 Fix spearmaster unlock (DM)
 Hack fonts
+Region colors from Wanderer achievement
 Per-type visibility toggles
 Better state saving - track if values were changed by user
 Undos

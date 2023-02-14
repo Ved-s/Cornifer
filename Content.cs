@@ -17,6 +17,7 @@ namespace Cornifer
         public static SpriteFont Consolas10;
         public static Texture2D Objects;
         public static Texture2D SlugcatIcons;
+        public static Texture2D MiscSprites;
 
         public static ReadOnlyDictionary<string, SpriteFont> Fonts;
         public static ReadOnlyDictionary<string, Texture2D> Textures;

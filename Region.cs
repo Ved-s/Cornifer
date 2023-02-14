@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Security.Policy;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -15,6 +16,24 @@ namespace Cornifer
     public class Region
     {
         static Regex GateNameRegex = new("GATE_(.+)?_(.+)", RegexOptions.Compiled);
+
+        public static Dictionary<string, Color> RegionColors = new()
+        {
+            ["SU"] = new(0.66f, 0.87f, 0.89f, 1f),
+            ["HI"] = new(0.4f, 0.48f, 0.82f, 1f),
+            ["DS"] = new(0.14f, 0.49f, 0.27f, 1f),
+            ["CC"] = new(0.83f, 0.52f, 0.45f, 1f),
+            ["GW"] = new(0.8f, 0.89f, 0.44f, 1f),
+            ["SH"] = new(0.35f, 0.21f, 0.6f, 1f),
+            ["SL"] = new(0.19f, 0.73f, 0.7f, 1f),
+            ["SI"] = new(0.91f, 0.35f, 0.5f, 1f),
+            ["LF"] = new(0.75f, 0.16f, 0.12f, 1f),
+            ["UW"] = new(0.94f, 0.84f, 0.73f, 1f),
+            ["SS"] = new(1f, 0.65f, 0.21f, 1f),
+            ["SB"] = new(0.61f, 0.35f, 0.2f, 1f),
+            ["DM"] = new(0.09803922f, 0.30980393f, 0.90588236f),
+            ["VS"] = new(1f, 0.53f, 0.51f, 1f),
+        };
 
         public string Id = "";
         public List<Room> Rooms = new();
@@ -404,42 +423,29 @@ namespace Cornifer
 
         private void AddGateLocks(string data, HashSet<string>? processed, List<string>? lockLines)
         {
-            static void AddGateSymbol(Room room, string symbol, bool leftSide)
-            {
-                string? spriteName = symbol switch
-                {
-                    "1" => "smallKarmaNoRing0",
-                    "2" => "smallKarmaNoRing1",
-                    "3" => "smallKarmaNoRing2",
-                    "4" => "smallKarmaNoRing3",
-                    "5" => "smallKarmaNoRing4",
-                    "R" => "smallKarmaNoRingR",
-                    _ => null
-                };
-                if (spriteName is null)
-                    return;
-
-                Vector2 align = new(.4f, .5f);
-                if (!leftSide)
-                    align.X = 1 - align.X;
-
-                if (!GameAtlases.Sprites.TryGetValue(spriteName, out AtlasSprite? sprite))
-                    return;
-
-                room.Children.Add(new SimpleIcon($"GateSymbol{(leftSide ? "Left" : "Right")}", sprite)
-                {
-                    ParentPosAlign = align
-                });
-            }
-
             foreach (string line in data.Split('\n', StringSplitOptions.TrimEntries))
             {
                 string[] split = line.Split(':', StringSplitOptions.TrimEntries);
                 if (processed is not null && processed.Contains(split[0]) || !TryGetRoom(split[0], out Room? gate))
                     continue;
 
-                AddGateSymbol(gate, split[1], true);
-                AddGateSymbol(gate, split[2], false);
+                Color left = Color.White;
+                Color right = Color.White;
+
+                Match match = GateNameRegex.Match(split[0]);
+                if (match.Success)
+                {
+                    if (RegionColors.TryGetValue(match.Groups[1].Value, out Color color))
+                        left = color;
+                    if (RegionColors.TryGetValue(match.Groups[2].Value, out color))
+                        right = color;
+                }
+
+                gate.Children.Add(new GateSymbols(split[1], split[2]) 
+                {
+                    LeftArrowColor = left,
+                    RightArrowColor = right,
+                });
 
                 processed?.Add(split[0]);
                 lockLines?.Add(line);
@@ -452,7 +458,25 @@ namespace Cornifer
                 if (!TryGetRoom(roomName, out Room? room))
                     continue;
 
-                room.Children.Add(new MapText("TargetRegionText", Content.RodondoExt20, $"To {targetRegion}") { Shade = true });
+                Color regionColor = Color.White;
+                Match match = GateNameRegex.Match(room.Name!);
+                if (match.Success)
+                {
+                    string? otherRegionId = null;
+
+                    string rgLeft = match.Groups[1].Value;
+                    string rgRight = match.Groups[2].Value;
+
+                    if (Id.Equals(rgLeft, StringComparison.InvariantCultureIgnoreCase))
+                        otherRegionId = rgRight;
+                    else if (Id.Equals(rgRight, StringComparison.InvariantCultureIgnoreCase))
+                        otherRegionId = rgLeft;
+
+                    if (otherRegionId is not null && RegionColors.TryGetValue(otherRegionId, out Color color))
+                        regionColor = color;
+                }
+
+                room.Children.Add(new MapText("TargetRegionText", Content.RodondoExt30, $"To [c:{regionColor.R:x2}{regionColor.G:x2}{regionColor.B:x2}]{targetRegion}[/c]") { Shade = true });
             }
         }
 
