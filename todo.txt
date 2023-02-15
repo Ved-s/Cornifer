@@ -2,5 +2,4 @@ UIInput clipboard actions
 Border visibility toggle
 Fix spearmaster unlock (DM)
 Per-type visibility toggles
-Better state saving - track if values were changed by user
 Undos

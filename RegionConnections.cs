@@ -45,6 +45,9 @@ namespace Cornifer
                         continue;
 
                     Connection regionConnection = new(room, connection);
+                    if (regionConnection.Invalid)
+                        continue;
+
                     PointObjectLists.Add(regionConnection.Points);
                     Connections[key1] = regionConnection;
                 }
@@ -535,8 +538,35 @@ namespace Cornifer
             public Vector2 SourcePoint;
             public Vector2 DestinationPoint;
 
+            public bool Invalid;
+
             public Connection(Room source, Room.Connection connection)
             {
+                Invalid = true;
+                if (Source is null || Destination is null)
+                {
+                    Main.LoadErrors.Add($"Tried mapping connection from {Source?.Name ?? "NONE"} to {Destination?.Name ?? "NONE"}");
+                }
+                else if (connection.Exit < 0 || connection.Exit >= Source.Exits.Length)
+                {
+                    Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.Exit} in {Source?.Name ?? "NONE"}");
+                }
+                else if (connection.TargetExit < 0 || connection.TargetExit >= Destination.Exits.Length)
+                {
+                    Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.TargetExit} in {Destination?.Name ?? "NONE"}");
+                }
+                else
+                {
+                    Invalid = false;
+                }
+
+                if (Invalid)
+                {
+                    Source = null!;
+                    Destination = null!;
+                    return;
+                }
+
                 Source = source;
                 Destination = connection.Target;
 
