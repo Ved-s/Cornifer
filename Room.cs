@@ -504,9 +504,6 @@ namespace Cornifer
                         colors[i + j * TileSize.X] = color;
                     }
 
-                foreach (Point p in Exits)
-                    colors[p.X + p.Y * TileSize.X] = new(255, 0, 0);
-
                 TileMap ??= new(Main.Instance.GraphicsDevice, TileSize.X, TileSize.Y);
                 TileMap.SetData(colors, 0, TileSize.X * TileSize.Y);
             }

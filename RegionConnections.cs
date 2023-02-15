@@ -4,13 +4,10 @@ using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using SixLabors.Fonts.Unicode;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Reflection.Metadata;
-using System.Security.Cryptography.Xml;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -144,15 +141,18 @@ namespace Cornifer
 
                 for (int i = 0; i <= connection.Points.Count; i++)
                 {
-                    (Vec2 start, Vec2 end) = GetLinePoints(null, connection, i);
+                    if (ShouldDrawLine(connection, i))
+                    {
+                        (Vec2 start, Vec2 end) = GetLinePoints(null, connection, i);
 
-                    float angle = (end - start).Angle.Radians;
-                    int length = (int)Math.Ceiling((end - start).Length);
+                        float angle = (end - start).Angle.Radians;
+                        int length = (int)Math.Ceiling((end - start).Length);
 
-                    Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(start), new Rectangle(0, 0, length + size * 2 - 3, 1 + size * 2), Color.Black, angle, new(size+.5f-2,size+.5f), renderer.Scale, SpriteEffects.None, 0);
+                        Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(start), new Rectangle(0, 0, length + size * 2 - 3, 1 + size * 2), Color.Black, angle, new(size + .5f - 2, size + .5f), renderer.Scale, SpriteEffects.None, 0);
 
-                    if (i < connection.Points.Count)
-                        Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(connection.Points[i].WorldPosition), new Rectangle(0, 0, size * 2 - 1, size * 2 - 1), Color.Black, 0f, new(size - 1f), renderer.Scale, SpriteEffects.None, 0);
+                        if (i < connection.Points.Count)
+                            Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(connection.Points[i].WorldPosition), new Rectangle(0, 0, size * 2 - 1, size * 2 - 1), Color.Black, 0f, new(size - 1f), renderer.Scale, SpriteEffects.None, 0);
+                    }
                 }
 
                 Main.SpriteBatch.End();
@@ -162,7 +162,47 @@ namespace Cornifer
             Main.SpriteBatch.Begin(state);
         }
 
-        public void DrawConnections(Renderer renderer)
+        //public void DrawConnectionsBelow(Renderer renderer)
+        //{
+        //    if (ConnectionTexture is null)
+        //    {
+        //        ConnectionTexture = new(Main.Instance.GraphicsDevice, 2, 1);
+        //        ConnectionTexture.SetData(new Color[] { Color.White, Color.Transparent });
+        //    }
+
+        //    var state = Main.SpriteBatch.GetState();
+        //    Main.SpriteBatch.End();
+
+        //    foreach (Connection connection in Connections.Values)
+        //    {
+        //        if (connection.Points.Count <= 1)
+        //            continue;
+
+        //        BeginConnectionCapture(renderer, connection);
+        //        Main.SpriteBatch.Begin(samplerState: SamplerState.PointWrap);
+
+        //        int totalLength = 0;
+
+        //        for (int i = 0; i < connection.Points.Count; i++)
+        //        {
+        //            (Vec2 start, Vec2 end) = GetLinePoints(null, connection, i);
+
+        //            int length = (int)Math.Ceiling((end - start).Length);
+        //            if (i > 0)
+        //            {
+        //                float angle = (end - start).Angle.Radians;
+        //                Main.SpriteBatch.Draw(ConnectionTexture, renderer.TransformVector(start), new Rectangle(totalLength, 0, length + 1, 1), Color.White, angle, new(.5f), renderer.Scale, SpriteEffects.None, 0);
+        //            }
+        //            totalLength += length;
+        //        }
+
+        //        Main.SpriteBatch.End();
+        //        EndConnectionCapture(renderer);
+        //    }
+
+        //    Main.SpriteBatch.Begin(state);
+        //}
+        public void DrawConnections(Renderer renderer, bool overRoomShadow)
         {
             if (ConnectionTexture is null)
             {
@@ -173,24 +213,7 @@ namespace Cornifer
             var state = Main.SpriteBatch.GetState();
             Main.SpriteBatch.End();
 
-            //foreach (Connection connection in Connections.Values)
-            //{
-            //    BeginConnectionCapture(renderer, connection);
-            //    Main.SpriteBatch.Begin(samplerState: SamplerState.PointWrap);
-            //
-            //    for (int i = 0; i <= connection.Points.Count; i++)
-            //    {
-            //        (Vec2 start, Vec2 end) = GetLinePoints(null, connection, i);
-            //
-            //        float angle = (end - start).Angle.Radians;
-            //        int length = (int)Math.Ceiling((end - start).Length);
-            //
-            //        Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(start), new Rectangle(0, 0, length + 3, 3), Color.Black * 0.6f, angle, new(2), renderer.Scale, SpriteEffects.None, 0);
-            //    }
-            //
-            //    Main.SpriteBatch.End();
-            //    EndConnectionCapture(renderer);
-            //}
+            bool localShadow = false;
 
             foreach (Connection connection in Connections.Values)
             {
@@ -201,12 +224,51 @@ namespace Cornifer
 
                 for (int i = 0; i <= connection.Points.Count; i++)
                 {
+                    localShadow = overRoomShadow && i > 0 && i < connection.Points.Count;
+
                     (Vec2 start, Vec2 end) = GetLinePoints(null, connection, i);
 
-                    float angle = (end - start).Angle.Radians;
                     int length = (int)Math.Ceiling((end - start).Length);
 
-                    Main.SpriteBatch.Draw(ConnectionTexture, renderer.TransformVector(start), new Rectangle(totalLength, 0, length + 1, 1), Color.White, angle, new(.5f), renderer.Scale, SpriteEffects.None, 0);
+                    if (ShouldDrawLine(connection, i))
+                    {
+
+                        float angle = (end - start).Angle.Radians;
+
+                        Rectangle source = new Rectangle(totalLength, 0, length + 1, 1);
+                        Vector2 origin = new(.5f);
+                        Color color = Color.White;
+
+                        if (i == 0)
+                        {
+                            source.Width -= 2;
+                            origin.X -= 2;
+                        }
+                        if (i == connection.Points.Count)
+                        {
+                            source.Width -= 2;
+                        }
+
+                        if (localShadow)
+                        {
+                            source.Width -= 6;
+                            source.Height = 5;
+                            origin.Y += 2f;
+                            origin.X -= 3;
+                            color = new(0, 0, 0, 100);
+
+                            Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(start), source, color, angle, origin, renderer.Scale, SpriteEffects.None, 0);
+
+                            Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(start), new Rectangle(0, 0, 5, 5), color, angle, new(2.5f), renderer.Scale, SpriteEffects.None, 0);
+
+                            if (i == connection.Points.Count - 1)
+                                Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(end), new Rectangle(0, 0, 5, 5), color, angle, new(2.5f), renderer.Scale, SpriteEffects.None, 0);
+                        }
+                        else
+                        {
+                            Main.SpriteBatch.Draw(ConnectionTexture, renderer.TransformVector(start), source, color, angle, origin, renderer.Scale, SpriteEffects.None, 0);
+                        }
+                    }
                     totalLength += length;
                 }
 
@@ -283,8 +345,8 @@ namespace Cornifer
                     if (HoveredConnectionPoint is not null && i < connection.Points.Count && connection.Points[i] == HoveredConnectionPoint && !HoveredConnectionPoint.Selected)
                     {
                         Main.SpriteBatch.Draw(
-                            Main.Pixel, 
-                            Main.WorldCamera.TransformVector(HoveredConnectionPoint.VisualPosition), 
+                            Main.Pixel,
+                            Main.WorldCamera.TransformVector(HoveredConnectionPoint.VisualPosition),
                             null,
                             Color.Yellow * .6f,
                             lineAngle,
@@ -335,6 +397,16 @@ namespace Cornifer
             reversed = true;
 
             return Connections.TryGetValue((to, from), out connection);
+        }
+
+        static bool ShouldDrawLine(Connection connection, int line)
+        {
+            (Vec2 start, Vec2 end) = GetLinePoints(null, connection, line);
+
+            start = start.Floored();
+            end = end.Floored();
+
+            return start.X == end.X || start.Y == end.Y;
         }
 
         static (Vec2, Vec2) GetLinePoints(Renderer? transformer, Connection connection, int line)
@@ -396,7 +468,7 @@ namespace Cornifer
         {
             return new JsonObject(Connections
                 .Where(kvp => kvp.Value.Points.Count > 0)
-                .Select(kvp => new KeyValuePair<string, JsonNode?>($"{kvp.Key.src}~{kvp.Key.dst}", 
+                .Select(kvp => new KeyValuePair<string, JsonNode?>($"{kvp.Key.src}~{kvp.Key.dst}",
                     new JsonArray(kvp.Value.Points.Select(p => JsonTypes.SaveVector2(p.WorldPosition)).ToArray())
                     ))
                 );
@@ -451,7 +523,7 @@ namespace Cornifer
                         };
                         connection.Points.Add(newPoint);
                     }
-                
+
             }
         }
 

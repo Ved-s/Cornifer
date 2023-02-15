@@ -371,8 +371,8 @@ namespace Cornifer
                 foreach (MapObject obj in Region.Rooms)
                     obj.Draw(renderer);
 
-                Region.Connections?.DrawConnections(renderer);
-
+                Region.Connections?.DrawConnections(renderer, true);
+                Region.Connections?.DrawConnections(renderer, false);
                 foreach (MapObject obj in WorldObjects)
                     obj.Draw(renderer);
 

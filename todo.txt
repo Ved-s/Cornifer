@@ -1,9 +1,5 @@
 UIInput clipboard actions
-Check GATE_SL_MS
-Scavenger storage (LF_A17)
-Change file extension
 Border visibility toggle
-Remove solid tracing and just cut all solid tiles
 Fix spearmaster unlock (DM)
 Hack fonts
 Per-type visibility toggles
