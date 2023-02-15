@@ -12,6 +12,8 @@ namespace Cornifer
         static readonly HashSet<Type> ContentTypes = new() { typeof(Texture2D), typeof(SpriteFont) };
 
 #nullable disable
+        public static SpriteFont Rodondo20;
+        public static SpriteFont Rodondo30;
         public static SpriteFont RodondoExt20;
         public static SpriteFont RodondoExt30;
         public static SpriteFont Consolas10;

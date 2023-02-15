@@ -52,6 +52,9 @@ namespace Cornifer
 
         public static List<string> LoadErrors = new();
 
+        public static SpriteFont DefaultSmallMapFont => Cornifer.Content.Rodondo20;
+        public static SpriteFont DefaultBigMapFont => Cornifer.Content.RodondoExt30;
+
         static Vector2 SelectionStart;
         static Vector2 OldDragPos;
         internal static bool Selecting;
@@ -122,11 +125,17 @@ namespace Cornifer
             SpriteBatch = new SpriteBatch(GraphicsDevice);
             Cornifer.Content.Load(Content);
 
+            FontAlphaHack.Apply(Cornifer.Content.Rodondo20, 5);
+            FontAlphaHack.Apply(Cornifer.Content.Rodondo30, 1);
             FontAlphaHack.Apply(Cornifer.Content.RodondoExt20, 5);
             FontAlphaHack.Apply(Cornifer.Content.RodondoExt30, 1);
 
+            Cornifer.Content.Rodondo20.Spacing += 1;
+            Cornifer.Content.Rodondo20.LineSpacing += 11;
+            Cornifer.Content.Rodondo30.LineSpacing += 11;
             Cornifer.Content.RodondoExt20.Spacing += 1;
-            Cornifer.Content.RodondoExt30.Spacing += 1;
+            Cornifer.Content.RodondoExt30.LineSpacing -= 5;
+            //Cornifer.Content.RodondoExt30.Spacing += 1;
 
             FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt20] = 4;
             FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt30] = 4;

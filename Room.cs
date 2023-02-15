@@ -396,14 +396,14 @@ namespace Cornifer
 
             if (IsScavengerOutpost)
             {
-                Children.Add(new MapText("TollText", Content.RodondoExt20, "Scavenger toll"));
+                Children.Add(new MapText("TollText", Main.DefaultSmallMapFont, "Scavenger toll"));
                 if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
                     Children.Add(new SimpleIcon("TollIcon", tollIcon));
             }
 
             if (IsScavengerTrader)
             {
-                Children.Add(new MapText("TraderText", Content.RodondoExt20, "Scavenger merchant"));
+                Children.Add(new MapText("TraderText", Main.DefaultSmallMapFont, "Scavenger merchant"));
                 if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
                     Children.Add(new SimpleIcon("TraderIcon", tollIcon));
             }
@@ -414,7 +414,7 @@ namespace Cornifer
 
                 rel.Y = 1 - rel.Y;
 
-                Children.Add(new MapText("VistaMarker", Content.RodondoExt20, "Expedition\nvista\npoint")
+                Children.Add(new MapText("VistaMarker", Main.DefaultSmallMapFont, "Expedition\nvista\npoint")
                 {
                     ParentPosAlign = rel,
                 });
@@ -423,7 +423,7 @@ namespace Cornifer
             if (BrokenForSlugcats.Count > 0)
             {
                 string text = "Broken for [a:.5]" + string.Join(' ', BrokenForSlugcats.OrderBy(s => Array.IndexOf(Main.SlugCatNames, s)).Select(s => $"[ic:Slugcat_{s}]"));
-                Children.Add(new MapText("BrokenShelterText", Content.RodondoExt20, text));
+                Children.Add(new MapText("BrokenShelterText", Main.DefaultSmallMapFont, text));
             }
 
             Loaded = true;

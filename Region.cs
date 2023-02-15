@@ -476,7 +476,7 @@ namespace Cornifer
                         regionColor = color;
                 }
 
-                room.Children.Add(new MapText("TargetRegionText", Content.RodondoExt30, $"To [c:{regionColor.R:x2}{regionColor.G:x2}{regionColor.B:x2}]{targetRegion}[/c]"));
+                room.Children.Add(new MapText("TargetRegionText", Main.DefaultBigMapFont, $"To [c:{regionColor.R:x2}{regionColor.G:x2}{regionColor.B:x2}]{targetRegion}[/c]"));
             }
         }
 

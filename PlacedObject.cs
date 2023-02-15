@@ -123,7 +123,7 @@ namespace Cornifer
 
                     if (type != "Misc" && type != "BroadcastMisc")
                     {
-                        obj.Children.Add(new MapText("PearlText", Content.RodondoExt20, $"[c:{obj.Color.Value.R:x2}{obj.Color.Value.G:x2}{obj.Color.Value.B:x2}]Colored[/c] pearl"));
+                        obj.Children.Add(new MapText("PearlText", Main.DefaultSmallMapFont, $"[c:{obj.Color.Value.R:x2}{obj.Color.Value.G:x2}{obj.Color.Value.B:x2}]Colored[/c] pearl"));
                         if (GameAtlases.Sprites.TryGetValue("ScholarA", out AtlasSprite? sprite))
                             obj.Children.Add(new SimpleIcon("PearlIcon", sprite)
                             {

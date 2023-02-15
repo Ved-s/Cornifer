@@ -38,14 +38,14 @@ namespace Cornifer
 
         public MapText()
         {
-            Font.OriginalValue = Content.RodondoExt20;
+            Font.OriginalValue = Main.DefaultSmallMapFont;
 
             Text.ValueChanged = ParamsChanged;
             Font.ValueChanged = ParamsChanged;
             Scale.ValueChanged = ParamsChanged;
 
             Font.SaveValue = f => Content.Fonts.FirstOrDefault(kvp => kvp.Value == f, new("", null!)).Key;
-            Font.LoadValue = s => Content.Fonts.GetValueOrDefault(s) ?? Content.RodondoExt20;
+            Font.LoadValue = s => Content.Fonts.GetValueOrDefault(s) ?? Main.DefaultSmallMapFont;
         }
 
         public MapText(string name, SpriteFont font, string text) : this()

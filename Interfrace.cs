@@ -586,7 +586,7 @@ namespace Cornifer
 
                             }.OnEvent(UIElement.ClickEvent, (btn, _) => 
                             {
-                                Main.WorldObjects.Add(new MapText($"WorldText_{Random.Shared.Next():x}", Content.RodondoExt20, "Sample text")
+                                Main.WorldObjects.Add(new MapText($"WorldText_{Random.Shared.Next():x}", Main.DefaultSmallMapFont, "Sample text")
                                 {
                                     WorldPosition = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
                                 });
