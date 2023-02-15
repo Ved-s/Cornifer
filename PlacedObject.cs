@@ -1,4 +1,5 @@
 ﻿using Cornifer.Renderers;
+using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
@@ -19,6 +20,7 @@ namespace Cornifer
         public Vector2 HandlePos;
 
         public bool RemoveByAvailability = true;
+        public string? DebugDisplay = null;
 
         public override int ShadeSize => 2;
         public override bool SkipTextureSave => true;
@@ -63,6 +65,7 @@ namespace Cornifer
             if (objName.EndsWith("Token"))
             {
                 string subname = subsplit[5];
+                obj.DebugDisplay = $"Token target: {subname}";
 
                 if (objName == "WhiteToken")
                     obj.SlugcatAvailability = new() { "Spear" };
@@ -114,6 +117,8 @@ namespace Cornifer
             {
                 if (subsplit.TryGet(4, out string type))
                 {
+                    obj.DebugDisplay = $"Pearl id: {type}";
+
                     obj.Color.OriginalValue = GetPearlHighlightColor(type) ?? GetPearlMainColor(type);
 
                     if (type != "Misc" && type != "BroadcastMisc")
@@ -177,6 +182,21 @@ namespace Cornifer
                 {
                     Id = Array.IndexOf(Main.SlugCatNames, slugcat),
                     ParentPosition = offset
+                });
+            }
+        }
+
+        protected override void BuildInnerConfig(UIList list)
+        {
+            base.BuildInnerConfig(list);
+
+            if (DebugDisplay is not null)
+            {
+                list.Elements.Add(new UILabel
+                {
+                    Height = 0,
+                    Text = DebugDisplay,
+                    TextAlign = new(.5f)
                 });
             }
         }
