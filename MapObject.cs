@@ -19,9 +19,9 @@ namespace Cornifer
         public virtual bool ParentSelected => Parent != null && (Parent.Selected || Parent.ParentSelected);
         public bool Selected => Main.SelectedObjects.Contains(this);
 
-        private bool InternalActive = true;
+        private ObjectProperty<bool> InternalActive = new("active", true);
 
-        public virtual bool Active { get => InternalActive; set => InternalActive = value; }
+        public virtual bool Active { get => InternalActive.Value; set => InternalActive.Value = value; }
         public virtual bool Selectable { get; set; } = true;
         public virtual bool LoadCreationForbidden { get; set; } = false;
         public virtual bool NeedsSaving { get; set; } = true;
@@ -204,14 +204,14 @@ namespace Cornifer
                                     Text = "A",
 
                                     Selectable = true,
-                                    Selected = obj.InternalActive,
+                                    Selected = obj.InternalActive.Value,
 
                                     SelectedBackColor = Color.White,
                                     SelectedTextColor = Color.Black,
 
                                     Left = new(0, 1, -1),
                                     Width = 18,
-                                }.OnEvent(UIElement.ClickEvent, (btn, _) => obj.InternalActive = btn.Selected),
+                                }.OnEvent(UIElement.ClickEvent, (btn, _) => obj.InternalActive.Value = btn.Selected),
                             }
                         };
 
@@ -237,11 +237,12 @@ namespace Cornifer
                         $"Type: {GetType().Name}\n" +
                         $"Parent: {Parent?.Name ?? Parent?.GetType().Name ?? "null"}"),
                 ["pos"] = JsonTypes.SaveVector2(ParentPosition),
-                ["active"] = InternalActive,
             };
+            InternalActive.SaveToJson(json);
+
             if (!LoadCreationForbidden)
                 json["type"] = GetType().FullName;
-            if (inner is not null)
+            if (inner is not null && (inner is not JsonObject innerobj || innerobj.Count > 0))
                 json["data"] = inner;
             if (Children.Count > 0)
                 json["children"] = new JsonArray(Children.Select(c => c.SaveJson()).OfType<JsonNode>().ToArray());
@@ -259,8 +260,7 @@ namespace Cornifer
             if (json.TryGet("pos", out JsonNode? pos))
                 ParentPosition = JsonTypes.LoadVector2(pos);
 
-            if (json.TryGet("active", out bool active))
-                InternalActive = active;
+            InternalActive.LoadFromJson(json);
 
             if (json.TryGet("children", out JsonArray? children))
                 foreach (JsonNode? childNode in children)

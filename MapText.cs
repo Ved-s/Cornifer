@@ -19,44 +19,17 @@ namespace Cornifer
     {
         const string EmptyTextString = "[c:9](empty text)[/c]";
 
-        private string text = "";
         private Vector2 size;
-        private SpriteFont font;
-        private float scale = 1;
 
         public override Vector2 Size => size + new Vector2(10);
 
-        public Color Color = Color.White;
-        public bool Shade;
-        public Color ShadeColor = Color.Black;
+        public ObjectProperty<Color> Color = new("color", Microsoft.Xna.Framework.Color.White);
+        public ObjectProperty<bool> Shade = new("shade", true);
+        public ObjectProperty<Color> ShadeColor = new("shadeColor", Microsoft.Xna.Framework.Color.Black);
 
-        public string Text
-        {
-            get => text;
-            set
-            {
-                text = value;
-                ParamsChanged();
-            }
-        }
-        public SpriteFont Font
-        {
-            get => font;
-            set
-            {
-                font = value;
-                ParamsChanged();
-            }
-        }
-        public float Scale
-        {
-            get => scale;
-            set
-            {
-                scale = value;
-                ParamsChanged();
-            }
-        }
+        public ObjectProperty<string> Text = new("text", "");
+        public ObjectProperty<SpriteFont, string> Font = new("font", null!);
+        public ObjectProperty<float> Scale = new("scale", 1);
 
         public override int ShadeSize => 5;
 
@@ -65,20 +38,28 @@ namespace Cornifer
 
         public MapText()
         {
-            font = Content.RodondoExt20;
+            Font.OriginalValue = Content.RodondoExt20;
+
+            Text.ValueChanged = ParamsChanged;
+            Font.ValueChanged = ParamsChanged;
+            Scale.ValueChanged = ParamsChanged;
+
+            Font.SaveValue = f => Content.Fonts.FirstOrDefault(kvp => kvp.Value == f, new("", null!)).Key;
+            Font.LoadValue = s => Content.Fonts.GetValueOrDefault(s) ?? Content.RodondoExt20;
         }
 
-        public MapText(string name, SpriteFont font, string text)
+        public MapText(string name, SpriteFont font, string text) : this()
         {
             Name = name;
-            this.font = font;
-            Text = text;
+            Font.OriginalValue = font;
+            Text.OriginalValue = text;
+            ParamsChanged();
         }
 
         void ParamsChanged()
         {
-            string text = Text.Length == 0 ? EmptyTextString : Text;
-            size = Font is null ? Vector2.Zero : FormattedText.Measure(Font, text, Scale);
+            string text = Text.Value.Length == 0 ? EmptyTextString : Text.Value;
+            size = Font is null ? Vector2.Zero : FormattedText.Measure(Font.Value, text, Scale.Value);
 
             IconPosAlign = new(Math.Min((Size.Y / 2) / Size.X, .5f), .5f);
             TextShadeTextureDirty = true;
@@ -90,7 +71,7 @@ namespace Cornifer
             Vector2 capturePos = Vector2.Zero;
             SpriteBatchState spriteBatchState = default;
 
-            if (TextShadeTextureDirty && Shade)
+            if (TextShadeTextureDirty && Shade.Value)
             {
                 UpdateShadeTexture(ref TextShadeTexture, 1, new(5), Vector2.Zero);
                 TextShadeTextureDirty = false;
@@ -106,18 +87,18 @@ namespace Cornifer
                 Main.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
             }
 
-            if (Shade && !Shading && TextShadeTexture is not null)
+            if (Shade.Value && !Shading && TextShadeTexture is not null)
                 renderer.DrawTexture(TextShadeTexture, WorldPosition);
 
-            string text = Text.Length == 0 ? EmptyTextString : Text;
+            string text = Text.Value.Length == 0 ? EmptyTextString : Text.Value;
 
             FormattedText.Draw(text, new()
             {
-                Font = Font,
+                Font = Font.Value,
                 OriginalPos = renderer.TransformVector(WorldPosition + new Vector2(5)),
                 SpriteBatch = Main.SpriteBatch,
-                Scale = scale * renderer.Scale,
-                Color = Color,
+                Scale = Scale.Value * renderer.Scale,
+                Color = Color.Value,
             });
 
             if (renderer is CaptureRenderer captureEnd)
@@ -140,15 +121,15 @@ namespace Cornifer
                 CanGrabRight = false,
                 CanGrabBottom = true,
 
-                BackColor = Color.Transparent,
-                BorderColor = Color.Transparent,
+                BackColor   = Microsoft.Xna.Framework.Color.Transparent,
+                BorderColor = Microsoft.Xna.Framework.Color.Transparent,
 
                 Elements =
                 {
                     new UIInput
                     {
-                        Text = Text,
-                    }.OnEvent(UIInput.TextChangedEvent, (inp, _) => { if (inp.Active) Text = inp.Text; })
+                        Text = Text.Value,
+                    }.OnEvent(UIInput.TextChangedEvent, (inp, _) => { if (inp.Active) Text.Value = inp.Text; })
                 }
             });
             list.Elements.Add(new UIButton
@@ -161,24 +142,24 @@ namespace Cornifer
             {
                 Text = "Set text color",
                 Height = 20
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Text color", Color, (_, c) => Color = c)));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Text color", Color.Value, (_, c) => Color.Value = c)));
             list.Elements.Add(new UIButton
             {
                 Text = "Set shade color",
                 Height = 20
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Text shade color", ShadeColor, (_, c) => ShadeColor = c)));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Text shade color", ShadeColor.Value, (_, c) => ShadeColor.Value = c)));
             list.Elements.Add(new UIButton
             {
                 Text = "Shade enabled",
                 Height = 20,
 
                 Selectable = true,
-                Selected = Shade,
+                Selected = Shade.Value,
 
-                SelectedTextColor = Color.Black,
-                SelectedBackColor = Color.White,
+                SelectedTextColor = Microsoft.Xna.Framework.Color.Black,
+                SelectedBackColor = Microsoft.Xna.Framework.Color.White,
 
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => Shade = btn.Selected));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Shade.Value = btn.Selected));
             list.Elements.Add(new UIPanel
             {
                 Height = 27,
@@ -199,9 +180,9 @@ namespace Cornifer
 
                         Width = new(-50, 1),
                         Left = 50,
-                        Value = Scale,
+                        Value = Scale.Value,
 
-                    }.OnEvent(UINumberInput.ValueChanged, (inp, _) => Scale = Math.Max(0.1f, (float)inp.Value))
+                    }.OnEvent(UINumberInput.ValueChanged, (inp, _) => Scale.Value = Math.Max(0.1f, (float)inp.Value))
                     .OnEvent(UIElement.ActiveChangedEvent, (inp, act) =>
                     {
                         if (!act && inp.Value < 0.1f)
@@ -270,17 +251,17 @@ namespace Cornifer
             Main.SpriteBatch.End();
             RenderTargetBinding[] targets = Main.Instance.GraphicsDevice.GetRenderTargets();
             Main.Instance.GraphicsDevice.SetRenderTarget(MapObject.ShadeRenderTarget);
-            Main.Instance.GraphicsDevice.Clear(Color.Transparent);
+            Main.Instance.GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.Transparent);
             Main.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-            string text = Text.Length == 0 ? EmptyTextString : Text;
+            string text = Text.Value.Length == 0 ? EmptyTextString : Text.Value;
             FormattedText.Draw(text, new()
             {
-                Font = Font,
+                Font = Font.Value,
                 SpriteBatch = Main.SpriteBatch,
                 OriginalPos = textpos,
-                Scale = scale,
-                Color = Color.Black
+                Scale = Scale.Value,
+                Color = Microsoft.Xna.Framework.Color.Black
             });
 
             Main.SpriteBatch.End();
@@ -315,10 +296,10 @@ namespace Cornifer
                     TextAlign = new(.5f),
                     RadioGroup = group,
                     Selectable = true,
-                    Selected = Font == font,
+                    Selected = Font.Value == font,
                     RadioTag = font,
-                    SelectedTextColor = Color.Black,
-                    SelectedBackColor = Color.White,
+                    SelectedTextColor = Microsoft.Xna.Framework.Color.Black,
+                    SelectedBackColor = Microsoft.Xna.Framework.Color.White,
                 };
 
                 list.Elements.Add(button);
@@ -328,42 +309,29 @@ namespace Cornifer
             {
                 if (tag is not SpriteFont font)
                     return;
-                Font = font;
+                Font.Value = font;
             };
         }
 
         protected override JsonNode? SaveInnerJson()
         {
-            return new JsonObject
-            {
-                ["text"] = Text,
-                ["font"] = Content.Fonts.FirstOrDefault(kvp => kvp.Value == Font).Key,
-                ["scale"] = Scale,
-                ["color"] = Color.PackedValue,
-                ["shade"] = Shade,
-                ["shadeColor"] = ShadeColor.PackedValue,
-            };
+            return new JsonObject()
+            .SaveProperty(Text)
+            .SaveProperty(Font)
+            .SaveProperty(Scale)
+            .SaveProperty(Color)
+            .SaveProperty(Shade)
+            .SaveProperty(ShadeColor);
         }
 
         protected override void LoadInnerJson(JsonNode node)
         {
-            if (node.TryGet("text", out string? text))
-                this.text = text;
-
-            if (node.TryGet("font", out string? font))
-                this.font = Content.Fonts.GetValueOrDefault(font) ?? Content.RodondoExt20;
-
-            if (node.TryGet("scale", out float scale))
-                this.scale = scale;
-
-            if (node.TryGet("color", out uint color))
-                Color.PackedValue = color;
-
-            if (node.TryGet("shade", out bool shade))
-                Shade = shade;
-
-            if (node.TryGet("shadeColor", out uint shadeColor))
-                ShadeColor.PackedValue = shadeColor;
+            Text.LoadFromJson(node);
+            Font.LoadFromJson(node);
+            Scale.LoadFromJson(node);
+            Color.LoadFromJson(node);
+            Shade.LoadFromJson(node);
+            ShadeColor.LoadFromJson(node);
 
             ParamsChanged();
         }

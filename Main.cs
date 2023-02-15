@@ -74,6 +74,7 @@ namespace Cornifer
 
             GithubInfo.Load();
             SearchRainWorld();
+            JsonValueConverter.Load();
 
             GraphicsDevice.PresentationParameters.RenderTargetUsage = RenderTargetUsage.PreserveContents;
             Window.AllowUserResizing = true;

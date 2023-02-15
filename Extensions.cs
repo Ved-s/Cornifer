@@ -231,5 +231,17 @@ namespace Cornifer
                 return value;
             return @default;
         }
+
+        public static TNode SaveProperty<TNode, TProp>(this TNode node, ObjectProperty<TProp> property) where TNode : JsonNode
+        {
+            property.SaveToJson(node);
+            return node;
+        }
+
+        public static TNode SaveProperty<TNode, TProp, TPropValue>(this TNode node, ObjectProperty<TProp, TPropValue> property) where TNode : JsonNode
+        {
+            property.SaveToJson(node);
+            return node;
+        }
     }
 }

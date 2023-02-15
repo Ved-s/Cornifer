@@ -24,11 +24,11 @@ namespace Cornifer
         AtlasSprite? LeftArrowSprite;
         AtlasSprite? RightArrowSprite;
 
-        public Color SplitterColor = Color.White;
-        public Color LeftSymbolColor = Color.White;
-        public Color RightSymbolColor = Color.White;
-        public Color LeftArrowColor = Color.White;
-        public Color RightArrowColor = Color.White;
+        public ObjectProperty<Color> SplitterColor    = new("splitter", Color.White);
+        public ObjectProperty<Color> LeftSymbolColor  = new("leftSymbol", Color.White);
+        public ObjectProperty<Color> RightSymbolColor = new("rightSymbol", Color.White);
+        public ObjectProperty<Color> LeftArrowColor   = new("leftArrow", Color.White);
+        public ObjectProperty<Color> RightArrowColor  = new("rightArrow", Color.White);
 
         public GateSymbols()
         {
@@ -68,14 +68,14 @@ namespace Cornifer
             Vector2 center = WorldPosition + Size / 2;
 
             Vector2 splitterSize = new(5, 64);
-            renderer.DrawTexture(Main.Pixel, center - splitterSize/2, null, splitterSize, SplitterColor);
+            renderer.DrawTexture(Main.Pixel, center - splitterSize/2, null, splitterSize, SplitterColor.Value);
 
             if (LeftSymbolSprite is not null)
             {
                 Vector2 spriteSize = LeftSymbolSprite.Frame.Size.ToVector2();
 
                 Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 - 15.5f - spriteSize.X, Size.Y - 21 - spriteSize.Y / 2);
-                renderer.DrawTexture(LeftSymbolSprite.Texture, spritePos, LeftSymbolSprite.Frame, null, LeftSymbolColor);
+                renderer.DrawTexture(LeftSymbolSprite.Texture, spritePos, LeftSymbolSprite.Frame, null, LeftSymbolColor.Value);
             }
 
             if (RighSymbolSprite is not null)
@@ -83,13 +83,13 @@ namespace Cornifer
                 Vector2 spriteSize = RighSymbolSprite.Frame.Size.ToVector2();
 
                 Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 + 15.5f, Size.Y - 21 - spriteSize.Y / 2);
-                renderer.DrawTexture(RighSymbolSprite.Texture, spritePos, RighSymbolSprite.Frame, null, RightSymbolColor);
+                renderer.DrawTexture(RighSymbolSprite.Texture, spritePos, RighSymbolSprite.Frame, null, RightSymbolColor.Value);
             }
 
             if (LeftArrowSprite is not null)
             {
                 Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 + 22.5f, 0);
-                renderer.DrawTexture(LeftArrowSprite.Texture, spritePos, LeftArrowSprite.Frame, null, RightArrowColor);
+                renderer.DrawTexture(LeftArrowSprite.Texture, spritePos, LeftArrowSprite.Frame, null, RightArrowColor.Value);
             }
 
             if (RightArrowSprite is not null)
@@ -97,7 +97,7 @@ namespace Cornifer
                 Vector2 spriteSize = RightArrowSprite.Frame.Size.ToVector2();
 
                 Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 - 22.5f - spriteSize.X, 0);
-                renderer.DrawTexture(RightArrowSprite.Texture, spritePos, RightArrowSprite.Frame, null, LeftArrowColor);
+                renderer.DrawTexture(RightArrowSprite.Texture, spritePos, RightArrowSprite.Frame, null, LeftArrowColor.Value);
             }
         }
 
@@ -107,61 +107,50 @@ namespace Cornifer
             {
                 Text = "Set splitter color",
                 Height = 20,
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Splitter color", SplitterColor, (_, c) => SplitterColor = c)));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Splitter color", SplitterColor.Value, (_, c) => SplitterColor.Value = c)));
 
             list.Elements.Add(new UIButton
             {
                 Text = "Set left symbol color",
                 Height = 20,
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Left symbol color", LeftSymbolColor, (_, c) => LeftSymbolColor = c)));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Left symbol color", LeftSymbolColor.Value, (_, c) => LeftSymbolColor.Value = c)));
 
             list.Elements.Add(new UIButton
             {
                 Text = "Set right symbol color",
                 Height = 20,
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Right symbol color", RightSymbolColor, (_, c) => RightSymbolColor = c)));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Right symbol color", RightSymbolColor.Value, (_, c) => RightSymbolColor.Value = c)));
 
             list.Elements.Add(new UIButton
             {
                 Text = "Set left arrow color",
                 Height = 20,
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Left arrow color", LeftArrowColor, (_, c) => LeftArrowColor = c)));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Left arrow color", LeftArrowColor.Value, (_, c) => LeftArrowColor.Value = c)));
 
             list.Elements.Add(new UIButton
             {
                 Text = "Set right arrow color",
                 Height = 20,
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Right arrow color", RightArrowColor, (_, c) => RightArrowColor = c)));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Right arrow color", RightArrowColor.Value, (_, c) => RightArrowColor.Value = c)));
         }
 
         protected override JsonNode? SaveInnerJson()
         {
-            return new JsonObject
-            {
-                ["splitter"] = SplitterColor.PackedValue,
-                ["leftSymbol"] = LeftSymbolColor.PackedValue,
-                ["rightSymbol"] = RightSymbolColor.PackedValue,
-                ["leftArrow"] = LeftArrowColor.PackedValue,
-                ["rightArrow"] = RightArrowColor.PackedValue,
-            };
+            return new JsonObject()
+                .SaveProperty(SplitterColor)
+                .SaveProperty(LeftSymbolColor)
+                .SaveProperty(RightSymbolColor)
+                .SaveProperty(LeftArrowColor)
+                .SaveProperty(RightArrowColor);
         }
 
         protected override void LoadInnerJson(JsonNode node)
         {
-            if (node.TryGet("splitter", out uint splitter))
-                SplitterColor.PackedValue = splitter;
-
-            if (node.TryGet("leftSymbol", out uint leftSymbol))
-                LeftSymbolColor.PackedValue = leftSymbol;
-
-            if (node.TryGet("rightSymbol", out uint rightSymbol))
-                RightSymbolColor.PackedValue = rightSymbol;
-
-            if (node.TryGet("leftArrow", out uint leftArrow))
-                LeftArrowColor.PackedValue = leftArrow;
-
-            if (node.TryGet("rightArrow", out uint rightArrow))
-                RightArrowColor.PackedValue = rightArrow;
+            SplitterColor.LoadFromJson(node);
+            LeftSymbolColor.LoadFromJson(node);
+            RightSymbolColor.LoadFromJson(node);
+            LeftArrowColor.LoadFromJson(node);
+            RightArrowColor.LoadFromJson(node);
         }
     }
 }

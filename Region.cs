@@ -357,7 +357,7 @@ namespace Cornifer
                         subregions.Add(subregion);
                     }
 
-                    room.Subregion = index;
+                    room.Subregion.OriginalValue = index;
                 }
 
                 unmappedRooms.Remove(room);
@@ -443,8 +443,8 @@ namespace Cornifer
 
                 gate.Children.Add(new GateSymbols(split[1], split[2]) 
                 {
-                    LeftArrowColor = left,
-                    RightArrowColor = right,
+                    LeftArrowColor = { OriginalValue = left },
+                    RightArrowColor = { OriginalValue = right },
                 });
 
                 processed?.Add(split[0]);
@@ -476,7 +476,7 @@ namespace Cornifer
                         regionColor = color;
                 }
 
-                room.Children.Add(new MapText("TargetRegionText", Content.RodondoExt30, $"To [c:{regionColor.R:x2}{regionColor.G:x2}{regionColor.B:x2}]{targetRegion}[/c]") { Shade = true });
+                room.Children.Add(new MapText("TargetRegionText", Content.RodondoExt30, $"To [c:{regionColor.R:x2}{regionColor.G:x2}{regionColor.B:x2}]{targetRegion}[/c]"));
             }
         }
 

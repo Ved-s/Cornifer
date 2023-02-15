@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Cornifer
@@ -96,7 +97,7 @@ namespace Cornifer
         public Shortcut[] Shortcuts = Array.Empty<Shortcut>();
 
         public int Layer;
-        public int Subregion = 0;
+        public ObjectProperty<int, string> Subregion = new("subregion", 0);
 
         public Vector2 WorldPos;
 
@@ -122,9 +123,13 @@ namespace Cornifer
 
         bool[,]? CutOutSolidTiles = null;
 
-        public Room() { }
+        public Room() 
+        {
+            Subregion.SaveValue = v => Region.Subregions[v].Name;
+            Subregion.LoadValue = s => Array.FindIndex(Region.Subregions, r => r.Name == s);
+        }
 
-        public Room(Region region, string id)
+        public Room(Region region, string id) : this()
         {
             Region = region;
             Name = id;
@@ -391,20 +396,14 @@ namespace Cornifer
 
             if (IsScavengerOutpost)
             {
-                Children.Add(new MapText("TollText", Content.RodondoExt20, "Scavenger toll")
-                {
-                    Shade = true
-                });
+                Children.Add(new MapText("TollText", Content.RodondoExt20, "Scavenger toll"));
                 if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
                     Children.Add(new SimpleIcon("TollIcon", tollIcon));
             }
 
             if (IsScavengerTrader)
             {
-                Children.Add(new MapText("TraderText", Content.RodondoExt20, "Scavenger merchant")
-                {
-                    Shade = true
-                });
+                Children.Add(new MapText("TraderText", Content.RodondoExt20, "Scavenger merchant"));
                 if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
                     Children.Add(new SimpleIcon("TraderIcon", tollIcon));
             }
@@ -418,17 +417,13 @@ namespace Cornifer
                 Children.Add(new MapText("VistaMarker", Content.RodondoExt20, "Expedition\nvista\npoint")
                 {
                     ParentPosAlign = rel,
-                    Shade = true,
                 });
             }
 
             if (BrokenForSlugcats.Count > 0)
             {
                 string text = "Broken for [a:.5]" + string.Join(' ', BrokenForSlugcats.OrderBy(s => Array.IndexOf(Main.SlugCatNames, s)).Select(s => $"[ic:Slugcat_{s}]"));
-                Children.Add(new MapText("BrokenShelterText", Content.RodondoExt20, text)
-                {
-                    Shade = true,
-                });
+                Children.Add(new MapText("BrokenShelterText", Content.RodondoExt20, text));
             }
 
             Loaded = true;
@@ -462,7 +457,7 @@ namespace Cornifer
                     }
                 }
 
-                Region.Subregion subregion = Region.Subregions[Subregion];
+                Region.Subregion subregion = Region.Subregions[Subregion.Value];
 
                 for (int j = 0; j < TileSize.Y; j++)
                     for (int i = 0; i < TileSize.X; i++)
@@ -606,7 +601,7 @@ namespace Cornifer
                         TextAlign = new(.5f),
                         RadioGroup = group,
                         Selectable = true,
-                        Selected = i == Subregion,
+                        Selected = i == Subregion.Value,
                         RadioTag = i,
                         SelectedTextColor = Color.Black,
                         SelectedBackColor = Color.White,
@@ -619,7 +614,7 @@ namespace Cornifer
                 {
                     if (tag is not int index)
                         return;
-                    Subregion = index;
+                    Subregion.Value = index;
                     TileMapDirty = true;
                 };
             }
@@ -627,18 +622,16 @@ namespace Cornifer
 
         protected override JsonNode? SaveInnerJson()
         {
-            return new JsonObject
-            {
-                ["subregion"] = Region?.Subregions[Subregion].Name,
-            };
+            return new JsonObject {}
+            .SaveProperty(Subregion);
         }
         protected override void LoadInnerJson(JsonNode node)
         {
-            if (node.TryGet("subregion", out string? subregion) && Region is not null)
-                for (int i = 0; i < Region.Subregions.Length; i++)
-                    if (Region.Subregions[i].Name == subregion)
-                        Subregion = i;
-
+            //if (node.TryGet("subregion", out string? subregion) && Region is not null)
+            //    for (int i = 0; i < Region.Subregions.Length; i++)
+            //        if (Region.Subregions[i].Name == subregion)
+            //            Subregion = i;
+            Subregion.LoadFromJson(node);
             TileMapDirty = true;
         }
 

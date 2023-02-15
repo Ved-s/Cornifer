@@ -588,7 +588,6 @@ namespace Cornifer
                             {
                                 Main.WorldObjects.Add(new MapText($"WorldText_{Random.Shared.Next():x}", Content.RodondoExt20, "Sample text")
                                 {
-                                    Shade = true,
                                     WorldPosition = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
                                 });
                             }),

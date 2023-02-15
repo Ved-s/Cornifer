@@ -20,8 +20,8 @@ namespace Cornifer
             Name = name;
             Texture = sprite.Texture;
             Frame = sprite.Frame;
-            Color = color ?? sprite.Color;
-            Shade = sprite.Shade;
+            Color.OriginalValue = color ?? sprite.Color;
+            Shade.OriginalValue = sprite.Shade;
             Sprite = sprite;
         }
 
@@ -31,28 +31,30 @@ namespace Cornifer
         public Texture2D? IconShadeTexture;
         public Texture2D? Texture;
         public Rectangle Frame;
-        public Color Color = Color.White;
-        public bool Shade = true;
+        public ObjectProperty<Color> Color = new("color", Microsoft.Xna.Framework.Color.White);
+        public ObjectProperty<bool> Shade = new("shade", true);
         public AtlasSprite? Sprite;
 
-        public override Vector2 Size => Frame.Size.ToVector2() + (Shade ? new Vector2(2) : Vector2.Zero);
+        public virtual bool SkipTextureSave { get; set; }
+
+        public override Vector2 Size => Frame.Size.ToVector2() + (Shade.Value ? new Vector2(2) : Vector2.Zero);
 
         public override void DrawIcon(Renderer renderer)
         {
             if (Texture is null)
                 return;
 
-            if (!Shading && Shade && IconShadeTexture is null)
+            if (!Shading && Shade.Value && IconShadeTexture is null)
             {
                 GenerateDefaultShadeTexture(ref IconShadeTexture, this, 1, null);
             }
 
-            if (Shade && IconShadeTexture is not null && !Shading)
+            if (Shade.Value && IconShadeTexture is not null && !Shading)
             {
                 renderer.DrawTexture(IconShadeTexture, WorldPosition - Vector2.One);
             }
 
-            renderer.DrawTexture(Texture, WorldPosition, Frame, color: Color);
+            renderer.DrawTexture(Texture, WorldPosition, Frame, color: Color.Value);
         }
 
         protected override void BuildInnerConfig(UIList list)
@@ -64,7 +66,7 @@ namespace Cornifer
                 TextAlign = new(.5f),
             }.OnEvent(UIElement.ClickEvent, (_, _) =>
             {
-                Interface.ColorSelector.Show("Icon color", Color, (_, color) => Color = color);
+                Interface.ColorSelector.Show("Icon color", Color.Value, (_, color) => Color.Value = color);
             }));
 
             list.Elements.Add(new UIButton
@@ -73,36 +75,36 @@ namespace Cornifer
                 Height = 20,
 
                 Selectable = true,
-                Selected = Shade,
+                Selected = Shade.Value,
 
-                SelectedBackColor = Color.White,
-                SelectedTextColor = Color.Black,
+                SelectedBackColor = Microsoft.Xna.Framework.Color.White,
+                SelectedTextColor = Microsoft.Xna.Framework.Color.Black,
 
                 Text = "Icon shade",
                 TextAlign = new(.5f),
             }.OnEvent(UIElement.ClickEvent, (btn, _) =>
             {
-                Shade = btn.Selected;
+                Shade.Value = btn.Selected;
             }));
         }
 
         protected override JsonNode? SaveInnerJson()
         {
-            if (Sprite is not null)
-                return new JsonObject
-                {
-                    ["sprite"] = Sprite.Name,
-                    ["color"] = Color.PackedValue,
-                    ["shade"] = Shade
-                };
+            JsonObject obj = new JsonObject()
+                .SaveProperty(Color)
+                .SaveProperty(Shade);
 
-            return new JsonObject
+            if (!SkipTextureSave)
             {
-                ["texture"] = Content.Textures.FirstOrDefault(t => t.Value == Texture).Key,
-                ["frame"] = JsonTypes.SaveRectangle(Frame),
-                ["color"] = Color.PackedValue,
-                ["shade"] = Shade
-            };
+                if (Sprite is not null)
+                    obj["sprite"] = Sprite.Name;
+                else
+                {
+                    obj["texture"] = Content.Textures.FirstOrDefault(t => t.Value == Texture).Key;
+                    obj["frame"] = JsonTypes.SaveRectangle(Frame);
+                }
+            }
+            return obj;
         }
 
         protected override void LoadInnerJson(JsonNode node)
@@ -118,16 +120,13 @@ namespace Cornifer
             {
                 Texture = sprite.Texture;
                 Frame = sprite.Frame;
-                Color = sprite.Color;
-                Shade = sprite.Shade;
+                Color.OriginalValue = sprite.Color;
+                Shade.OriginalValue = sprite.Shade;
                 Sprite = sprite;
             }
 
-            if (node.TryGet("color", out uint color))
-                Color.PackedValue = color;
-
-            if (node.TryGet("shade", out bool shade))
-                Shade = shade;
+            Color.LoadFromJson(node);
+            Shade.LoadFromJson(node);
         }
     }
 }

@@ -21,6 +21,7 @@ namespace Cornifer
         public bool RemoveByAvailability = true;
 
         public override int ShadeSize => 2;
+        public override bool SkipTextureSave => true;
 
         public override Vector2 Size => Frame.Size.ToVector2();
         public override Vector2 ParentPosAlign => Parent is not Room ? new(.5f) : new Vector2(RoomPos.X / Parent.Size.X, 1 - (RoomPos.Y / Parent.Size.Y));
@@ -69,8 +70,8 @@ namespace Cornifer
                     obj.RemoveByAvailability = false;
                 else
                     obj.SlugcatAvailability = ParseSlugcats(subsplit[6]);
-                obj.Color.A = 150;
-                obj.Shade = false;
+                obj.Color.OriginalValue.A = 150;
+                obj.Shade.OriginalValue = false;
 
                 switch (objName)
                 {
@@ -84,7 +85,7 @@ namespace Cornifer
                                 ParentPosition = new(0, 8),
                                 Parent = obj,
                                 ForceSlugcatIcon = true,
-                                LineColor = Color.Lime
+                                LineColor = Microsoft.Xna.Framework.Color.Lime
                             });
                         }
                         break;
@@ -113,22 +114,19 @@ namespace Cornifer
             {
                 if (subsplit.TryGet(4, out string type))
                 {
-                    obj.Color = GetPearlHighlightColor(type) ?? GetPearlMainColor(type);
+                    obj.Color.OriginalValue = GetPearlHighlightColor(type) ?? GetPearlMainColor(type);
 
                     if (type != "Misc" && type != "BroadcastMisc")
                     {
-                        obj.Children.Add(new MapText("PearlText", Content.RodondoExt20, $"[c:{obj.Color.R:x2}{obj.Color.G:x2}{obj.Color.B:x2}]Colored[/c] pearl")
-                        {
-                            Shade = true
-                        });
+                        obj.Children.Add(new MapText("PearlText", Content.RodondoExt20, $"[c:{obj.Color.Value.R:x2}{obj.Color.Value.G:x2}{obj.Color.Value.B:x2}]Colored[/c] pearl"));
                         if (GameAtlases.Sprites.TryGetValue("ScholarA", out AtlasSprite? sprite))
                             obj.Children.Add(new SimpleIcon("PearlIcon", sprite)
                             {
-                                Shade = true
+                                Shade = { OriginalValue = true }
                             });
                     }
                 }
-                obj.Color.A = 165;
+                obj.Color.OriginalValue.A = 165;
             }
 
             if (obj.RemoveByAvailability && Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Count > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat))
@@ -158,8 +156,8 @@ namespace Cornifer
                 RoomPos = pos,
                 Frame = atlas.Frame,
                 Texture = atlas.Texture,
-                Color = atlas.Color,
-                Shade = atlas.Shade
+                Color = { OriginalValue = atlas.Color },
+                Shade = { OriginalValue = atlas.Shade }
             };
         }
 
