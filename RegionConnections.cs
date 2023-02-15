@@ -543,17 +543,17 @@ namespace Cornifer
             public Connection(Room source, Room.Connection connection)
             {
                 Invalid = true;
-                if (Source is null || Destination is null)
+                if (source is null || connection.Target is null)
                 {
-                    Main.LoadErrors.Add($"Tried mapping connection from {Source?.Name ?? "NONE"} to {Destination?.Name ?? "NONE"}");
+                    Main.LoadErrors.Add($"Tried mapping connection from {source?.Name ?? "NONE"} to {connection.Target?.Name ?? "NONE"}");
                 }
-                else if (connection.Exit < 0 || connection.Exit >= Source.Exits.Length)
+                else if (connection.Exit < 0 || connection.Exit >= source.Exits.Length)
                 {
-                    Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.Exit} in {Source?.Name ?? "NONE"}");
+                    Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.Exit} in {source?.Name ?? "NONE"}");
                 }
-                else if (connection.TargetExit < 0 || connection.TargetExit >= Destination.Exits.Length)
+                else if (connection.TargetExit < 0 || connection.TargetExit >= connection.Target.Exits.Length)
                 {
-                    Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.TargetExit} in {Destination?.Name ?? "NONE"}");
+                    Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.TargetExit} in {connection.Target?.Name ?? "NONE"}");
                 }
                 else
                 {
