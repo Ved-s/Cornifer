@@ -567,11 +567,11 @@ namespace Cornifer
                     return;
                 }
 
-                Source = source;
-                Destination = connection.Target;
+                Source = source!;
+                Destination = connection.Target!;
 
-                SourcePoint = source.Exits[connection.Exit].ToVector2() + new Vector2(.5f);
-                DestinationPoint = connection.Target.Exits[connection.TargetExit].ToVector2() + new Vector2(.5f);
+                SourcePoint = source!.Exits[connection.Exit].ToVector2() + new Vector2(.5f);
+                DestinationPoint = connection.Target!.Exits[connection.TargetExit].ToVector2() + new Vector2(.5f);
             }
 
             public List<ConnectionPoint> Points = new();
