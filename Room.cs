@@ -424,7 +424,7 @@ namespace Cornifer
 
             if (BrokenForSlugcats.Count > 0)
             {
-                string text = "Broken for [a:.5]" + string.Join(' ', BrokenForSlugcats.Select(s => $"[ic:Slugcat_{s}]"));
+                string text = "Broken for [a:.5]" + string.Join(' ', BrokenForSlugcats.OrderBy(s => Array.IndexOf(Main.SlugCatNames, s)).Select(s => $"[ic:Slugcat_{s}]"));
                 Children.Add(new MapText("BrokenShelterText", Content.RodondoExt20, text)
                 {
                     Shade = true,

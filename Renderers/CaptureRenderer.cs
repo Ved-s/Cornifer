@@ -81,20 +81,24 @@ namespace Cornifer.Renderers
 
             int texWidth = source?.Width ?? texture.Width;
             int texHeight = source?.Height ?? texture.Height;
+            Vector2 scale = worldSize is null ? Vector2.One : worldSize.Value / new Vector2(texWidth, texHeight);
+
             if (Capturing)
             {
-                Vector2 scale = worldSize is null ? Vector2.One : worldSize.Value / new Vector2(texWidth, texHeight);
                 Main.SpriteBatch.Draw(texture, TransformVector(worldPos), source, color ?? Color.White, 0f, Vector2.Zero, scale * Scale, SpriteEffects.None, 0);
                 return;
             }
 
+            int captureWidth = worldSize.HasValue ? (int)Math.Ceiling(worldSize.Value.X) : texWidth;
+            int captureHeight = worldSize.HasValue ? (int)Math.Ceiling(worldSize.Value.Y) : texHeight;
+
             var prevState = Main.SpriteBatch.GetState();
             Main.SpriteBatch.End();
-            BeginCapture(texWidth, texHeight);
+            BeginCapture(captureWidth, captureHeight);
             Main.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-            Main.SpriteBatch.Draw(texture, Vector2.Zero, source, color ?? Color.White, 0f, Vector2.Zero, scaleOverride ?? Vector2.One, SpriteEffects.None, 0);
+            Main.SpriteBatch.Draw(texture, Vector2.Zero, source, color ?? Color.White, 0f, Vector2.Zero, scaleOverride ?? scale * Scale, SpriteEffects.None, 0);
             Main.SpriteBatch.End();
-            EndCapture(worldPos, texWidth, texHeight);
+            EndCapture(worldPos, captureWidth, captureHeight);
             Main.SpriteBatch.Begin(prevState);
         }
 
