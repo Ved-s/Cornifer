@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Cornifer
 {
@@ -119,7 +120,7 @@ namespace Cornifer
                 {
                     obj.DebugDisplay = $"Pearl id: {type}";
 
-                    obj.Color.OriginalValue = GetPearlHighlightColor(type) ?? GetPearlMainColor(type);
+                    obj.Color.OriginalValue = GetPearlColor(type);
 
                     if (type != "Misc" && type != "BroadcastMisc")
                     {
@@ -238,6 +239,37 @@ namespace Cornifer
             return slugcats;
         }
 
+        static Color GetPearlColor(string type)
+        {
+            Color color = GetPearlMainColor(type);
+            Color? color2 = GetPearlHighlightColor(type);
+            if (color2.HasValue)
+            {
+                // color = Custom.Screen(color, color2.Value * Custom.QuickSaturation(color2.Value) * 0.5f);
+
+                float max = Math.Max(color2.Value.R, Math.Max(color2.Value.G, color2.Value.B)) / 255f;
+                float min = Math.Min(color2.Value.R, Math.Min(color2.Value.G, color2.Value.B)) / 255f;
+
+                float sat = (min - max) / -max;
+
+                Color v = color2.Value * sat * 0.5f;
+
+                color = new Color(1f - (1f - color.R/255f) * (1f - v.R/255f), 1f - (1f - color.G/255f) * (1f - v.G/255f), 1f - (1f - color.B/255f) * (1f - v.B/255f));
+            }
+            else
+            {
+                color = Microsoft.Xna.Framework.Color.Lerp(color, Microsoft.Xna.Framework.Color.White, 0.15f);
+            }
+            if (color.R / 255f < 0.1f && color.G / 255f < 0.1f && color.B / 255f < 0.1f)
+            {
+                // color = Color.Lerp(color, Menu.MenuRGB(Menu.MenuColors.MediumGrey), 0.3f);
+
+                Color menurgb = new(169, 164, 178);
+                color = Microsoft.Xna.Framework.Color.Lerp(color, menurgb, 0.3f);
+            }
+
+            return color;
+        }
         static Color GetPearlMainColor(string type)
         {
             return type switch
