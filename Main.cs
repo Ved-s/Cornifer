@@ -121,6 +121,12 @@ namespace Cornifer
             SpriteBatch = new SpriteBatch(GraphicsDevice);
             Cornifer.Content.Load(Content);
 
+            FontAlphaHack.Apply(Cornifer.Content.RodondoExt20, 5);
+            FontAlphaHack.Apply(Cornifer.Content.RodondoExt30, 1);
+
+            Cornifer.Content.RodondoExt20.Spacing += 1;
+            Cornifer.Content.RodondoExt30.Spacing += 1;
+
             FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt20] = 4;
             FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt30] = 4;
 
@@ -239,7 +245,8 @@ namespace Cornifer
                 SpriteBatch.End();
             }
 
-            SpriteBatch.Begin();
+            SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            //SpriteBatch.DrawString(Cornifer.Content.RodondoExt20, "test", new(5, 5), Color.White, 0f, Vector2.Zero, 10, SpriteEffects.None, 0);
             SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, GithubInfo.Desc, new(5, vp.Height - Cornifer.Content.Consolas10.LineSpacing * 2 - 5), Color.White);
             SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, GithubInfo.Status, new(5, vp.Height - Cornifer.Content.Consolas10.LineSpacing - 5), Color.White);
             SpriteBatch.End();
