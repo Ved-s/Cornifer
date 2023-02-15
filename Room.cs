@@ -98,6 +98,7 @@ namespace Cornifer
 
         public int Layer;
         public ObjectProperty<int, string> Subregion = new("subregion", 0);
+        public ObjectProperty<bool> Deathpit = new("deathpit", false);
 
         public Vector2 WorldPos;
 
@@ -426,6 +427,8 @@ namespace Cornifer
                 Children.Add(new MapText("BrokenShelterText", Main.DefaultSmallMapFont, text));
             }
 
+            Deathpit.OriginalValue = WaterLevel < 0 && Enumerable.Range(0, TileSize.X).Any(x => Tiles[x, TileSize.Y-1].Terrain == Tile.TerrainType.Air);
+
             Loaded = true;
         }
 
@@ -495,6 +498,9 @@ namespace Cornifer
                         {
                             color = Color.Lerp(subregion.WaterColor, color, WaterTransparency);
                         }
+
+                        if (Deathpit.Value && j >= TileSize.Y - 5 && Tiles[i, TileSize.Y - 1].Terrain == Tile.TerrainType.Air)
+                            color = Color.Lerp(Color.Black, color, (TileSize.Y - j - 1) / 5f);
 
                         colors[i + j * TileSize.X] = color;
                     }
@@ -618,20 +624,37 @@ namespace Cornifer
                     TileMapDirty = true;
                 };
             }
+
+            list.Elements.Add(new UIButton
+            {
+                Height = 20,
+
+                Selectable = true,
+                Selected = Deathpit.Value,
+                Text = "Deathpit",
+
+                SelectedBackColor = Color.White,
+                SelectedTextColor = Color.Black,
+
+                TextAlign = new(.5f)
+
+            }.OnEvent(UIElement.ClickEvent, (btn, _) =>
+            {
+                Deathpit.Value = btn.Selected;
+                TileMapDirty = true;
+            }));
         }
 
         protected override JsonNode? SaveInnerJson()
         {
             return new JsonObject {}
+            .SaveProperty(Deathpit)
             .SaveProperty(Subregion);
         }
         protected override void LoadInnerJson(JsonNode node)
         {
-            //if (node.TryGet("subregion", out string? subregion) && Region is not null)
-            //    for (int i = 0; i < Region.Subregions.Length; i++)
-            //        if (Region.Subregions[i].Name == subregion)
-            //            Subregion = i;
             Subregion.LoadFromJson(node);
+            Deathpit.LoadFromJson(node);
             TileMapDirty = true;
         }
 

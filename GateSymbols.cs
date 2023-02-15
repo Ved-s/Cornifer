@@ -67,7 +67,7 @@ namespace Cornifer
         {
             Vector2 center = WorldPosition + Size / 2;
 
-            Vector2 splitterSize = new(5, 64);
+            Vector2 splitterSize = new(5, 66);
             renderer.DrawTexture(Main.Pixel, center - splitterSize/2, null, splitterSize, SplitterColor.Value);
 
             if (LeftSymbolSprite is not null)
