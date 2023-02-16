@@ -135,7 +135,6 @@ namespace Cornifer
             Cornifer.Content.Rodondo30.LineSpacing += 11;
             Cornifer.Content.RodondoExt20.Spacing += 1;
             Cornifer.Content.RodondoExt30.LineSpacing -= 5;
-            //Cornifer.Content.RodondoExt30.Spacing += 1;
 
             FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt20] = 4;
             FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt30] = 4;
@@ -533,7 +532,8 @@ namespace Cornifer
                 ["slugcat"] = SelectedSlugcat,
                 ["region"] = Region?.SaveJson(),
                 ["connections"] = Region?.Connections?.SaveJson(),
-                ["objects"] = new JsonArray(WorldObjectLists.Enumerate().Select(o => o.SaveJson()).ToArray())
+                ["objects"] = new JsonArray(WorldObjectLists.Enumerate().Select(o => o.SaveJson()).OfType<JsonNode>().ToArray()),
+                ["interface"] = InterfaceState.SaveJson(),
             };
         }
         public static void LoadJson(JsonNode node)
@@ -562,6 +562,9 @@ namespace Cornifer
 
                         WorldObjects.Add(obj);
                     }
+
+            if (node.TryGet("interface", out JsonNode? @interface))
+                InterfaceState.LoadJson(@interface);
         }
 
         public static void OpenState()

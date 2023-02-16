@@ -76,12 +76,6 @@ namespace Cornifer
             ["CL_CORE"] = new(471f, 373f),
         };
 
-        public static bool DrawTileWalls = true;
-        public static bool DrawObjects = true;
-        public static bool DrawPickUpObjects = true;
-
-        public static float WaterTransparency = .3f;
-
         public bool IsGate;
         public bool IsShelter;
         public bool IsAncientShelter;
@@ -160,6 +154,11 @@ namespace Cornifer
                             pos = testTilePos;
                             continue;
                         }
+                        else if (tile.Shortcut != Tile.ShortcutType.None)
+                        {
+                            pos = testTilePos;
+                            break;
+                        }
                     }
                 }
                 foundDir = false;
@@ -176,6 +175,12 @@ namespace Cornifer
                     {
                         dir = j;
                         foundDir = true;
+                        break;
+                    }
+                    else if (tile.Shortcut != Tile.ShortcutType.None)
+                    {
+                        pos = testTilePos;
+                        foundDir = false;
                         break;
                     }
                 }
@@ -305,7 +310,12 @@ namespace Cornifer
                 {
                     Point target = TraceShotrcut(shortcutIn);
                     Tile targetTile = GetTile(target.X, target.Y);
-                    tracedShortcuts.Add(new(shortcutIn, target, targetTile.Shortcut));
+
+                    Tile.ShortcutType type = targetTile.Shortcut;
+                    if (targetTile.Shortcut == Tile.ShortcutType.Normal && targetTile.Terrain != Tile.TerrainType.ShortcutEntrance)
+                        type = Tile.ShortcutType.None;
+
+                    tracedShortcuts.Add(new(shortcutIn, target, type));
                 }
 
                 Shortcuts = tracedShortcuts.ToArray();
@@ -479,18 +489,18 @@ namespace Cornifer
             Color[] colors = ArrayPool<Color>.Shared.Rent(TileSize.X * TileSize.Y);
             try
             {
-                bool invertedWater = Effects.Any(ef => ef.name == "InvertedWater");
+                bool invertedWater = Effects.Any(ef => ef.Name == "InvertedWater");
 
                 int waterLevel = WaterLevel;
 
                 if (waterLevel < 0)
                 {
-                    Effect? waterFluxMin = Effects.FirstOrDefault(ef => ef.name == "WaterFluxMinLevel");
-                    Effect? waterFluxMax = Effects.FirstOrDefault(ef => ef.name == "WaterFluxMaxLevel");
+                    Effect? waterFluxMin = Effects.FirstOrDefault(ef => ef.Name == "WaterFluxMinLevel");
+                    Effect? waterFluxMax = Effects.FirstOrDefault(ef => ef.Name == "WaterFluxMaxLevel");
 
                     if (waterFluxMin is not null && waterFluxMax is not null)
                     {
-                        float waterMid = 1 - ((waterFluxMax.amount + waterFluxMin.amount) / 2 * (22f / 20f));
+                        float waterMid = 1 - ((waterFluxMax.Amount + waterFluxMin.Amount) / 2 * (22f / 20f));
                         waterLevel = (int)(waterMid * TileSize.Y) + 2;
                     }
                 }
@@ -521,7 +531,7 @@ namespace Cornifer
                         else if (tile.Terrain == Tile.TerrainType.Slope)
                             gray = .4f;
 
-                        else if (DrawTileWalls && tile.Attributes.HasFlag(Tile.TileAttributes.WallBehind))
+                        else if (InterfaceState.DrawTileWalls.Value && tile.Attributes.HasFlag(Tile.TileAttributes.WallBehind))
                             gray = 0.75f;
 
                         if (tile.Attributes.HasFlag(Tile.TileAttributes.VerticalBeam) || tile.Attributes.HasFlag(Tile.TileAttributes.HorizontalBeam))
@@ -531,7 +541,7 @@ namespace Cornifer
 
                         if (!solid && (invertedWater ? j <= waterLevel : j >= TileSize.Y - waterLevel))
                         {
-                            color = Color.Lerp(subregion.WaterColor, color, WaterTransparency);
+                            color = Color.Lerp(subregion.WaterColor, color, InterfaceState.WaterTransparency.Value);
                         }
 
                         if (Deathpit.Value && j >= TileSize.Y - 5 && Tiles[i, TileSize.Y - 1].Terrain == Tile.TerrainType.Air)
@@ -539,6 +549,12 @@ namespace Cornifer
 
                         colors[i + j * TileSize.X] = color;
                     }
+
+                if (InterfaceState.MarkShortcuts.Value)
+                    foreach (Shortcut shortcut in Shortcuts)
+                        if ((!InterfaceState.MarkExitsOnly.Value || shortcut.Type == Tile.ShortcutType.RoomExit) && shortcut.Type != Tile.ShortcutType.None)
+                            colors[shortcut.Entrance.X + shortcut.Entrance.Y * TileSize.X] = new(255, 0, 0);
+                    
 
                 TileMap ??= new(Main.Instance.GraphicsDevice, TileSize.X, TileSize.Y);
                 TileMap.SetData(colors, 0, TileSize.X * TileSize.Y);
@@ -705,8 +721,8 @@ namespace Cornifer
                 return $"{Exit} -> {Target.Name}[{TargetExit}]";
             }
         }
-        public record class Shortcut(Point entrance, Point target, Tile.ShortcutType type);
-        public record class Effect(string name, float amount);
+        public record class Shortcut(Point Entrance, Point Target, Tile.ShortcutType Type);
+        public record class Effect(string Name, float Amount);
 
         public struct Tile
         {

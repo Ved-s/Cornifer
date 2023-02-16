@@ -490,13 +490,12 @@ namespace Cornifer
                                 Text = "Draw slugcat icons",
 
                                 Selectable = true,
-                                Selected = SlugcatIcon.DrawIcons,
 
                                 SelectedBackColor = Color.White,
                                 SelectedTextColor = Color.Black,
 
                                 TextAlign = new(.5f)
-                            }.OnEvent(UIElement.ClickEvent, (btn, _) => SlugcatIcon.DrawIcons = btn.Selected)
+                            }.BindConfig(InterfaceState.DrawSLugcatIcons)
                             .Assign(out SlugcatIcons),
 
                             new UIButton
@@ -507,13 +506,12 @@ namespace Cornifer
                                 HoverText = "Draw diamonds instead of\nslugcat icons",
 
                                 Selectable = true,
-                                Selected = SlugcatIcon.DrawDiamond,
-
+ 
                                 SelectedBackColor = Color.White,
                                 SelectedTextColor = Color.Black,
 
                                 TextAlign = new(.5f)
-                            }.OnEvent(UIElement.ClickEvent, (btn, _) => SlugcatIcon.DrawDiamond = btn.Selected),
+                            }.BindConfig(InterfaceState.DrawSLugcatDiamond),
 
                             new UIButton
                             {
@@ -521,13 +519,12 @@ namespace Cornifer
                                 Text = "Draw room objects",
 
                                 Selectable = true,
-                                Selected = Room.DrawObjects,
 
                                 SelectedBackColor = Color.White,
                                 SelectedTextColor = Color.Black,
 
                                 TextAlign = new(.5f)
-                            }.OnEvent(UIElement.ClickEvent, (btn, _) => Room.DrawObjects = btn.Selected),
+                            }.BindConfig(InterfaceState.DrawPlacedObjects),
 
                             new UIButton
                             {
@@ -537,20 +534,18 @@ namespace Cornifer
                                 HoverText = "Draw placed items",
 
                                 Selectable = true,
-                                Selected = Room.DrawPickUpObjects,
 
                                 SelectedBackColor = Color.White,
                                 SelectedTextColor = Color.Black,
 
                                 TextAlign = new(.5f)
-                            }.OnEvent(UIElement.ClickEvent, (btn, _) => Room.DrawPickUpObjects = btn.Selected),
+                            }.BindConfig(InterfaceState.DrawPlacedPickups),
 
                             new UIButton
                             {
                                 Height = 20,
 
                                 Selectable = true,
-                                Selected = Room.DrawTileWalls,
                                 Text = "Draw tile walls",
 
                                 HoverText = "Render room tiles with walls",
@@ -560,11 +555,71 @@ namespace Cornifer
 
                                 TextAlign = new(.5f)
 
-                            }.OnEvent(UIElement.ClickEvent, (btn, _) =>
+                            }.BindConfig(InterfaceState.DrawTileWalls),
+
+                            new UIButton
                             {
-                                Room.DrawTileWalls = btn.Selected;
-                                Main.Region?.MarkRoomTilemapsDirty();
-                            }),
+                                Height = 20,
+
+                                Selectable = true,
+                                Text = "Mark shortcuts",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.MarkShortcuts),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Selectable = true,
+                                Text = "Mark exits only",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.MarkExitsOnly),
+
+                            new UIPanel
+                            {
+                                Height = 40,
+                                Padding = 3,
+
+                                BorderColor = new(100, 100, 100),
+
+                                Elements =
+                                {
+                                    new UILabel
+                                    {
+                                        Height = 20,
+                                        Text = $"Water transparency: {InterfaceState.WaterTransparency.Value*100:0}%",
+                                        TextAlign = new(0, .5f)
+                                    }.OnConfigChange(InterfaceState.WaterTransparency, (label, value) => label.Text = $"Water transparency: {value*100:0}%"),
+                                    new UIScrollBar
+                                    {
+                                        Top = 20,
+                                        Height = 8,
+                                        Margin = new(0, 5),
+
+                                        BackColor = new(36, 36, 36),
+                                        BorderColor = new(100, 100, 100),
+
+                                        Horizontal = true,
+                                        BarPadding = -4,
+                                        BarSize = 7,
+                                        BarSizeAbsolute = true,
+                                        ScrollMin = 0,
+                                        ScrollMax = 1,
+                                    }.BindConfig(InterfaceState.WaterTransparency)
+                                }
+                            },
+
+                            new UIElement { Height = 10 },
 
                             new UIButton
                             {
@@ -592,47 +647,7 @@ namespace Cornifer
                                 });
                             }),
 
-                            new UIPanel
-                            {
-                                Height = 40,
-                                Padding = 3,
-
-                                BorderColor = new(100, 100, 100),
-
-                                Elements =
-                                {
-                                    new UILabel
-                                    {
-                                        Height = 20,
-                                        Text = $"Water transparency: {Room.WaterTransparency*100:0}%",
-                                        TextAlign = new(0, .5f)
-                                    }.Assign(out UILabel waterTransparencyLabel),
-                                    new UIScrollBar
-                                    {
-                                        Top = 20,
-                                        Height = 8,
-                                        Margin = new(0, 5),
-
-                                        BackColor = new(36, 36, 36),
-                                        BorderColor = new(100, 100, 100),
-
-                                        Horizontal = true,
-                                        BarPadding = -4,
-                                        BarSize = 7,
-                                        BarSizeAbsolute = true,
-                                        ScrollMin = 0,
-                                        ScrollMax = 1,
-                                        ScrollPosition = Room.WaterTransparency,
-                                    }.OnEvent(UIScrollBar.ScrollChanged, (_, scroll) =>
-                                    {
-                                        Room.WaterTransparency = scroll;
-                                        waterTransparencyLabel.Text = $"Water transparency: {Room.WaterTransparency*100:0}%";
-                                        Main.Region?.MarkRoomTilemapsDirty();
-                                    })
-                                }
-                            },
-
-                            new UIElement { Height = 20 },
+                            new UIElement { Height = 10 },
                             new UIPanel
                             {
                                 Height = 50,
@@ -766,8 +781,7 @@ namespace Cornifer
                 button.OnEvent(UIElement.ClickEvent, (_, _) =>
                 {
                     Main.SelectedSlugcat = slugcat;
-                    SlugcatIcon.DrawIcons = false;
-                    SlugcatIcons.Selected = SlugcatIcon.DrawIcons;
+                    InterfaceState.DrawSLugcatIcons.Value = false;
                     SlugcatSelectVisible = false;
                     RegionSelectVisible = true;
                 });
@@ -786,8 +800,7 @@ namespace Cornifer
             all.OnEvent(UIElement.ClickEvent, (_, _) =>
             {
                 Main.SelectedSlugcat = null;
-                SlugcatIcon.DrawIcons = true;
-                SlugcatIcons.Selected = SlugcatIcon.DrawIcons;
+                InterfaceState.DrawSLugcatIcons.Value = false;
                 SlugcatSelectVisible = false;
                 RegionSelectVisible = true;
             });

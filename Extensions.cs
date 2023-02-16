@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Cornifer.UI.Elements;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Buffers;
@@ -242,6 +243,20 @@ namespace Cornifer
         {
             property.SaveToJson(node);
             return node;
+        }
+
+        public static TElement BindConfig<TElement, TConfig>(this TElement element, InterfaceState.Config<TConfig> config) where TElement : UIElement
+        {
+            config.Element = element;
+            config.UpdateElement();
+            config.BindElement();
+            return element;
+        }
+
+        public static TElement OnConfigChange<TElement, TConfig>(this TElement element, InterfaceState.Config<TConfig> config, Action<TElement, TConfig> handler) where TElement : UIElement
+        {
+            config.OnChanged += () => handler(element, config.Value);
+            return element;
         }
     }
 }
