@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 namespace Cornifer.UI.Elements
 {
@@ -317,19 +318,7 @@ namespace Cornifer.UI.Elements
 
                     if (CheckKeyTriggered(Keys.Enter) && Multiline)
                     {
-                        if (PreTextChanged())
-                        {
-                            ClearSelection();
-
-                            StringBuilder line = Lines[CaretPos.Y];
-                            StringBuilder newLine = new();
-                            newLine.Append(line, CaretPos.X, line.Length - CaretPos.X);
-                            line.Remove(CaretPos.X, line.Length - CaretPos.X);
-                            Lines.Insert(CaretPos.Y + 1, newLine);
-                            CaretPos.X = 0;
-                            CaretPos.Y++;
-                            PostTextChanged();
-                        }
+                        InsertNewline();
                     }
 
                     if (Root.CtrlKey > KeybindState.JustPressed)
@@ -339,9 +328,23 @@ namespace Cornifer.UI.Elements
                             SelectionStartPos = Point.Zero;
                             CaretPos = SelectionEndPos = new(Lines[^1].Length, Lines.Count - 1);
                         }
+
+                        if (Root.GetKeyState(Keys.C) == KeybindState.JustPressed)
+                        {
+                            SetClipboard(GetSelection());
+                        }
+
+                        if (Root.GetKeyState(Keys.X) == KeybindState.JustPressed)
+                        {
+                            SetClipboard(GetSelection());
+                            ClearSelection();
+                        }
                     }
                 }
 
+                if (Root.CtrlKey != KeybindState.Released && Root.GetKeyState(Keys.V) == KeybindState.JustPressed)
+                    foreach (char c in GetClipboard())
+                        TextInput(null, new(c));
             }
 
             if (LineWidths.Length < Lines.Count)
@@ -355,6 +358,24 @@ namespace Cornifer.UI.Elements
                 LineWidths[i] = lineWidth;
             }
         }
+
+        private void InsertNewline()
+        {
+            if (PreTextChanged())
+            {
+                ClearSelection();
+
+                StringBuilder line = Lines[CaretPos.Y];
+                StringBuilder newLine = new();
+                newLine.Append(line, CaretPos.X, line.Length - CaretPos.X);
+                line.Remove(CaretPos.X, line.Length - CaretPos.X);
+                Lines.Insert(CaretPos.Y + 1, newLine);
+                CaretPos.X = 0;
+                CaretPos.Y++;
+                PostTextChanged();
+            }
+        }
+
         protected override void DrawSelf(SpriteBatch spriteBatch)
         {
             spriteBatch.FillRectangle(ScreenRect, BackColor);
@@ -501,6 +522,37 @@ namespace Cornifer.UI.Elements
             CaretPos = SelectionStartPos;
             SelectionStartPos = SelectionEndPos = Point.Zero;
         }
+        protected virtual string GetSelection()
+        {
+            if (SelectionEndPos == SelectionStartPos)
+                return "";
+
+            StringBuilder builder = new();
+
+            if (SelectionEndPos.Y == SelectionStartPos.Y) // Text te[xt text tex]t text
+            {
+                StringBuilder line = Lines[SelectionStartPos.Y];
+
+                builder.Append(line, SelectionStartPos.X, SelectionEndPos.X - SelectionStartPos.X);
+            }
+            else
+            {
+                StringBuilder startLine = Lines[SelectionStartPos.Y];
+                builder.Append(startLine, SelectionStartPos.X, startLine.Length - SelectionStartPos.X);
+                builder.Append('\n');
+
+                for (int i = SelectionStartPos.Y + 1; i < SelectionEndPos.Y; i++)
+                {
+                    builder.Append(Lines[i]);
+                    builder.Append('\n');
+                }
+
+                StringBuilder endLine = Lines[SelectionEndPos.Y];
+                builder.Append(endLine, 0, SelectionEndPos.X);
+            }
+
+            return builder.ToString();
+        }
 
         protected virtual bool PreTextChanged() => Events.PreCall(TextChangedEvent, default);
         protected virtual void PostTextChanged() => Events.PostCall(TextChangedEvent, default);
@@ -566,6 +618,29 @@ namespace Cornifer.UI.Elements
             KeyRepeatCounter = 0;
             KeyRepeatCounterMax = 2;
             return true;
+        }
+
+        static string GetClipboard()
+        {
+            string value = "";
+            Thread thread = new(() => 
+            {
+                value = System.Windows.Forms.Clipboard.GetText();
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
+            thread.Join();
+            return value;
+        }
+
+        static void SetClipboard(string value)
+        {
+            Thread thread = new(() =>
+            {
+                System.Windows.Forms.Clipboard.SetText(value);
+            });
+            thread.SetApartmentState(ApartmentState.STA);
+            thread.Start();
         }
     }
 }
