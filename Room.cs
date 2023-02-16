@@ -122,6 +122,8 @@ namespace Cornifer
         public override Vector2 ParentPosition { get => WorldPos; set => WorldPos = value; }
         public override Vector2 Size => TileSize.ToVector2();
 
+        public GateRoomData? GateData;
+
         bool[,]? CutOutSolidTiles = null;
 
         public Room() 
@@ -429,6 +431,39 @@ namespace Cornifer
 
             Deathpit.OriginalValue = WaterLevel < 0 && Enumerable.Range(0, TileSize.X).Any(x => Tiles[x, TileSize.Y-1].Terrain == Tile.TerrainType.Air);
 
+            if (GateData is not null && IsGate)
+            {
+                Color leftColor = Color.White;
+                Color rightColor = Color.White;
+                Color regionColor = Color.White;
+
+                if (GateData.LeftRegionId is not null && Region.RegionColors.TryGetValue(GateData.LeftRegionId, out Color color))
+                    leftColor = color;
+
+                if (GateData.RightRegionId is not null && Region.RegionColors.TryGetValue(GateData.RightRegionId, out color))
+                    rightColor = color;
+
+                string? targetRegion = null;
+
+                if (GateData.LeftRegionId is not null && !GateData.LeftRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase))
+                    targetRegion = GateData.LeftRegionId;
+
+                else if (GateData.RightRegionId is not null && !GateData.RightRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase))
+                    targetRegion = GateData.RightRegionId;
+
+                if (targetRegion is not null && Region.RegionColors.TryGetValue(targetRegion, out color))
+                    regionColor = color;
+
+                Children.Add(new GateSymbols(GateData.LeftKarma, GateData.RightKarma)
+                {
+                    LeftArrowColor = { OriginalValue = leftColor },
+                    RightArrowColor = { OriginalValue = rightColor },
+                });
+
+                if (GateData.TargetRegionName is not null)
+                    Children.Add(new MapText("TargetRegionText", Main.DefaultBigMapFont, $"To [c:{regionColor.R:x2}{regionColor.G:x2}{regionColor.B:x2}]{GateData.TargetRegionName}[/c]"));
+            }
+
             Loaded = true;
         }
 
@@ -647,7 +682,7 @@ namespace Cornifer
 
         protected override JsonNode? SaveInnerJson()
         {
-            return new JsonObject {}
+            return new JsonObject()
             .SaveProperty(Deathpit)
             .SaveProperty(Subregion);
         }
@@ -711,5 +746,16 @@ namespace Cornifer
                 RegionTransportation,
             }
         }
+    }
+
+    public class GateRoomData
+    {
+        public string? TargetRegionName;
+
+        public string? LeftRegionId;
+        public string? RightRegionId;
+
+        public string? LeftKarma;
+        public string? RightKarma;
     }
 }

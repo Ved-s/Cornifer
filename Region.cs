@@ -46,9 +46,6 @@ namespace Cornifer
         string? PropertiesString;
         string? GateLockString;
 
-        // room name -> region name 
-        Dictionary<string, string> GateTargetRegions = new();
-
         public Region()
         {
 
@@ -88,6 +85,8 @@ namespace Cornifer
                     roomDirs.Add(Path.Combine(rwworld, Id));
             }
 
+            LoadGates(id, worldFilePath, roomDirs);
+
             foreach (Room r in Rooms)
             {
                 string? settings = null;
@@ -122,7 +121,11 @@ namespace Cornifer
 
                 r.Load(File.ReadAllText(data!), settings is null ? null : File.ReadAllText(settings));
             }
+            LoadConnections();
+        }
 
+        private void LoadGates(string id, string worldFilePath, List<string> roomDirs)
+        {
             HashSet<string> gatesProcessed = new();
             List<string> lockLines = new();
             foreach (string roomDir in roomDirs)
@@ -145,7 +148,7 @@ namespace Cornifer
                     if (!room.IsGate)
                         continue;
 
-                    Match match = GateNameRegex.Match(room.Name);
+                    Match match = GateNameRegex.Match(room.Name!);
                     if (!match.Success)
                         continue;
 
@@ -164,11 +167,44 @@ namespace Cornifer
                     if (!regionNames.TryGetValue(otherRegionId, out string? otherRegionName))
                         continue;
 
-                    GateTargetRegions[room.Name] = otherRegionName;
+                    room.GateData ??= new();
+                    room.GateData.TargetRegionName = otherRegionName;
                 }
             }
-            AddGateTexts();
-            LoadConnections();
+        }
+
+        private void AddGateLocks(string data, HashSet<string>? processed, List<string>? lockLines)
+        {
+            foreach (string line in data.Split('\n', StringSplitOptions.TrimEntries))
+            {
+                string[] split = line.Split(':', StringSplitOptions.TrimEntries);
+                if (processed is not null && processed.Contains(split[0]) || !TryGetRoom(split[0], out Room? gate))
+                    continue;
+
+                string? leftRegion = null;
+                string? rightRegion = null;
+
+                Match match = GateNameRegex.Match(split[0]);
+                gate.GateData ??= new();
+
+                if (match.Success)
+                {
+                    leftRegion = match.Groups[1].Value;
+                    rightRegion = match.Groups[2].Value;
+
+                    if (split.Length >= 4 && split[3] == "SWAPMAPSYMBOL")
+                        (leftRegion, rightRegion) = (rightRegion, leftRegion);
+
+                    gate.GateData.LeftRegionId = leftRegion;
+                    gate.GateData.RightRegionId = rightRegion;
+                }
+
+                gate.GateData.LeftKarma = split[1];
+                gate.GateData.RightKarma = split[2];
+
+                processed?.Add(split[0]);
+                lockLines?.Add(line);
+            }
         }
 
         private void Load()
@@ -421,65 +457,6 @@ namespace Cornifer
             Connections = new(this);
         }
 
-        private void AddGateLocks(string data, HashSet<string>? processed, List<string>? lockLines)
-        {
-            foreach (string line in data.Split('\n', StringSplitOptions.TrimEntries))
-            {
-                string[] split = line.Split(':', StringSplitOptions.TrimEntries);
-                if (processed is not null && processed.Contains(split[0]) || !TryGetRoom(split[0], out Room? gate))
-                    continue;
-
-                Color left = Color.White;
-                Color right = Color.White;
-
-                Match match = GateNameRegex.Match(split[0]);
-                if (match.Success)
-                {
-                    if (RegionColors.TryGetValue(match.Groups[1].Value, out Color color))
-                        left = color;
-                    if (RegionColors.TryGetValue(match.Groups[2].Value, out color))
-                        right = color;
-                }
-
-                gate.Children.Add(new GateSymbols(split[1], split[2]) 
-                {
-                    LeftArrowColor = { OriginalValue = left },
-                    RightArrowColor = { OriginalValue = right },
-                });
-
-                processed?.Add(split[0]);
-                lockLines?.Add(line);
-            }
-        }
-        private void AddGateTexts()
-        {
-            foreach (var (roomName, targetRegion) in GateTargetRegions)
-            {
-                if (!TryGetRoom(roomName, out Room? room))
-                    continue;
-
-                Color regionColor = Color.White;
-                Match match = GateNameRegex.Match(room.Name!);
-                if (match.Success)
-                {
-                    string? otherRegionId = null;
-
-                    string rgLeft = match.Groups[1].Value;
-                    string rgRight = match.Groups[2].Value;
-
-                    if (Id.Equals(rgLeft, StringComparison.InvariantCultureIgnoreCase))
-                        otherRegionId = rgRight;
-                    else if (Id.Equals(rgRight, StringComparison.InvariantCultureIgnoreCase))
-                        otherRegionId = rgLeft;
-
-                    if (otherRegionId is not null && RegionColors.TryGetValue(otherRegionId, out Color color))
-                        regionColor = color;
-                }
-
-                room.Children.Add(new MapText("TargetRegionText", Main.DefaultBigMapFont, $"To [c:{regionColor.R:x2}{regionColor.G:x2}{regionColor.B:x2}]{targetRegion}[/c]"));
-            }
-        }
-
         public bool TryGetRoom(string id, [NotNullWhen(true)] out Room? room)
         {
             foreach (Room r in Rooms)
@@ -506,7 +483,9 @@ namespace Cornifer
                 ["world"] = WorldString,
                 ["properties"] = PropertiesString,
                 ["map"] = MapString,
-                ["gateTargets"] = JsonSerializer.SerializeToNode(GateTargetRegions),
+                ["gateTargets"] = new JsonObject(Rooms
+                    .Where(r => r.IsGate && r.GateData?.TargetRegionName is not null)
+                    .Select(r => new KeyValuePair<string, JsonNode?>(r.Name!, r.GateData!.TargetRegionName!))),
                 ["locks"] = GateLockString,
                 ["rooms"] = new JsonArray(Rooms.Select(r => new JsonObject()
                 {
@@ -537,17 +516,25 @@ namespace Cornifer
             if (node.TryGet("map", out string? map))
                 MapString = map;
 
-            if (node.TryGet("gateTargets", out JsonNode? gateTargets))
-                GateTargetRegions = JsonSerializer.Deserialize<Dictionary<string, string>>(gateTargets) ?? new();
-
             if (node.TryGet("locks", out string? locks))
                 GateLockString = locks;
 
             Load();
 
+            if (node.TryGet("gateTargets", out JsonObject? gateTargets))
+                foreach (var (roomName, targetObj) in gateTargets)
+                    if (TryGetRoom(roomName, out Room? room) && targetObj is JsonValue targetValue)
+                    {
+                        string? target = targetValue.Deserialize<string>();
+                        if (target is null)
+                            continue;
+
+                        room.GateData ??= new();
+                        room.GateData.TargetRegionName = target;
+                    }
+
             if (GateLockString is not null)
                 AddGateLocks(GateLockString, null, null);
-            AddGateTexts();
 
             if (node.TryGet("rooms", out JsonArray? rooms))
             {

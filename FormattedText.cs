@@ -432,7 +432,7 @@ namespace Cornifer
 
                 float width = DrawLine(text.Slice(linePos, lineLength), pos, context);
                 pos.Advance(new(width, context.Font.LineSpacing * context.Scale));
-                pos.NewLine(context);
+                pos.NewLine();
                 linePos += lineLength + 1;
             }
 
@@ -645,11 +645,11 @@ namespace Cornifer
             public float LineHeight;
             public Vector2 Size;
 
-            public void NewLine(DrawContext context)
+            public void NewLine()
             {
                 Offset.X = 0;
                 Offset.Y += LineHeight;
-                LineHeight = context.Font.LineSpacing;
+                LineHeight = 0;
             }
 
             public void Advance(Vector2 size)

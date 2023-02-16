@@ -13,7 +13,7 @@ namespace Cornifer
 {
     public class GateSymbols : SelectableIcon
     {
-        public override Vector2 Size => new(107, 66);
+        public override Vector2 Size => new(107, 64);
         public override int ShadeSize => 5;
         public override int? ShadeCornerRadius => 6;
         public override bool LoadCreationForbidden => true;
@@ -36,10 +36,10 @@ namespace Cornifer
             RightArrowSprite = GameAtlases.GetSpriteOrNull("Misc_ArrowRight");
         }
 
-        public GateSymbols(string left, string right) : this()
+        public GateSymbols(string? left, string? right) : this()
         {
-            LeftSymbolSprite = GetSprite(left);
-            RighSymbolSprite = GetSprite(right);
+            LeftSymbolSprite = left is null ? null : GetSprite(left);
+            RighSymbolSprite = right is null ? null : GetSprite(right);
         }
 
         static AtlasSprite? GetSprite(string symbol)
@@ -67,14 +67,14 @@ namespace Cornifer
         {
             Vector2 center = WorldPosition + Size / 2;
 
-            Vector2 splitterSize = new(5, 66);
+            Vector2 splitterSize = new(5, 64);
             renderer.DrawTexture(Main.Pixel, center - splitterSize/2, null, splitterSize, SplitterColor.Value);
 
             if (LeftSymbolSprite is not null)
             {
                 Vector2 spriteSize = LeftSymbolSprite.Frame.Size.ToVector2();
 
-                Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 - 15.5f - spriteSize.X, Size.Y - 21 - spriteSize.Y / 2);
+                Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 - 14.5f - spriteSize.X, Size.Y - 20 - spriteSize.Y / 2);
                 renderer.DrawTexture(LeftSymbolSprite.Texture, spritePos, LeftSymbolSprite.Frame, null, LeftSymbolColor.Value);
             }
 
@@ -82,14 +82,14 @@ namespace Cornifer
             {
                 Vector2 spriteSize = RighSymbolSprite.Frame.Size.ToVector2();
 
-                Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 + 15.5f, Size.Y - 21 - spriteSize.Y / 2);
+                Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 + 14.5f, Size.Y - 20 - spriteSize.Y / 2);
                 renderer.DrawTexture(RighSymbolSprite.Texture, spritePos, RighSymbolSprite.Frame, null, RightSymbolColor.Value);
             }
 
             if (LeftArrowSprite is not null)
             {
                 Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 + 22.5f, 0);
-                renderer.DrawTexture(LeftArrowSprite.Texture, spritePos, LeftArrowSprite.Frame, null, RightArrowColor.Value);
+                renderer.DrawTexture(LeftArrowSprite.Texture, spritePos, LeftArrowSprite.Frame, null, LeftArrowColor.Value);
             }
 
             if (RightArrowSprite is not null)
@@ -97,7 +97,7 @@ namespace Cornifer
                 Vector2 spriteSize = RightArrowSprite.Frame.Size.ToVector2();
 
                 Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 - 22.5f - spriteSize.X, 0);
-                renderer.DrawTexture(RightArrowSprite.Texture, spritePos, RightArrowSprite.Frame, null, LeftArrowColor.Value);
+                renderer.DrawTexture(RightArrowSprite.Texture, spritePos, RightArrowSprite.Frame, null, RightArrowColor.Value);
             }
         }
 
@@ -132,6 +132,18 @@ namespace Cornifer
                 Text = "Set right arrow color",
                 Height = 20,
             }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Right arrow color", RightArrowColor.Value, (_, c) => RightArrowColor.Value = c)));
+
+            list.Elements.Add(new UIButton
+            {
+                Text = "Swap arrow colors",
+                Height = 20,
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => (RightArrowColor, LeftArrowColor) = (LeftArrowColor, RightArrowColor)));
+
+            list.Elements.Add(new UIButton
+            {
+                Text = "Swap symbol colors",
+                Height = 20,
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => (RightSymbolColor, LeftSymbolColor) = (LeftSymbolColor, RightSymbolColor)));
         }
 
         protected override JsonNode? SaveInnerJson()
