@@ -439,7 +439,7 @@ namespace Cornifer
                 Children.Add(new MapText("BrokenShelterText", Main.DefaultSmallMapFont, text));
             }
 
-            Deathpit.OriginalValue = WaterLevel < 0 && Enumerable.Range(0, TileSize.X).Any(x => Tiles[x, TileSize.Y-1].Terrain == Tile.TerrainType.Air);
+            Deathpit.OriginalValue = !IsShelter && !IsGate && WaterLevel < 0 && Enumerable.Range(0, TileSize.X).Any(x => Tiles[x, TileSize.Y-1].Terrain == Tile.TerrainType.Air);
 
             if (GateData is not null && IsGate)
             {
@@ -766,6 +766,8 @@ namespace Cornifer
 
     public class GateRoomData
     {
+        public bool Swapped;
+
         public string? TargetRegionName;
 
         public string? LeftRegionId;

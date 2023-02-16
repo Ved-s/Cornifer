@@ -85,7 +85,7 @@ namespace Cornifer
                     roomDirs.Add(Path.Combine(rwworld, Id));
             }
 
-            LoadGates(id, worldFilePath, roomDirs);
+            LoadGates(worldFilePath);
 
             foreach (Room r in Rooms)
             {
@@ -124,17 +124,27 @@ namespace Cornifer
             LoadConnections();
         }
 
-        private void LoadGates(string id, string worldFilePath, List<string> roomDirs)
+        private void LoadGates(string worldFilePath)
         {
             HashSet<string> gatesProcessed = new();
             List<string> lockLines = new();
-            foreach (string roomDir in roomDirs)
+
+            string dir = Path.GetDirectoryName(worldFilePath)!;
+
+            List<string> gateFileDirs = new()
             {
-                string locksPath = Path.Combine(roomDir, "../gates/locks.txt");
-                if (!File.Exists(locksPath))
+                Path.Combine(dir, "../gates/locks.txt")
+            };
+
+            if (Main.TryFindParentDir(dir, "mergedmods", out string? mergedmods))
+                gateFileDirs.Add(Path.Combine(mergedmods, "world/gates/locks.txt"));
+
+            foreach (string file in gateFileDirs)
+            {
+                if (!File.Exists(file))
                     continue;
 
-                AddGateLocks(File.ReadAllText(locksPath), gatesProcessed, lockLines);
+                AddGateLocks(File.ReadAllText(file), gatesProcessed, lockLines);
             }
 
             if (lockLines.Count > 0)
@@ -145,29 +155,27 @@ namespace Cornifer
             {
                 foreach (Room room in Rooms)
                 {
-                    if (!room.IsGate)
+                    if (!room.IsGate || room.GateData is null)
                         continue;
 
                     Match match = GateNameRegex.Match(room.Name!);
                     if (!match.Success)
                         continue;
 
-                    string otherRegionId;
+                    string? otherRegionId;
 
-                    string rgLeft = match.Groups[1].Value;
-                    string rgRight = match.Groups[2].Value;
+                    if (room.GateData.RightRegionId?.Equals(Id, StringComparison.InvariantCultureIgnoreCase) ?? false)
+                        otherRegionId = room.GateData.LeftRegionId;
 
-                    if (id.Equals(rgLeft, StringComparison.InvariantCultureIgnoreCase))
-                        otherRegionId = rgRight;
-                    else if (id.Equals(rgRight, StringComparison.InvariantCultureIgnoreCase))
-                        otherRegionId = rgLeft;
+                    else if (room.GateData.LeftRegionId?.Equals(Id, StringComparison.InvariantCultureIgnoreCase) ?? false)
+                        otherRegionId = room.GateData.RightRegionId;
+
                     else
+                        otherRegionId = room.GateData.Swapped ? room.GateData.RightRegionId : room.GateData.LeftRegionId;
+
+                    if (otherRegionId is null || !regionNames.TryGetValue(otherRegionId, out string? otherRegionName))
                         continue;
 
-                    if (!regionNames.TryGetValue(otherRegionId, out string? otherRegionName))
-                        continue;
-
-                    room.GateData ??= new();
                     room.GateData.TargetRegionName = otherRegionName;
                 }
             }
@@ -181,24 +189,32 @@ namespace Cornifer
                 if (processed is not null && processed.Contains(split[0]) || !TryGetRoom(split[0], out Room? gate))
                     continue;
 
-                string? leftRegion = null;
-                string? rightRegion = null;
-
                 Match match = GateNameRegex.Match(split[0]);
                 gate.GateData ??= new();
 
+                if (split.Length >= 4 && split[3] == "SWAPMAPSYMBOL")
+                    gate.GateData.Swapped = true;
+
                 if (match.Success)
                 {
-                    leftRegion = match.Groups[1].Value;
-                    rightRegion = match.Groups[2].Value;
+                    string leftRegion = match.Groups[1].Value;
+                    string rightRegion = match.Groups[2].Value;
 
-                    if (split.Length >= 4 && split[3] == "SWAPMAPSYMBOL")
+                    if (gate.GateData.Swapped)
                         (leftRegion, rightRegion) = (rightRegion, leftRegion);
 
                     gate.GateData.LeftRegionId = leftRegion;
                     gate.GateData.RightRegionId = rightRegion;
                 }
 
+                if ((gate.GateData.LeftRegionId is null || !gate.GateData.LeftRegionId.Equals(Id, StringComparison.InvariantCultureIgnoreCase))
+                 && (gate.GateData.RightRegionId is null || !gate.GateData.RightRegionId.Equals(Id, StringComparison.InvariantCultureIgnoreCase)))
+                {
+                    if (gate.GateData.Swapped)
+                        gate.GateData.LeftRegionId = Id.ToUpper();
+                    else
+                        gate.GateData.RightRegionId = Id.ToUpper();
+                }
                 gate.GateData.LeftKarma = split[1];
                 gate.GateData.RightKarma = split[2];
 
