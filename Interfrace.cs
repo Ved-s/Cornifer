@@ -156,6 +156,12 @@ namespace Cornifer
             "[ic:name] [ic:name:color] Icon (this tag does not need to be closed)\n" +
             "Draws icons, found in \"Add icons to map\" menu."),
             (true, "Slugcat \\[ic:Slugcat_White\\] and their bat \\[ic:batSymbol:0\\] - Slugcat [ic:Slugcat_White] and their bat [ic:batSymbol:0]"),
+
+            (false, ""),
+            (false,
+            "[ds:color] Dropshadow\n" +
+            "Adds dropshadow effect to text and icons."),
+            (true, "\\[ds:555\\]Text\\[/ds\\] - [ds:555]Text[/ds]"),
         };
 
         public static void Init()

@@ -397,11 +397,22 @@ namespace Cornifer
                                         {
                                             Vector2 off = Offsets[i] * context.Scale * j;
                                             context.SpriteBatch.Draw(sprite.Texture, iconPos + off, sprite.Frame, context.ShadeColor, 0f, Vector2.Zero, context.Scale, SpriteEffects.None, 0f);
-                                        }
 
+                                            if (context.DropShadowColor.HasValue)
+                                            {
+                                                off += new Vector2(-1, 1) * context.Scale;
+                                                context.SpriteBatch.Draw(sprite.Texture, iconPos + off, sprite.Frame, context.ShadeColor, 0f, Vector2.Zero, context.Scale, SpriteEffects.None, 0f);
+                                            }
+                                        }
                                 }
                                 else if (!context.ShadeRun)
                                 {
+                                    if (context.DropShadowColor.HasValue)
+                                    {
+                                        Vector2 off = new Vector2(-1, 1) * context.Scale;
+                                        context.SpriteBatch.Draw(sprite.Texture, iconPos + off, sprite.Frame, context.DropShadowColor.Value, 0f, Vector2.Zero, context.Scale, SpriteEffects.None, 0f);
+                                    }
+
                                     context.SpriteBatch.Draw(sprite.Texture, iconPos, sprite.Frame, iconColor.Value, 0f, Vector2.Zero, context.Scale, SpriteEffects.None, 0f);
                                 }
                             }
@@ -410,7 +421,16 @@ namespace Cornifer
                         }
                     }
                 }
+                else if (tagName.Equals("ds", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    Color? tagColor = ParseColor(tagData);
 
+                    if (tagColor.HasValue)
+                    {
+                        DrawTaggedText(tagContent, ref pos, context with { DropShadowColor = tagColor.Value });
+                        tagHandled = true;
+                    }
+                }
                 if (!tagHandled)
                     DrawSimpleText(text.Slice(textPos, tagLength), ref pos, context);
 
@@ -481,6 +501,13 @@ namespace Cornifer
                     glyphWidth = context.SpaceOverride.Value;
                 else if (!context.MeasuringSize)
                 {
+                    if (context.DropShadowColor.HasValue)
+                    {
+                        DrawGlyph(glyph, linePos + drawPos + new Vector2(-1, 1) * context.Scale, context with { Color = context.DropShadowColor.Value });
+                        if (context.Bold)
+                            DrawGlyph(glyph, linePos + drawPos + new Vector2(0.5f) + new Vector2(-1, 1) * context.Scale, context with { Color = context.DropShadowColor.Value });
+                    }
+
                     DrawGlyph(glyph, linePos + drawPos, context);
                     if (context.Bold)
                         DrawGlyph(glyph, linePos + drawPos + new Vector2(0.5f), context);
@@ -494,11 +521,19 @@ namespace Cornifer
 
                 if (context.ShadeRun && context.Shade > 0)
                 {
-                    context.SpriteBatch.DrawRect(new(linePos.X - context.Shade, lineY - context.Shade), new(drawPos.X + context.Shade * 2, context.Shade * 2 + 1), context.ShadeColor);
+                    context.SpriteBatch.DrawRect(new(linePos.X - context.Shade, lineY - context.Shade), new(drawPos.X + context.Shade * 2, context.Shade * 2 + context.Scale), context.ShadeColor);
+                    if (context.DropShadowColor.HasValue)
+                    {
+                        context.SpriteBatch.DrawRect(new Vector2(linePos.X - context.Shade, lineY - context.Shade) + new Vector2(-1, 1) * context.Scale, new(drawPos.X + context.Shade * 2, context.Shade * 2 + context.Scale), context.ShadeColor);
+                    }
                 }
                 else if (!context.ShadeRun)
                 {
-                    context.SpriteBatch.DrawLine(new(linePos.X, lineY), new(linePos.X + drawPos.X, lineY), context.Color);
+                    if (context.DropShadowColor.HasValue)
+                    {
+                        context.SpriteBatch.DrawRect(new Vector2(linePos.X, lineY) + new Vector2(-1, 1) * context.Scale, new Vector2(drawPos.X, context.Scale), context.DropShadowColor);
+                    }
+                    context.SpriteBatch.DrawRect(new(linePos.X, lineY), new Vector2(drawPos.X, context.Scale), context.Color);
                 }
             }
 
@@ -625,6 +660,7 @@ namespace Cornifer
 
             public Color Color;
             public Color ShadeColor;
+            public Color? DropShadowColor;
             public int Shade;
             public bool ShadeRun;
 
