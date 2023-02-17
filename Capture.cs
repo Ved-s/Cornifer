@@ -37,8 +37,8 @@ namespace Cornifer
             foreach (MapObject obj in Main.WorldObjectLists)
                 ProcessObjectRect(obj);
 
-            tl -= new Vector2(10);
-            br += new Vector2(10);
+            tl -= new Vector2(30);
+            br += new Vector2(30);
 
             int width = (int)(br.X - tl.X);
             int height = (int)(br.Y - tl.Y);
