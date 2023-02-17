@@ -131,10 +131,11 @@ namespace Cornifer
             FontAlphaHack.Apply(Cornifer.Content.RodondoExt30, 1);
 
             Cornifer.Content.Rodondo20.Spacing += 1;
-            Cornifer.Content.Rodondo20.LineSpacing += 11;
-            Cornifer.Content.Rodondo30.LineSpacing += 11;
+            Cornifer.Content.Rodondo20.LineSpacing += 2;
+            Cornifer.Content.Rodondo30.LineSpacing += 5;
             Cornifer.Content.RodondoExt20.Spacing += 1;
-            Cornifer.Content.RodondoExt30.LineSpacing -= 5;
+            Cornifer.Content.RodondoExt20.LineSpacing -= 9;
+            Cornifer.Content.RodondoExt30.LineSpacing -= 12;
 
             FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt20] = 4;
             FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt30] = 4;

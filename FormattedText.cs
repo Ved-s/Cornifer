@@ -20,11 +20,15 @@ namespace Cornifer
         }
 
         public static Dictionary<SpriteFont, float> FontSpaceOverride = new();
+        public static Dictionary<SpriteFont, float> FontScaleOverride = new();
 
         public static Vector2 Draw(ReadOnlySpan<char> text, DrawContext context)
         {
             if (context.SpaceOverride is null && FontSpaceOverride.TryGetValue(context.Font, out float spaceOverrideValue))
                 context.SpaceOverride = spaceOverrideValue;
+
+            if (FontScaleOverride.TryGetValue(context.Font, out float scaleOverrideValue))
+                context.Scale *= scaleOverrideValue;
 
             if (context.FontCache is null)
             {
@@ -54,6 +58,9 @@ namespace Cornifer
             float? spaceOverride = null;
             if (FontSpaceOverride.TryGetValue(font, out float spaceOverrideValue))
                 spaceOverride = spaceOverrideValue;
+
+            if (FontScaleOverride.TryGetValue(font, out float scaleOverrideValue))
+                scale *= scaleOverrideValue;
 
             if (!Cache.TryGetValue(font, out FontCache? cache))
             {
@@ -90,6 +97,9 @@ namespace Cornifer
             if (FontSpaceOverride.TryGetValue(font, out float spaceOverrideValue))
                 spaceOverride = spaceOverrideValue;
 
+            if (FontScaleOverride.TryGetValue(font, out float scaleOverrideValue))
+                scale *= scaleOverrideValue;
+
             if (!Cache.TryGetValue(font, out FontCache? cache))
             {
                 cache = new(font);
@@ -125,6 +135,9 @@ namespace Cornifer
             float? spaceOverride = null;
             if (FontSpaceOverride.TryGetValue(font, out float spaceOverrideValue))
                 spaceOverride = spaceOverrideValue;
+
+            if (FontScaleOverride.TryGetValue(font, out float scaleOverrideValue))
+                scale *= scaleOverrideValue;
 
             if (!Cache.TryGetValue(font, out FontCache? cache))
             {
