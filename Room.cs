@@ -447,10 +447,10 @@ namespace Cornifer
                 Color rightColor = Color.White;
                 Color regionColor = Color.White;
 
-                if (GateData.LeftRegionId is not null && Region.RegionColors.TryGetValue(GateData.LeftRegionId, out Color color))
+                if (GateData.LeftRegionId is not null && RegionColors.TryGetMainColor(GateData.LeftRegionId, null, out Color color))
                     leftColor = color;
 
-                if (GateData.RightRegionId is not null && Region.RegionColors.TryGetValue(GateData.RightRegionId, out color))
+                if (GateData.RightRegionId is not null && RegionColors.TryGetMainColor(GateData.RightRegionId, null, out color))
                     rightColor = color;
 
                 string? targetRegion = null;
@@ -461,7 +461,7 @@ namespace Cornifer
                 else if (GateData.RightRegionId is not null && !GateData.RightRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase))
                     targetRegion = GateData.RightRegionId;
 
-                if (targetRegion is not null && Region.RegionColors.TryGetValue(targetRegion, out color))
+                if (targetRegion is not null && RegionColors.TryGetMainColor(targetRegion, null, out color))
                     regionColor = color;
 
                 Children.Add(new GateSymbols(GateData.LeftKarma, GateData.RightKarma)

@@ -1,5 +1,10 @@
 Border visibility toggle
 In-room shortcuts
+Proper mod loading
+Fix font spacing
+Echo text tag
+Test scaling big text instead
+Border 30px
 Fix spearmaster unlock (DM)
 Per-type visibility toggles
 Undos

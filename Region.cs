@@ -17,23 +17,23 @@ namespace Cornifer
     {
         static Regex GateNameRegex = new("GATE_(.+)?_(.+)", RegexOptions.Compiled);
 
-        public static Dictionary<string, Color> RegionColors = new()
-        {
-            ["SU"] = new(0.66f, 0.87f, 0.89f, 1f),
-            ["HI"] = new(0.4f, 0.48f, 0.82f, 1f),
-            ["DS"] = new(0.14f, 0.49f, 0.27f, 1f),
-            ["CC"] = new(0.83f, 0.52f, 0.45f, 1f),
-            ["GW"] = new(0.8f, 0.89f, 0.44f, 1f),
-            ["SH"] = new(0.35f, 0.21f, 0.6f, 1f),
-            ["SL"] = new(0.19f, 0.73f, 0.7f, 1f),
-            ["SI"] = new(0.91f, 0.35f, 0.5f, 1f),
-            ["LF"] = new(0.75f, 0.16f, 0.12f, 1f),
-            ["UW"] = new(0.94f, 0.84f, 0.73f, 1f),
-            ["SS"] = new(1f, 0.65f, 0.21f, 1f),
-            ["SB"] = new(0.61f, 0.35f, 0.2f, 1f),
-            ["DM"] = new(0.09803922f, 0.30980393f, 0.90588236f),
-            ["VS"] = new(1f, 0.53f, 0.51f, 1f),
-        };
+        //public static Dictionary<string, Color> RegionColors = new()
+        //{
+        //    ["SU"] = new(0.66f, 0.87f, 0.89f, 1f),
+        //    ["HI"] = new(0.4f, 0.48f, 0.82f, 1f),
+        //    ["DS"] = new(0.14f, 0.49f, 0.27f, 1f),
+        //    ["CC"] = new(0.83f, 0.52f, 0.45f, 1f),
+        //    ["GW"] = new(0.8f, 0.89f, 0.44f, 1f),
+        //    ["SH"] = new(0.35f, 0.21f, 0.6f, 1f),
+        //    ["SL"] = new(0.19f, 0.73f, 0.7f, 1f),
+        //    ["SI"] = new(0.91f, 0.35f, 0.5f, 1f),
+        //    ["LF"] = new(0.75f, 0.16f, 0.12f, 1f),
+        //    ["UW"] = new(0.94f, 0.84f, 0.73f, 1f),
+        //    ["SS"] = new(1f, 0.65f, 0.21f, 1f),
+        //    ["SB"] = new(0.61f, 0.35f, 0.2f, 1f),
+        //    ["DM"] = new(0.09803922f, 0.30980393f, 0.90588236f),
+        //    ["VS"] = new(1f, 0.53f, 0.51f, 1f),
+        //};
 
         public string Id = "";
         public List<Room> Rooms = new();
@@ -53,7 +53,7 @@ namespace Cornifer
 
         public Region(string id, string worldFilePath, string mapFilePath, string? propertiesFilePath, string roomsDir)
         {
-            Id = id;
+            Id = id.ToUpper();
             WorldString = File.ReadAllText(worldFilePath);
             PropertiesString = propertiesFilePath is null ? null : File.ReadAllText(propertiesFilePath);
             MapString = File.ReadAllText(mapFilePath);
@@ -422,6 +422,7 @@ namespace Cornifer
             }
 
             Subregions = subregions.Select(s => new Subregion(s)).ToArray();
+            ResetSubregionColors();
 
             foreach (var (roomName, roomConnections) in connections)
             {
@@ -466,6 +467,16 @@ namespace Cornifer
                             if (TryGetRoom(roomName, out Room? room))
                                 room.BrokenForSlugcats.Add(split[1]);
                 }
+        }
+        public void ResetSubregionColors()
+        {
+            foreach (Subregion subregion in Subregions)
+            {
+                Color? mainColor = RegionColors.GetMainColor(Id, subregion.Name);
+                if (mainColor.HasValue)
+                    subregion.BackgroundColor = mainColor.Value;
+            }
+            MarkRoomTilemapsDirty();
         }
 
         public void LoadConnections()
@@ -521,7 +532,7 @@ namespace Cornifer
         public void LoadJson(JsonNode node)
         {
             if (node.TryGet("id", out string? id))
-                Id = id;
+                Id = id.ToUpper();
 
             if (node.TryGet("world", out string? world))
                 WorldString = world;
