@@ -354,8 +354,8 @@ namespace Cornifer
 
                     if (i > 0 && i <= connection.Points.Count)
                     {
-                        Main.SpriteBatch.DrawRect(start - new Vector2(4), new(7), Color.Black);
-                        Main.SpriteBatch.DrawRect(start - new Vector2(3), new(5), Color.Yellow);
+                        Main.SpriteBatch.DrawRect(start - new Vector2(3), new(7), Color.Black);
+                        Main.SpriteBatch.DrawRect(start - new Vector2(2), new(5), Color.Yellow);
                     }
 
                     if (connection == HoveredConnection && i == HoveredConnectionLine)
