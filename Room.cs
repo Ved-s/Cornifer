@@ -95,6 +95,7 @@ namespace Cornifer
         public ObjectProperty<int, string> Subregion = new("subregion", 0);
         public ObjectProperty<bool> Deathpit = new("deathpit", false);
         public ObjectProperty<bool> UseBetterTileCutout = new("betterTileCutout", true);
+        public ObjectProperty<bool> CutoutAllSolidTiles = new("cutAllSolid", false);
 
         public Vector2 WorldPos;
 
@@ -570,8 +571,19 @@ namespace Cornifer
 
         void ProcessCutouts()
         {
-            Queue<Point> queue = new();
             CutOutSolidTiles = new bool[TileSize.X, TileSize.Y];
+
+            if (CutoutAllSolidTiles.Value)
+            {
+                for (int j = 0; j < TileSize.Y; j++)
+                    for (int i = 0; i < TileSize.X; i++)
+                        if (Tiles[i, j].Terrain == Tile.TerrainType.Solid)
+                            CutOutSolidTiles[i, j] = true;
+
+                return;
+            }
+
+            Queue<Point> queue = new();
             bool[,] noCutTiles = new bool[TileSize.X, TileSize.Y];
 
             for (int i = 0; i < TileSize.X - 1; i++)
@@ -840,6 +852,28 @@ namespace Cornifer
             }.OnEvent(UIElement.ClickEvent, (btn, _) =>
             {
                 UseBetterTileCutout.Value = btn.Selected;
+
+                ProcessCutouts();
+                TileMapDirty = true;
+                ShadeTextureDirty = true;
+            }));
+
+            list.Elements.Add(new UIButton
+            {
+                Height = 20,
+
+                Selectable = true,
+                Selected = CutoutAllSolidTiles.Value,
+                Text = "Cut all solid tiles",
+
+                SelectedBackColor = Color.White,
+                SelectedTextColor = Color.Black,
+
+                TextAlign = new(.5f)
+
+            }.OnEvent(UIElement.ClickEvent, (btn, _) =>
+            {
+                CutoutAllSolidTiles.Value = btn.Selected;
 
                 ProcessCutouts();
                 TileMapDirty = true;
