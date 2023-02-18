@@ -501,7 +501,7 @@ namespace Cornifer
                                 SelectedTextColor = Color.Black,
 
                                 TextAlign = new(.5f)
-                            }.BindConfig(InterfaceState.DrawSLugcatIcons)
+                            }.BindConfig(InterfaceState.DrawSlugcatIcons)
                             .Assign(out SlugcatIcons),
 
                             new UIButton
@@ -517,7 +517,7 @@ namespace Cornifer
                                 SelectedTextColor = Color.Black,
 
                                 TextAlign = new(.5f)
-                            }.BindConfig(InterfaceState.DrawSLugcatDiamond),
+                            }.BindConfig(InterfaceState.DrawSlugcatDiamond),
 
                             new UIButton
                             {
@@ -590,6 +590,21 @@ namespace Cornifer
                                 TextAlign = new(.5f)
 
                             }.BindConfig(InterfaceState.MarkExitsOnly),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Selectable = true,
+                                Text = "Draw borders",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.DrawBorders),
+
 
                             new UIPanel
                             {
@@ -787,7 +802,7 @@ namespace Cornifer
                 button.OnEvent(UIElement.ClickEvent, (_, _) =>
                 {
                     Main.SelectedSlugcat = slugcat;
-                    InterfaceState.DrawSLugcatIcons.Value = false;
+                    InterfaceState.DrawSlugcatIcons.Value = false;
                     SlugcatSelectVisible = false;
                     RegionSelectVisible = true;
                 });
@@ -806,7 +821,7 @@ namespace Cornifer
             all.OnEvent(UIElement.ClickEvent, (_, _) =>
             {
                 Main.SelectedSlugcat = null;
-                InterfaceState.DrawSLugcatIcons.Value = false;
+                InterfaceState.DrawSlugcatIcons.Value = false;
                 SlugcatSelectVisible = false;
                 RegionSelectVisible = true;
             });

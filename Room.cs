@@ -545,7 +545,7 @@ namespace Cornifer
                         }
 
                         if (Deathpit.Value && j >= TileSize.Y - 5 && Tiles[i, TileSize.Y - 1].Terrain == Tile.TerrainType.Air)
-                            color = Color.Lerp(Color.Black, color, (TileSize.Y - j - 1) / 5f);
+                            color = Color.Lerp(Color.Black, color, (TileSize.Y - j - .5f) / 5f);
 
                         colors[i + j * TileSize.X] = color;
                     }

@@ -1,7 +1,8 @@
 Border visibility toggle
 In-room shortcuts
 Proper mod loading
-Fix font spacing
+Connection point config to offset texture line by 1 
+Multi layered export
 Fix spearmaster unlock (DM)
 Per-type visibility toggles
 Undos

@@ -12,8 +12,10 @@ namespace Cornifer
         public static Switch DrawPlacedObjects = new("placedObjects", true);
         public static Switch DrawPlacedPickups = new("placedPickups", false);
 
-        public static Switch DrawSLugcatIcons = new("slugcatIcons", false);
-        public static Switch DrawSLugcatDiamond = new("slugcatDiamond", true);
+        public static Switch DrawSlugcatIcons = new("slugcatIcons", false);
+        public static Switch DrawSlugcatDiamond = new("slugcatDiamond", true);
+
+        public static Switch DrawBorders = new("borders", true);
 
         public static Switch MarkShortcuts = new("markShortcuts", true);
         public static Switch MarkExitsOnly = new("markExitsOnly", true);

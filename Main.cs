@@ -381,9 +381,12 @@ namespace Cornifer
 
             if (Region is not null)
             {
-                Region.Connections?.DrawShadows(renderer);
-                foreach (MapObject obj in WorldObjectLists)
-                    obj.DrawShade(renderer);
+                if (InterfaceState.DrawBorders.Value)
+                {
+                    Region.Connections?.DrawShadows(renderer);
+                    foreach (MapObject obj in WorldObjectLists)
+                        obj.DrawShade(renderer);
+                }
 
                 foreach (MapObject obj in Region.Rooms)
                     obj.Draw(renderer);
