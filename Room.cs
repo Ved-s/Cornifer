@@ -583,10 +583,49 @@ namespace Cornifer
             for (int i = 1; i < TileSize.X; i++)
                 queue.Enqueue(new(i, TileSize.Y - 1));
 
+            int GetTileNeighbors(int x, int y)
+            {
+                int neighbors = 0;
+
+                if (x <= 0              || Tiles[x - 1, y].Terrain == Tile.TerrainType.Solid) neighbors += 1;
+                if (x >= TileSize.X-1   || Tiles[x + 1, y].Terrain == Tile.TerrainType.Solid) neighbors += 1;
+                if (y <= 0              || Tiles[x, y - 1].Terrain == Tile.TerrainType.Solid) neighbors += 1;
+                if (y >= TileSize.Y - 1 || Tiles[x, y + 1].Terrain == Tile.TerrainType.Solid) neighbors += 1;
+
+                return neighbors;
+            }
+
+            bool IsTileOOB(int x, int y)
+            {
+                return x < 0 || y < 0 || x >= TileSize.X || y >= TileSize.Y;
+            }
+
             while (queue.TryDequeue(out Point point))
             {
-                if (CutOutSolidTiles[point.X, point.Y] || Tiles[point.X, point.Y].Terrain != Tile.TerrainType.Solid)
+                if (CutOutSolidTiles[point.X, point.Y])
                     continue;
+
+                if (Tiles[point.X, point.Y].Terrain != Tile.TerrainType.Solid)
+                {
+                    int neighbors = GetTileNeighbors(point.X, point.Y);
+                    
+                    if (neighbors == 4)
+                        CutOutSolidTiles[point.X, point.Y] = true;
+                    if (neighbors == 3)
+                    {
+                        bool found = true;
+                        if (!IsTileOOB(point.X - 1, point.Y) && GetTileNeighbors(point.X - 1, point.Y) == 3) CutOutSolidTiles[point.X - 1, point.Y] = true;
+                        else if (!IsTileOOB(point.X + 1, point.Y) && GetTileNeighbors(point.X + 1, point.Y) == 3) CutOutSolidTiles[point.X + 1, point.Y] = true;
+                        else if (!IsTileOOB(point.X, point.Y - 1) && GetTileNeighbors(point.X, point.Y - 1) == 3) CutOutSolidTiles[point.X, point.Y - 1] = true;
+                        else if (!IsTileOOB(point.X, point.Y + 1) && GetTileNeighbors(point.X, point.Y + 1) == 3) CutOutSolidTiles[point.X, point.Y + 1] = true;
+                        else found = false;
+                    
+                        if (found)
+                            CutOutSolidTiles[point.X, point.Y] = true;
+                    }
+
+                    continue;
+                }
 
                 CutOutSolidTiles[point.X, point.Y] = true;
 
