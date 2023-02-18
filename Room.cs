@@ -11,6 +11,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Windows.Forms.Design;
 
 namespace Cornifer
 {
@@ -93,6 +94,7 @@ namespace Cornifer
         public int Layer;
         public ObjectProperty<int, string> Subregion = new("subregion", 0);
         public ObjectProperty<bool> Deathpit = new("deathpit", false);
+        public ObjectProperty<bool> UseBetterTileCutout = new("betterTileCutout", true);
 
         public Vector2 WorldPos;
 
@@ -570,6 +572,7 @@ namespace Cornifer
         {
             Queue<Point> queue = new();
             CutOutSolidTiles = new bool[TileSize.X, TileSize.Y];
+            bool[,] noCutTiles = new bool[TileSize.X, TileSize.Y];
 
             for (int i = 0; i < TileSize.X - 1; i++)
                 queue.Enqueue(new(i, 0));
@@ -608,9 +611,91 @@ namespace Cornifer
                 return cutout;
             }
 
+            void ClearNoCutout(int x, int y)
+            {
+                for (int i = 0; i < TileSize.X; i++)
+                    noCutTiles[i, y] = false;
+
+                for (int i = 0; i < TileSize.Y; i++)
+                    noCutTiles[x, i] = false;
+            }
+
+            bool CutTile(int x, int y)
+            {
+                if (IsTileOOB(x, y) || CutOutSolidTiles[x, y] || noCutTiles[x, y])
+                    return false;
+
+                if (UseBetterTileCutout.Value)
+                {
+                    int searchDist = 20;
+                    int searchMaxDist = 30;
+
+                    for (int i = x - 1; i >= Math.Max(x - searchMaxDist, 0); i--)
+                    {
+                        bool outOfRangeLeft = i < x - searchDist;
+
+                        if (CutOutSolidTiles[i, y])
+                            break;
+
+                        if (Tiles[i, y].Terrain == Tile.TerrainType.Solid)
+                            continue;
+
+                        for (i = x + 1; i < Math.Min(x + searchMaxDist, TileSize.X); i++)
+                        {
+                            bool outOfRangeRight = i > x + searchDist;
+
+                            if (CutOutSolidTiles[i, y])
+                                break;
+
+                            if (Tiles[i, y].Terrain == Tile.TerrainType.Solid)
+                                continue;
+
+                            if (outOfRangeLeft && outOfRangeRight)
+                                break;
+
+                            noCutTiles[x, y] = true;
+                            return false;
+                        }
+                        break;
+                    }
+
+                    for (int i = y - 1; i >= Math.Max(y - searchMaxDist, 0); i--)
+                    {
+                        bool outOfRangeLeft = i < y - searchDist;
+
+                        if (CutOutSolidTiles[x, i])
+                            break;
+
+                        if (Tiles[x, i].Terrain == Tile.TerrainType.Solid)
+                            continue;
+
+                        for (i = y + 1; i < Math.Min(y + searchMaxDist, TileSize.Y); i++)
+                        {
+                            bool outOfRangeRight = i > y + searchDist;
+
+                            if (CutOutSolidTiles[x, i])
+                                break;
+
+                            if (Tiles[x, i].Terrain == Tile.TerrainType.Solid)
+                                continue;
+
+                            if (outOfRangeLeft && outOfRangeRight)
+                                break;
+
+                            noCutTiles[x, y] = true;
+                            return false;
+                        }
+                        break;
+                    }
+                }
+                CutOutSolidTiles[x, y] = true;
+                ClearNoCutout(x, y);
+                return true;
+            }
+
             while (queue.TryDequeue(out Point point))
             {
-                if (CutOutSolidTiles[point.X, point.Y])
+                if (CutOutSolidTiles[point.X, point.Y] || noCutTiles[point.X, point.Y])
                     continue;
 
                 if (Tiles[point.X, point.Y].Terrain != Tile.TerrainType.Solid)
@@ -631,7 +716,8 @@ namespace Cornifer
                     continue;
                 }
 
-                CutOutSolidTiles[point.X, point.Y] = true;
+                if (!CutTile(point.X, point.Y))
+                    continue;
 
                 if (point.X > 0)
                     queue.Enqueue(new(point.X - 1, point.Y));
@@ -737,18 +823,42 @@ namespace Cornifer
                 Deathpit.Value = btn.Selected;
                 TileMapDirty = true;
             }));
+
+            list.Elements.Add(new UIButton
+            {
+                Height = 20,
+
+                Selectable = true,
+                Selected = UseBetterTileCutout.Value,
+                Text = "Better tile cutouts",
+
+                SelectedBackColor = Color.White,
+                SelectedTextColor = Color.Black,
+
+                TextAlign = new(.5f)
+
+            }.OnEvent(UIElement.ClickEvent, (btn, _) =>
+            {
+                UseBetterTileCutout.Value = btn.Selected;
+
+                ProcessCutouts();
+                TileMapDirty = true;
+                ShadeTextureDirty = true;
+            }));
         }
 
         protected override JsonNode? SaveInnerJson()
         {
             return new JsonObject()
             .SaveProperty(Deathpit)
-            .SaveProperty(Subregion);
+            .SaveProperty(Subregion)
+            .SaveProperty(UseBetterTileCutout);
         }
         protected override void LoadInnerJson(JsonNode node)
         {
             Subregion.LoadFromJson(node);
             Deathpit.LoadFromJson(node);
+            UseBetterTileCutout.LoadFromJson(node);
             TileMapDirty = true;
         }
 
