@@ -886,13 +886,15 @@ namespace Cornifer
             return new JsonObject()
             .SaveProperty(Deathpit)
             .SaveProperty(Subregion)
-            .SaveProperty(UseBetterTileCutout);
+            .SaveProperty(UseBetterTileCutout)
+            .SaveProperty(CutoutAllSolidTiles);
         }
         protected override void LoadInnerJson(JsonNode node)
         {
             Subregion.LoadFromJson(node);
             Deathpit.LoadFromJson(node);
             UseBetterTileCutout.LoadFromJson(node);
+            CutoutAllSolidTiles.LoadFromJson(node);
             TileMapDirty = true;
         }
 
