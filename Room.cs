@@ -600,6 +600,14 @@ namespace Cornifer
                 return x < 0 || y < 0 || x >= TileSize.X || y >= TileSize.Y;
             }
 
+            bool Check2TileCutout(int x, int y)
+            {
+                bool cutout = !IsTileOOB(x, y) && Tiles[x, y].Terrain != Tile.TerrainType.Solid && GetTileNeighbors(x, y) == 3;
+                if (cutout)
+                    CutOutSolidTiles[x, y] = true;
+                return cutout;
+            }
+
             while (queue.TryDequeue(out Point point))
             {
                 if (CutOutSolidTiles[point.X, point.Y])
@@ -613,14 +621,10 @@ namespace Cornifer
                         CutOutSolidTiles[point.X, point.Y] = true;
                     if (neighbors == 3)
                     {
-                        bool found = true;
-                        if (!IsTileOOB(point.X - 1, point.Y) && GetTileNeighbors(point.X - 1, point.Y) == 3) CutOutSolidTiles[point.X - 1, point.Y] = true;
-                        else if (!IsTileOOB(point.X + 1, point.Y) && GetTileNeighbors(point.X + 1, point.Y) == 3) CutOutSolidTiles[point.X + 1, point.Y] = true;
-                        else if (!IsTileOOB(point.X, point.Y - 1) && GetTileNeighbors(point.X, point.Y - 1) == 3) CutOutSolidTiles[point.X, point.Y - 1] = true;
-                        else if (!IsTileOOB(point.X, point.Y + 1) && GetTileNeighbors(point.X, point.Y + 1) == 3) CutOutSolidTiles[point.X, point.Y + 1] = true;
-                        else found = false;
-                    
-                        if (found)
+                        if (Check2TileCutout(point.X - 1, point.Y) 
+                         || Check2TileCutout(point.X + 1, point.Y) 
+                         || Check2TileCutout(point.X, point.Y - 1)
+                         || Check2TileCutout(point.X, point.Y + 1)) 
                             CutOutSolidTiles[point.X, point.Y] = true;
                     }
 
