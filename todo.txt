@@ -2,6 +2,7 @@ Border visibility toggle
 In-room shortcuts
 Proper mod loading
 Connection point config to offset texture line by 1 
+Remove stripes of slopes inside solids
 Multi layered export
 Fix spearmaster unlock (DM)
 Per-type visibility toggles

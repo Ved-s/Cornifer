@@ -1,5 +1,6 @@
 ﻿using Cornifer.Renderers;
 using Cornifer.UI;
+using Cornifer.UI.Elements;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -165,46 +166,6 @@ namespace Cornifer
             Main.SpriteBatch.Begin(state);
         }
 
-        //public void DrawConnectionsBelow(Renderer renderer)
-        //{
-        //    if (ConnectionTexture is null)
-        //    {
-        //        ConnectionTexture = new(Main.Instance.GraphicsDevice, 2, 1);
-        //        ConnectionTexture.SetData(new Color[] { Color.White, Color.Transparent });
-        //    }
-
-        //    var state = Main.SpriteBatch.GetState();
-        //    Main.SpriteBatch.End();
-
-        //    foreach (Connection connection in Connections.Values)
-        //    {
-        //        if (connection.Points.Count <= 1)
-        //            continue;
-
-        //        BeginConnectionCapture(renderer, connection);
-        //        Main.SpriteBatch.Begin(samplerState: SamplerState.PointWrap);
-
-        //        int totalLength = 0;
-
-        //        for (int i = 0; i < connection.Points.Count; i++)
-        //        {
-        //            (Vec2 start, Vec2 end) = GetLinePoints(null, connection, i);
-
-        //            int length = (int)Math.Ceiling((end - start).Length);
-        //            if (i > 0)
-        //            {
-        //                float angle = (end - start).Angle.Radians;
-        //                Main.SpriteBatch.Draw(ConnectionTexture, renderer.TransformVector(start), new Rectangle(totalLength, 0, length + 1, 1), Color.White, angle, new(.5f), renderer.Scale, SpriteEffects.None, 0);
-        //            }
-        //            totalLength += length;
-        //        }
-
-        //        Main.SpriteBatch.End();
-        //        EndConnectionCapture(renderer);
-        //    }
-
-        //    Main.SpriteBatch.Begin(state);
-        //}
         public void DrawConnections(Renderer renderer, bool overRoomShadow)
         {
             if (ConnectionTexture is null)
@@ -233,9 +194,8 @@ namespace Cornifer
 
                     int length = (int)Math.Ceiling((end - start).Length);
 
-                    if (ShouldDrawLine(connection, i))
+                    if (ShouldDrawLine(connection, i) && (!overRoomShadow || localShadow))
                     {
-
                         float angle = (end - start).Angle.Radians;
 
                         Rectangle source = new Rectangle(totalLength, 0, length + 1, 1);
@@ -269,6 +229,23 @@ namespace Cornifer
                         }
                         else
                         {
+                            ConnectionPoint? startPoint = i > 0 ? connection.Points[i - 1] : null;
+                            ConnectionPoint? endPoint = i < connection.Points.Count ? connection.Points[i] : null;
+
+                            if (startPoint is not null && startPoint.SkipPixelAfter.Value)
+                            {
+                                source.Width -= 1;
+                                origin.X -= 1;
+
+                                length += 1;
+                            }
+
+                            if (endPoint is not null && endPoint.SkipPixelBefore.Value)
+                            {
+                                source.Width -= 1;
+                                length -= 1;
+                            }
+
                             Main.SpriteBatch.Draw(ConnectionTexture, renderer.TransformVector(start), source, color, angle, origin, renderer.Scale, SpriteEffects.None, 0);
                         }
                     }
@@ -472,7 +449,7 @@ namespace Cornifer
             return new JsonObject(Connections
                 .Where(kvp => kvp.Value.Points.Count > 0)
                 .Select(kvp => new KeyValuePair<string, JsonNode?>($"{kvp.Key.src}~{kvp.Key.dst}",
-                    new JsonArray(kvp.Value.Points.Select(p => JsonTypes.SaveVector2(p.WorldPosition)).ToArray())
+                    new JsonArray(kvp.Value.Points.Select(p => p.SaveJson()).ToArray())
                     ))
                 );
         }
@@ -494,7 +471,6 @@ namespace Cornifer
 
                 if (con is JsonValue value)
                 {
-
                     int pointCount = value.Deserialize<int>();
                     if (pointCount == 0)
                         continue;
@@ -515,15 +491,13 @@ namespace Cornifer
                     }
                 }
                 else if (con is JsonArray points)
-                    foreach (JsonNode? posNode in points)
+                    foreach (JsonNode? pointNode in points)
                     {
-                        if (posNode is null)
+                        if (pointNode is null)
                             continue;
 
-                        ConnectionPoint newPoint = new(connection)
-                        {
-                            WorldPosition = JsonTypes.LoadVector2(posNode)
-                        };
+                        ConnectionPoint newPoint = new(connection);
+                        newPoint.LoadJson(pointNode);
                         connection.Points.Add(newPoint);
                     }
 
@@ -586,6 +560,9 @@ namespace Cornifer
 
             public Connection Connection = null!;
 
+            public ObjectProperty<bool> SkipPixelBefore = new("skipBefore", false);
+            public ObjectProperty<bool> SkipPixelAfter = new("skipAfter", false);
+
             public ConnectionPoint() { }
             public ConnectionPoint(Connection connection)
             {
@@ -595,7 +572,52 @@ namespace Cornifer
             public override Vector2 VisualOffset => -(VisualSize - Vector2.One) / 2;
             public override Vector2 VisualSize => new(13);
 
+            public new JsonNode SaveJson()
+            {
+                return new JsonObject
+                {
+                    ["x"] = ParentPosition.X,
+                    ["y"] = ParentPosition.Y,
+                }.SaveProperty(SkipPixelBefore)
+                .SaveProperty(SkipPixelAfter);
+            }
+
+            public new void LoadJson(JsonNode node)
+            {
+                ParentPosition = JsonTypes.LoadVector2(node);
+                SkipPixelBefore.LoadFromJson(node);
+                SkipPixelAfter.LoadFromJson(node);
+            }
+
             protected override void DrawSelf(Renderer renderer) { }
+
+            protected override void BuildInnerConfig(UIList list)
+            {
+                list.Elements.Add(new UIButton
+                {
+                    Text = "Skip pixel before",
+                    Height = 20,
+
+                    Selectable = true,
+                    Selected = SkipPixelBefore.Value,
+
+                    SelectedTextColor = Color.Black,
+                    SelectedBackColor = Color.White,
+
+                }.OnEvent(UIElement.ClickEvent, (btn, _) => SkipPixelBefore.Value = btn.Selected));
+                list.Elements.Add(new UIButton
+                {
+                    Text = "Skip pixel after",
+                    Height = 20,
+
+                    Selectable = true,
+                    Selected = SkipPixelAfter.Value,
+
+                    SelectedTextColor = Color.Black,
+                    SelectedBackColor = Color.White,
+
+                }.OnEvent(UIElement.ClickEvent, (btn, _) => SkipPixelAfter.Value = btn.Selected));
+            }
         }
     }
 }
