@@ -450,6 +450,11 @@ namespace Cornifer
                 Color rightColor = Color.White;
                 Color regionColor = Color.White;
 
+                if (GateData.LeftRegionId is not null && GateData.RightRegionId is not null 
+                 && (GateData.LeftRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase)
+                  || GateData.RightRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase)))
+                    FixGateData();
+
                 if (GateData.LeftRegionId is not null && RegionColors.TryGetMainColor(GateData.LeftRegionId, null, out Color color))
                     leftColor = color;
 
@@ -742,6 +747,40 @@ namespace Cornifer
 
                 if (point.Y < TileSize.Y - 1)
                     queue.Enqueue(new(point.X, point.Y + 1));
+            }
+        }
+
+        void FixGateData()
+        {
+            if (GateData is null)
+                return;
+
+            bool? leftConnection = null;
+
+            foreach (Connection? connection in Connections)
+            {
+                if (connection is null || connection.Target.IsShelter)
+                    continue;
+
+                leftConnection = Exits[connection.Exit].X < TileSize.X / 2;
+            }
+
+            if (leftConnection is null)
+                return;
+
+            string? otherRegion = GateData.LeftRegionId == Region.Id ? GateData.RightRegionId : GateData.LeftRegionId;
+            if (otherRegion is null) 
+                return;
+
+            if (leftConnection.Value)
+            {
+                GateData.LeftRegionId = Region.Id;
+                GateData.RightRegionId = otherRegion;
+            }
+            else
+            {
+                GateData.RightRegionId = Region.Id;
+                GateData.LeftRegionId = otherRegion;
             }
         }
 
