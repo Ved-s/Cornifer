@@ -44,6 +44,7 @@ namespace Cornifer
 
         internal UIElement? ConfigCache { get; set; }
         internal Texture2D? ShadeTexture;
+        int ShadeTextureShadeSize = 0;
 
         public bool ShadeTextureDirty { get; set; }
         protected bool Shading { get; private set; }
@@ -276,11 +277,12 @@ namespace Cornifer
 
         public void EnsureCorrectShadeTexture()
         {
-            if ((ShadeTexture is null || ShadeTextureDirty) && ShadeSize > 0)
+            if ((ShadeTexture is null || ShadeTextureDirty || ShadeSize != ShadeTextureShadeSize) && ShadeSize > 0)
             {
                 Shading = true;
                 GenerateShadeTexture();
                 Shading = false;
+                ShadeTextureShadeSize = ShadeSize;
             }
             ShadeTextureDirty = false;
         }

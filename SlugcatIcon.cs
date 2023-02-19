@@ -14,7 +14,7 @@ namespace Cornifer
 
         public bool ForceSlugcatIcon;
 
-        public override int ShadeSize => InterfaceState.DrawSlugcatDiamond.Value ? 0 : 1;
+        public override int ShadeSize => InterfaceState.DrawSlugcatDiamond.Value ? 1 : 2;
         public override bool Active => (InterfaceState.DrawSlugcatIcons.Value || ForceSlugcatIcon) && base.Active;
         public override Vector2 Size => InterfaceState.DrawSlugcatDiamond.Value && !ForceSlugcatIcon ? new(9) : new(8);
 

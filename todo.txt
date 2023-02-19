@@ -1,8 +1,7 @@
-Border visibility toggle
 In-room shortcuts
 Proper mod loading
 Warnings system (2 wide gaps in connections)
-Multi layered export
 Fix spearmaster unlock (DM)
 Per-type visibility toggles
+Layer visibility toggles
 Undos
