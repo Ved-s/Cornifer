@@ -221,11 +221,19 @@ namespace Cornifer
             {
                 SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
                 foreach (MapObject obj in SelectedObjects)
-                    SpriteBatch.DrawRect(WorldCamera.TransformVector(obj.WorldPosition + obj.VisualOffset) - new Vector2(2), obj.VisualSize * WorldCamera.Scale + new Vector2(4), Color.White * 0.4f);
+                    SpriteBatch.DrawRect(WorldCamera.TransformVector(obj.WorldPosition + obj.VisualOffset) - new Vector2(2), obj.VisualSize * WorldCamera.Scale + new Vector2(4), Color.DarkGray * 0.4f);
                 SpriteBatch.End();
             }
 
             DrawMap(WorldCamera, ActiveRenderLayers, null);
+
+            if (SelectedObjects.Count > 0)
+            {
+                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+                foreach (MapObject obj in SelectedObjects)
+                    SpriteBatch.DrawRect(WorldCamera.TransformVector(obj.WorldPosition + obj.VisualOffset) - new Vector2(2), obj.VisualSize * WorldCamera.Scale + new Vector2(4), null, Color.White * 0.6f, 2);
+                SpriteBatch.End();
+            }
 
             if (Selecting)
             {
