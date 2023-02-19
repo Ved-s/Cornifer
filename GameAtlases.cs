@@ -122,7 +122,7 @@ namespace Cornifer
         {
             { "ArrowLeft",     (new(0, 0,  22, 13), new(255, 255, 255, 255)) },
             { "ArrowRight",    (new(0, 13, 22, 13), new(255, 255, 255, 255)) },
-            { "KarmaR",        (new(23, 0, 34, 34), new(255, 255, 255, 255)) },
+            { "KarmaR",        (new(23, 0, 36, 36), new(255, 255, 255, 255)) },
         };
 
         public static void Load()
