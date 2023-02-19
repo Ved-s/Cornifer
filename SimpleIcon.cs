@@ -15,7 +15,7 @@ namespace Cornifer
         {
         }
 
-        public SimpleIcon(string name, AtlasSprite sprite, Color? color = null)
+        public SimpleIcon(string name, AtlasSprite sprite, Color? color = null) : this()
         {
             Name = name;
             Texture = sprite.Texture;
@@ -25,14 +25,15 @@ namespace Cornifer
             Sprite = sprite;
         }
 
-        public override int ShadeSize => 5;
-        public override int? ShadeCornerRadius => 6;
+        public override int ShadeSize => BorderSize.Value;
+        public override int? ShadeCornerRadius => ShadeSize + 1;
 
         public Texture2D? IconShadeTexture;
         public Texture2D? Texture;
         public Rectangle Frame;
         public ObjectProperty<Color> Color = new("color", Microsoft.Xna.Framework.Color.White);
         public ObjectProperty<bool> Shade = new("shade", true);
+        public ObjectProperty<int> BorderSize = new("shadeSize", 5);
         public AtlasSprite? Sprite;
 
         public virtual bool SkipTextureSave { get; set; }
@@ -71,7 +72,6 @@ namespace Cornifer
 
             list.Elements.Add(new UIButton
             {
-                Top = 25,
                 Height = 20,
 
                 Selectable = true,
@@ -86,13 +86,43 @@ namespace Cornifer
             {
                 Shade.Value = btn.Selected;
             }));
+
+            list.Elements.Add(new UIPanel
+            {
+                Height = 44,
+                Padding = 3,
+
+                BorderColor = new(100, 100, 100),
+
+                Elements =
+                {
+                    new UILabel
+                    {
+                        Height = 20,
+                        Left = 1,
+                        Text = $"Border size",
+                        TextAlign = new(0, .5f)
+                    },
+                    new UINumberInput
+                    {
+                        Top = 18,
+                        Height = 20,
+
+                        BorderColor = new(100, 100, 100),
+                        Value = BorderSize.Value,
+                        AllowNegative = false,
+                        AllowDecimal = false,
+                    }.OnEvent(UINumberInput.ValueChanged, (inp, _) => BorderSize.Value = (int)inp.Value)
+                }
+            });
         }
 
         protected override JsonNode? SaveInnerJson()
         {
             JsonObject obj = new JsonObject()
                 .SaveProperty(Color)
-                .SaveProperty(Shade);
+                .SaveProperty(Shade)
+                .SaveProperty(BorderSize);
 
             if (!SkipTextureSave)
             {
@@ -127,6 +157,7 @@ namespace Cornifer
 
             Color.LoadFromJson(node);
             Shade.LoadFromJson(node);
+            BorderSize.LoadFromJson(node);
         }
     }
 }
