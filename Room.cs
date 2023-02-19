@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.InteropServices.ObjectiveC;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Windows.Forms.Design;
@@ -18,7 +19,11 @@ namespace Cornifer
     public class Room : MapObject
     {
         static Point[] Directions = new Point[] { new Point(0, -1), new Point(1, 0), new Point(0, 1), new Point(-1, 0) };
-        public static HashSet<string> NonPickupObjectsWhitelist = new() { "GhostSpot", "BlueToken", "GoldToken", "RedToken", "WhiteToken", "DevToken", "DataPearl", "UniqueDataPearl" };
+        public static HashSet<string> NonPickupObjectsWhitelist = new() 
+        {
+            "GhostSpot", "BlueToken", "GoldToken", 
+            "RedToken", "WhiteToken", "DevToken", 
+            "DataPearl", "UniqueDataPearl", "ScavengerOutpost" };
         public static Dictionary<string, Vector2> VistaRooms = new()
         {
             ["HI_B04"] = new(214f, 615f),
@@ -82,6 +87,10 @@ namespace Cornifer
         public bool IsAncientShelter;
         public bool IsScavengerTrader;
         public bool IsScavengerOutpost;
+        public bool IsScavengerTreasury;
+
+        public Vector2? TreasuryPos;
+        public Vector2? OutpostPos;
 
         public Point TileSize;
         public int WaterLevel;
@@ -352,8 +361,16 @@ namespace Cornifer
                             {
                                 if (obj.Type == "Filter")
                                     filters.Add(obj);
-                                else 
+                                else if (obj.Type == "ScavengerTreasury")
+                                {
+                                    IsScavengerTreasury = true;
+                                    TreasuryPos = new(obj.RoomPos.X, TileSize.Y - obj.RoomPos.Y);
+                                }
+                                else
                                     objects.Add(obj);
+
+                                if (obj.Type == "ScavengerOutpost")
+                                    OutpostPos = new(obj.RoomPos.X, TileSize.Y - obj.RoomPos.Y);
                             }
                         }
                         List<PlacedObject> remove = new();
@@ -413,9 +430,17 @@ namespace Cornifer
 
             if (IsScavengerOutpost)
             {
-                Children.Add(new MapText("TollText", Main.DefaultSmallMapFont, "Scavenger toll"));
+                Vector2 align = OutpostPos.HasValue ? OutpostPos.Value / TileSize.ToVector2() : new Vector2(.5f);
+
+                Children.Add(new MapText("TollText", Main.DefaultSmallMapFont, "Scavenger toll")
+                {
+                    ParentPosAlign = align,
+                });
                 if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
-                    Children.Add(new SimpleIcon("TollIcon", tollIcon));
+                    Children.Add(new SimpleIcon("TollIcon", tollIcon)
+                    {
+                        ParentPosAlign = align,
+                    });
             }
 
             if (IsScavengerTrader)
@@ -423,6 +448,21 @@ namespace Cornifer
                 Children.Add(new MapText("TraderText", Main.DefaultSmallMapFont, "Scavenger merchant"));
                 if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
                     Children.Add(new SimpleIcon("TraderIcon", tollIcon));
+            }
+
+            if (IsScavengerTreasury)
+            {
+                Vector2 align = TreasuryPos.HasValue ? TreasuryPos.Value / TileSize.ToVector2() : new Vector2(.5f);
+
+                Children.Add(new MapText("TreasuryText", Main.DefaultSmallMapFont, "Scavenger treasury") 
+                {
+                    ParentPosAlign = align,
+                });
+                if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
+                    Children.Add(new SimpleIcon("TreasuryIcon", tollIcon)
+                    {
+                        ParentPosAlign = align,
+                    });
             }
 
             if (VistaRooms.TryGetValue(Name!, out Vector2 vistaPoint))

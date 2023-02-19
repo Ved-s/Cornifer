@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
@@ -114,6 +115,18 @@ namespace Cornifer
                 obj.SlugcatAvailability = ParseSlugcats(subsplit[4]);
             }
 
+            if (objName == "ScavengerOutpost")
+            {
+                float x = float.Parse(subsplit[0], NumberStyles.Float, CultureInfo.InvariantCulture);
+                float y = float.Parse(subsplit[1], NumberStyles.Float, CultureInfo.InvariantCulture);
+
+                Vector2 handlePos = new Vector2(x, y);
+                obj.RoomPos += handlePos / 20;
+
+                handlePos.Normalize();
+                obj.RoomPos += handlePos * 3.5f;
+            }
+
             if (split[0].Contains("DataPearl"))
             {
                 if (subsplit.TryGet(4, out string type))
@@ -143,7 +156,7 @@ namespace Cornifer
 
         public static PlacedObject? Load(string name, Vector2 pos)
         {
-            if (name == "Filter")
+            if (name == "Filter" || name == "ScavengerTreasury")
                 return new()
                 {
                     Type = name,

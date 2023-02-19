@@ -104,17 +104,18 @@ namespace Cornifer
 
         static Dictionary<string, (Rectangle Frame, Color Color)> ObjectSpriteFrames = new()
         {
-            { "KarmaFlower",     (new(76, 0,  23, 23), new(255, 255, 255, 255)) },
-            { "SeedCob",         (new(40, 0,  35, 38), new(255, 255, 255, 255)) },
-            { "GhostSpot",       (new(0,  0,  38, 48), new(255, 255, 255, 255)) },
-            { "BlueToken",       (new(76, 24, 10, 20), new(255, 255, 255, 150)) },
-            { "GoldToken",       (new(87, 24, 10, 20), new(255, 255, 255, 150)) },
-            { "RedToken",        (new(100, 0, 10, 20), new(255, 255, 255, 150)) },
-            { "DevToken",        (new(98, 24, 10, 20), new(255, 255, 255, 150)) },
-            { "GreenToken",      (new(111, 0, 10, 20), new(255, 255, 255, 150)) },
-            { "DataPearl",       (new(39, 39, 11, 11), new(255, 255, 255, 255)) },
-            { "UniqueDataPearl", (new(39, 39, 11, 11), new(255, 255, 255, 255)) },
-            { "Slugcat",         (new(51, 39, 20, 19), new(255, 255, 255, 255)) },
+            { "KarmaFlower",      (new(76, 0,   23, 23), new(255, 255, 255, 255)) },
+            { "SeedCob",          (new(40, 0,   35, 38), new(255, 255, 255, 255)) },
+            { "GhostSpot",        (new(0,  0,   38, 48), new(255, 255, 255, 255)) },
+            { "BlueToken",        (new(76, 24,  10, 20), new(255, 255, 255, 150)) },
+            { "GoldToken",        (new(87, 24,  10, 20), new(255, 255, 255, 150)) },
+            { "RedToken",         (new(100, 0,  10, 20), new(255, 255, 255, 150)) },
+            { "DevToken",         (new(98, 24,  10, 20), new(255, 255, 255, 150)) },
+            { "GreenToken",       (new(111, 0,  10, 20), new(255, 255, 255, 150)) },
+            { "DataPearl",        (new(39, 39,  11, 11), new(255, 255, 255, 255)) },
+            { "UniqueDataPearl",  (new(39, 39,  11, 11), new(255, 255, 255, 255)) },
+            { "Slugcat",          (new(51, 39,  20, 19), new(255, 255, 255, 255)) },
+            { "ScavengerOutpost", (new(109, 21, 11, 15), new(255, 255, 255, 255)) },
         };
 
         static Dictionary<string, (Rectangle Frame, Color Color)> MiscSpriteFrames = new()
