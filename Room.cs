@@ -106,8 +106,6 @@ namespace Cornifer
         public ObjectProperty<bool> UseBetterTileCutout = new("betterTileCutout", true);
         public ObjectProperty<bool> CutoutAllSolidTiles = new("cutAllSolid", false);
 
-        public Vector2 WorldPos;
-
         public Effect[] Effects = Array.Empty<Effect>();
         public Connection?[] Connections = Array.Empty<Connection>();
         public List<string> BrokenForSlugcats = new();
@@ -126,12 +124,40 @@ namespace Cornifer
         public override bool LoadCreationForbidden => true;
         public override int ShadeSize => 5;
         public override int? ShadeCornerRadius => 6;
-        public override Vector2 ParentPosition { get => WorldPos; set => WorldPos = value; }
+        public override bool ParentSelected => BoundRoom is not null && (BoundRoom.Selected || BoundRoom.ParentSelected) || base.ParentSelected;
+
+        public override Vector2 ParentPosition 
+        {
+            get => boundRoom is null ? Position : boundRoom.WorldPosition + Position;
+            set
+            {
+                Position = value;
+                if (boundRoom is not null)
+                    Position -= boundRoom.WorldPosition;
+            }
+        }
         public override Vector2 Size => TileSize.ToVector2();
+
+        public Room? BoundRoom 
+        {
+            get => boundRoom;
+            set
+            {
+                if (boundRoom is not null)
+                    Position += boundRoom.WorldPosition;
+
+                boundRoom = value;
+
+                if (boundRoom is not null)
+                    Position -= boundRoom.WorldPosition;
+            }
+        }
 
         public GateRoomData? GateData;
 
         bool[,]? CutOutSolidTiles = null;
+        Vector2 Position;
+        private Room? boundRoom;
 
         public Room() 
         {
@@ -425,8 +451,14 @@ namespace Cornifer
                     }
                 }
 
-            if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
-                Children.Add(new SimpleIcon("ShelterMarker", shelterMarker));
+            if (IsShelter)
+            {
+                if (Connections.Length == 1 && Connections[0] is not null)
+                    BoundRoom = Connections[0]!.Target;
+
+                if (GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
+                    Children.Add(new SimpleIcon("ShelterMarker", shelterMarker));
+            }
 
             if (IsScavengerOutpost)
             {
@@ -830,10 +862,10 @@ namespace Cornifer
             if (!Loaded)
                 return;
 
-            renderer.DrawTexture(GetTileMap(), WorldPos);
+            renderer.DrawTexture(GetTileMap(), WorldPosition);
 
             if (base.Name is not null)
-                Main.SpriteBatch.DrawStringAligned(Content.Consolas10, base.Name, renderer.TransformVector(WorldPos + new Vector2(TileSize.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
+                Main.SpriteBatch.DrawStringAligned(Content.Consolas10, base.Name, renderer.TransformVector(WorldPosition + new Vector2(TileSize.X / 2, .5f)), Color.Yellow, new(.5f, 0), Color.Black);
         }
         protected override void BuildInnerConfig(UIList list)
         {
