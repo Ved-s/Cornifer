@@ -579,6 +579,8 @@ namespace Cornifer
 
             if (node.TryGet("interface", out JsonNode? @interface))
                 InterfaceState.LoadJson(@interface);
+
+            Region?.BindRooms();
         }
 
         public static void OpenState()

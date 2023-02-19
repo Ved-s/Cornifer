@@ -101,6 +101,7 @@ namespace Cornifer
                 r.Load(File.ReadAllText(data!), settings is null ? null : File.ReadAllText(settings));
             }
             LoadConnections();
+            BindRooms();
         }
 
         private void LoadGates(string worldFilePath)
@@ -465,6 +466,11 @@ namespace Cornifer
         public void LoadConnections()
         {
             Connections = new(this);
+        }
+        public void BindRooms()
+        {
+            foreach (Room room in Rooms)
+                room.BindToRooms();
         }
 
         public bool TryGetRoom(string id, [NotNullWhen(true)] out Room? room)

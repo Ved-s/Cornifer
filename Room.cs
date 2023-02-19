@@ -451,14 +451,8 @@ namespace Cornifer
                     }
                 }
 
-            if (IsShelter)
-            {
-                if (Connections.Length == 1 && Connections[0] is not null)
-                    BoundRoom = Connections[0]!.Target;
-
-                if (GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
+            if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
                     Children.Add(new SimpleIcon("ShelterMarker", shelterMarker));
-            }
 
             if (IsScavengerOutpost)
             {
@@ -855,6 +849,12 @@ namespace Cornifer
                 GateData.RightRegionId = Region.Id;
                 GateData.LeftRegionId = otherRegion;
             }
+        }
+
+        public void BindToRooms()
+        {
+            if (IsShelter && Connections.Length == 1 && Connections[0] is not null)
+                BoundRoom = Connections[0]!.Target;
         }
 
         protected override void DrawSelf(Renderer renderer)
