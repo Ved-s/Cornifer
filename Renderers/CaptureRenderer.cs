@@ -19,7 +19,7 @@ namespace Cornifer.Renderers
         Rgba32[] Colors = Array.Empty<Rgba32>();
         Image<Rgba32>? ScreenImage = null;
 
-        Image<Rgba32> Image;
+        public Image<Rgba32> Image;
         PointF[] LinePoints = new PointF[2];
         bool Capturing = false;
 

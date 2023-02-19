@@ -569,6 +569,7 @@ namespace Cornifer
                 Connection = connection;
             }
 
+            public override RenderLayers RenderLayer => RenderLayers.None;
             public override Vector2 VisualOffset => -(VisualSize - Vector2.One) / 2;
             public override Vector2 VisualSize => new(13);
 

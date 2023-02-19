@@ -29,6 +29,8 @@ namespace Cornifer
         public virtual Vector2 ParentPosition { get; set; }
         public virtual Vector2 Size { get; }
 
+        public abstract RenderLayers RenderLayer { get; }
+
         public Vector2 VisualPosition => WorldPosition + VisualOffset;
         public virtual Vector2 VisualSize => Size + new Vector2(ShadeSize * 2);
         public virtual Vector2 VisualOffset => new Vector2(-ShadeSize);
@@ -65,29 +67,33 @@ namespace Cornifer
             Children = new(this);
         }
 
-        public void DrawShade(Renderer renderer)
+        public void DrawShade(Renderer renderer, RenderLayers renderLayers)
         {
             if (!Active)
                 return;
 
-            EnsureCorrectShadeTexture();
+            if (renderLayers.HasFlag(RenderLayer))
+            {
+                EnsureCorrectShadeTexture();
 
-            if (ShadeSize > 0 && ShadeTexture is not null)
-                renderer.DrawTexture(ShadeTexture, WorldPosition - new Vector2(ShadeSize));
+                if (ShadeSize > 0 && ShadeTexture is not null)
+                    renderer.DrawTexture(ShadeTexture, WorldPosition - new Vector2(ShadeSize));
+            }
 
             foreach (MapObject child in Children)
-                child.DrawShade(renderer);
+                child.DrawShade(renderer, renderLayers);
         }
 
-        public void Draw(Renderer renderer)
+        public void Draw(Renderer renderer, RenderLayers renderLayers)
         {
             if (!Active)
                 return;
 
-            DrawSelf(renderer);
+            if (renderLayers.HasFlag(RenderLayer))
+                DrawSelf(renderer);
 
             foreach (MapObject child in Children)
-                child.Draw(renderer);
+                child.Draw(renderer, renderLayers);
         }
 
         protected abstract void DrawSelf(Renderer renderer);

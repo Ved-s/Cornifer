@@ -113,6 +113,7 @@ namespace Cornifer
 
         public readonly Region Region = null!;
 
+        public override RenderLayers RenderLayer => RenderLayers.Rooms;
         public override bool LoadCreationForbidden => true;
         public override int ShadeSize => 5;
         public override int? ShadeCornerRadius => 6;

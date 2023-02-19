@@ -484,7 +484,7 @@ namespace Cornifer
 
                     new UIList()
                     {
-                        Top = 50,
+                        Top = 35,
                         Height = new(-100, 1),
                         ElementSpacing = 2,
 
@@ -717,13 +717,23 @@ namespace Cornifer
 
                     new UIButton
                     {
-                        Top = new(-25, 1),
+                        Top = new(-55, 1),
 
                         Height = 25,
-                        Text = "Capture region",
+                        Text = "Capture map",
 
                         TextAlign = new(.5f)
                     }.OnEvent(UIElement.ClickEvent, CaptureClicked),
+
+                    new UIButton
+                    {
+                        Top = new(-25, 1),
+
+                        Height = 25,
+                        Text = "Capture map (Layered)",
+
+                        TextAlign = new(.5f)
+                    }.OnEvent(UIElement.ClickEvent, CaptureLayeredClicked),
                 }
             };
         }
@@ -939,6 +949,31 @@ namespace Cornifer
                 using FileStream fs = File.Create(renderFile);
                 capResult.Save(fs, encoder);
                 capResult.Dispose();
+                GC.Collect();
+            }
+        }
+        static void CaptureLayeredClicked(UIButton btn, Empty _)
+        {
+            if (Main.Region is null)
+                return;
+
+            string? renderDir = null;
+            Thread thd = new(() =>
+            {
+                System.Windows.Forms.FolderBrowserDialog fbd = new();
+                fbd.Description = "Select render save folder";
+                fbd.ShowNewFolderButton = true;
+                fbd.UseDescriptionForTitle = true;
+                if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    renderDir = fbd.SelectedPath;
+            });
+            thd.SetApartmentState(ApartmentState.STA);
+            thd.Start();
+            thd.Join();
+
+            if (renderDir is not null)
+            {
+                Capture.CaptureMapLayered(renderDir);
                 GC.Collect();
             }
         }

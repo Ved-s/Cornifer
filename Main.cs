@@ -42,6 +42,8 @@ namespace Cornifer
 
         public static string? RainWorldRoot;
 
+        public static RenderLayers ActiveRenderLayers = RenderLayers.All;
+
         public static KeyboardState KeyboardState;
         public static KeyboardState OldKeyboardState;
 
@@ -223,7 +225,7 @@ namespace Cornifer
                 SpriteBatch.End();
             }
 
-            DrawMap(WorldCamera);
+            DrawMap(WorldCamera, ActiveRenderLayers, null);
 
             if (Selecting)
             {
@@ -375,28 +377,36 @@ namespace Cornifer
             }
         }
 
-        public static void DrawMap(Renderer renderer)
+        public static void DrawMap(Renderer renderer, RenderLayers layers, bool? border)
         {
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
             if (Region is not null)
             {
-                if (InterfaceState.DrawBorders.Value)
+                if (border is null && InterfaceState.DrawBorders.Value || border is true)
                 {
-                    Region.Connections?.DrawShadows(renderer);
+                    if (layers.HasFlag(RenderLayers.Connections))
+                        Region.Connections?.DrawShadows(renderer);
+
                     foreach (MapObject obj in WorldObjectLists)
-                        obj.DrawShade(renderer);
+                        obj.DrawShade(renderer, layers);
                 }
 
-                foreach (MapObject obj in Region.Rooms)
-                    obj.Draw(renderer);
+                if (border is null or false)
+                {
+                    foreach (MapObject obj in Region.Rooms)
+                        obj.Draw(renderer, layers);
 
-                Region.Connections?.DrawConnections(renderer, true);
-                Region.Connections?.DrawConnections(renderer, false);
-                foreach (MapObject obj in WorldObjects)
-                    obj.Draw(renderer);
+                    if (layers.HasFlag(RenderLayers.Connections))
+                    {
+                        Region.Connections?.DrawConnections(renderer, true);
+                        Region.Connections?.DrawConnections(renderer, false);
+                    }
+                    foreach (MapObject obj in WorldObjects)
+                        obj.Draw(renderer, layers);
 
-                Region.Connections?.DrawGuideLines(renderer);
+                    Region.Connections?.DrawGuideLines(renderer);
+                }
             }
 
             SpriteBatch.End();
@@ -773,5 +783,18 @@ namespace Cornifer
                     }
                 }
         }
+    }
+
+    [Flags]
+    public enum RenderLayers
+    {
+        All = 0x7f,
+
+        Rooms = 1,
+        Connections = 2,
+        Icons = 4,
+        Texts = 8,
+
+        None = 255,
     }
 }

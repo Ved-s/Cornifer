@@ -32,6 +32,7 @@ namespace Cornifer
         public ObjectProperty<float> Scale = new("scale", 1);
 
         public override int ShadeSize => 5;
+        public override RenderLayers RenderLayer => RenderLayers.Texts;
 
         Texture2D? TextShadeTexture;
         bool TextShadeTextureDirty;

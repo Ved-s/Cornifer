@@ -1,10 +1,12 @@
 ﻿using Cornifer.Renderers;
 using Microsoft.Xna.Framework;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,7 +16,7 @@ namespace Cornifer
 {
     public static class Capture
     {
-        public static Image<Rgba32> CaptureMap()
+        static CaptureRenderer CreateRenderer()
         {
             Vector2 tl = Vector2.Zero;
             Vector2 br = Vector2.Zero;
@@ -50,9 +52,48 @@ namespace Cornifer
                 Position = tl
             };
 
-            Main.DrawMap(renderer);
+            return renderer;
+        }
 
-            return image;
+        public static Image<Rgba32> CaptureMap()
+        {
+            CaptureRenderer renderer = CreateRenderer();
+
+            Main.DrawMap(renderer, RenderLayers.All, null);
+
+            return renderer.Image;
+        }
+
+        public static void CaptureMapLayered(string dirPath)
+        {
+            Directory.CreateDirectory(dirPath);
+            CaptureRenderer renderer = CreateRenderer();
+
+            for (int i = 0; i < 4; i++)
+            {
+                RenderLayers layer = (RenderLayers)(1 << i);
+
+                CaptureMapLayer(renderer, layer, true, dirPath);
+                CaptureMapLayer(renderer, layer, false, dirPath);
+            }
+
+            renderer.Dispose();
+        }
+
+        static void CaptureMapLayer(CaptureRenderer renderer, RenderLayers layer, bool shadow, string dir)
+        {
+            for (int j = 0; j < renderer.Image.Height; j++)
+            {
+                Span<Rgba32> row = renderer.Image.DangerousGetPixelRowMemory(j).Span;
+
+                for (int i = 0; i < row.Length; i++)
+                    row[i] = new(0);
+            }
+
+            Main.DrawMap(renderer, layer, shadow);
+
+            string filePath = Path.Combine(dir, $"{Main.Region?.Id}_{layer}{(shadow ? "Border" : "")}.png");
+            renderer.Image.SaveAsPng(filePath);
         }
     }
 }

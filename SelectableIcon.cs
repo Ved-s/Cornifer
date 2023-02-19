@@ -9,6 +9,7 @@ namespace Cornifer
 
         Vector2 Offset;
 
+        public override RenderLayers RenderLayer => RenderLayers.Icons;
         public override Vector2 ParentPosition
         {
             get => (Parent?.Size * ParentPosAlign ?? Vector2.Zero) + Offset - Size * IconPosAlign;
