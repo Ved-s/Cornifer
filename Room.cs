@@ -122,7 +122,7 @@ namespace Cornifer
 
         public override RenderLayers RenderLayer => RenderLayers.Rooms;
         public override bool LoadCreationForbidden => true;
-        public override int ShadeSize => 5;
+        public override int ShadeSize => InterfaceState.DisableRoomCropping.Value ? 0 : 5;
         public override int? ShadeCornerRadius => 6;
         public override bool ParentSelected => BoundRoom is not null && (BoundRoom.Selected || BoundRoom.ParentSelected) || base.ParentSelected;
 
@@ -585,7 +585,7 @@ namespace Cornifer
                 for (int j = 0; j < TileSize.Y; j++)
                     for (int i = 0; i < TileSize.X; i++)
                     {
-                        if (CutOutSolidTiles is not null && CutOutSolidTiles[i, j])
+                        if (!InterfaceState.DisableRoomCropping.Value && CutOutSolidTiles is not null && CutOutSolidTiles[i, j])
                         {
                             colors[i + j * TileSize.X] = Color.Transparent;
                             continue;

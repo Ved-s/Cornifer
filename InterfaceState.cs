@@ -20,6 +20,8 @@ namespace Cornifer
         public static Switch MarkShortcuts = new("markShortcuts", true);
         public static Switch MarkExitsOnly = new("markExitsOnly", true);
 
+        public static Switch DisableRoomCropping = new("disableRoomCropping", false);
+
         public static Slider WaterTransparency = new("waterTransparency", .3f);
 
         static List<Config> Configs = new();
@@ -31,6 +33,7 @@ namespace Cornifer
             WaterTransparency.OnChanged = UpdateRoomTilemaps;
             MarkShortcuts.OnChanged = UpdateRoomTilemaps;
             MarkExitsOnly.OnChanged = UpdateRoomTilemaps;
+            DisableRoomCropping.OnChanged = UpdateRoomTilemaps;
 
             foreach (FieldInfo field in typeof(InterfaceState).GetFields(BindingFlags.Public | BindingFlags.Static))
                 if (field.FieldType.IsAssignableTo(typeof(Config)))

@@ -605,6 +605,19 @@ namespace Cornifer
 
                             }.BindConfig(InterfaceState.DrawBorders),
 
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Selectable = true,
+                                Text = "Disable room cropping",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.DisableRoomCropping),
 
                             new UIPanel
                             {
