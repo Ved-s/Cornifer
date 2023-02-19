@@ -38,7 +38,7 @@ namespace Cornifer
 
         public virtual bool SkipTextureSave { get; set; }
 
-        public override Vector2 Size => Frame.Size.ToVector2() + (Shade.Value ? new Vector2(2) : Vector2.Zero);
+        public override Vector2 Size => Frame.Size.ToVector2();
 
         public override void DrawIcon(Renderer renderer)
         {
