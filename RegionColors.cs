@@ -59,7 +59,7 @@ namespace Cornifer
                 case "VS": switch (subregion)
                 {
                     case "Sump Tunnel": return RGBColor(0x666256);
-                    default: return RGBColor(0xFF00FD);
+                    default: return RGBColor(0x75405C);
                 }
                 case "UG": return RGBColor(0x8FB572);
                 case "OE": switch (subregion)
