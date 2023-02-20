@@ -132,6 +132,9 @@ namespace Cornifer
             FontAlphaHack.Apply(Cornifer.Content.RodondoExt20, 5);
             FontAlphaHack.Apply(Cornifer.Content.RodondoExt30, 1);
 
+            Cornifer.Content.RodondoExt20M.LineSpacing -= 3;
+            Cornifer.Content.RodondoExt30M.LineSpacing -= 5;
+
             Cornifer.Content.Rodondo20.Spacing += 1;
             Cornifer.Content.Rodondo20.LineSpacing += 2;
             Cornifer.Content.Rodondo30.LineSpacing += 5;

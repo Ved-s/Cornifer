@@ -1,0 +1,25 @@
+texture RodondoExt_20_30.png
+lineHeight 28
+glyphSpacing 2
+spacing 1
+spaceWidth 3
+ignoreCase true
+defaultChar ?
+
+pos 1 81
+chars A 15 B 11 C 12 D 13 E 9 F 8 G 15 H 12 I 3 J 7 K 12 L 9
+chars M 19 N 13 O 18 P 10 Q 18 R 11 S 10 T 11 U 14 V 13 W 20
+chars X 15 Y 13 Z 12
+
+pos 1 111
+chars А 15 Б 10 В 11 Г 8 Д 18 Е 9 Ё 9 Ж 15 З 10 И 13 Й 13 К 12
+chars Л 13 М 19 Н 12 О 18 П 14 Р 10 С 12 Т 11 У 14 Ф 18 Х 15
+chars Ц 15 Ч 14 Ш 15 Щ 19 Ъ 14 Ы 15 Ь 10 Э 12 Ю 23 Я 11
+
+pos 1 141
+chars 0 13 1 3 2 10 3 11 4 14 5 12 6 11 7 11 8 11 9 11
+
+pos 1 171
+chars ! 4 " 7 # 18 % 18 & 15 ' 3 ( 4 ) 4 * 8 + 11 , 3 - 8 . 4
+chars / 14 : 4 ; 4 < 9 = 11 > 9 ? 12 @ 18 [ 5 \ 14 ] 5 ^ 14
+chars _ 13 ` 8 { 4 | 3 } 4 £ 11 © 18 ° 8 ≤ 8 ≥ 8 ═ 12
