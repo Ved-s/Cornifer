@@ -37,6 +37,7 @@ namespace Cornifer
         public AtlasSprite? Sprite;
 
         public virtual bool SkipTextureSave { get; set; }
+        public virtual bool DisableBorderConfig { get; set; }
 
         public override Vector2 Size => Frame.Size.ToVector2();
 
@@ -87,34 +88,35 @@ namespace Cornifer
                 Shade.Value = btn.Selected;
             }));
 
-            list.Elements.Add(new UIPanel
+            if (!DisableBorderConfig)
             {
-                Height = 44,
-                Padding = 3,
-
-                BorderColor = new(100, 100, 100),
-
-                Elements =
+                list.Elements.Add(new UIPanel
                 {
-                    new UILabel
-                    {
-                        Height = 20,
-                        Left = 1,
-                        Text = $"Border size",
-                        TextAlign = new(0, .5f)
-                    },
-                    new UINumberInput
-                    {
-                        Top = 18,
-                        Height = 20,
+                    Height = 27,
+                    Padding = 4,
 
-                        BorderColor = new(100, 100, 100),
-                        Value = BorderSize.Value,
-                        AllowNegative = false,
-                        AllowDecimal = false,
-                    }.OnEvent(UINumberInput.ValueChanged, (inp, _) => BorderSize.Value = (int)inp.Value)
-                }
-            });
+                    Elements =
+                    {
+                        new UILabel
+                        {
+                            Top = 3,
+                            Width = 90,
+                            Height = 20,
+                            Text = "Border size:",
+                            WordWrap = false,
+                        },
+                        new UINumberInput
+                        {
+                            Width = new(-90, 1),
+                            Left = new(0, 1, -1),
+                            Value = BorderSize.Value,
+                            AllowDecimal = false,
+                            AllowNegative = false,
+
+                        }.OnEvent(UINumberInput.ValueChanged, (inp, _) => BorderSize.Value = (int)inp.Value),
+                    }
+                });
+            }
         }
 
         protected override JsonNode? SaveInnerJson()

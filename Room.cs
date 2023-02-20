@@ -95,7 +95,6 @@ namespace Cornifer
         public Vector2? OutpostPos;
 
         public Point TileSize;
-        public int WaterLevel;
         public bool WaterInFrontOfTerrain;
         public Tile[,] Tiles = null!;
 
@@ -103,6 +102,7 @@ namespace Cornifer
         public Shortcut[] Shortcuts = Array.Empty<Shortcut>();
 
         public int Layer;
+        public ObjectProperty<int> WaterLevel = new("waterLevel", -1);
         public ObjectProperty<int, string> Subregion = new("subregion", 0);
         public ObjectProperty<bool> Deathpit = new("deathpit", false);
         public ObjectProperty<bool> UseBetterTileCutout = new("betterTileCutout", true);
@@ -258,7 +258,7 @@ namespace Cornifer
                 }
                 if (swArray.TryGet(1, out string waterLevelStr) && int.TryParse(waterLevelStr, out int waterLevel))
                 {
-                    WaterLevel = waterLevel;
+                    WaterLevel.OriginalValue = waterLevel;
                 }
                 if (swArray.TryGet(2, out string waterInFrontStr))
                 {
@@ -511,7 +511,7 @@ namespace Cornifer
                 Children.Add(new MapText("BrokenShelterText", Main.DefaultSmallMapFont, text));
             }
 
-            Deathpit.OriginalValue = !IsShelter && !IsGate && WaterLevel < 0 && Enumerable.Range(0, TileSize.X).Any(x => Tiles[x, TileSize.Y-1].Terrain == Tile.TerrainType.Air);
+            Deathpit.OriginalValue = !IsShelter && !IsGate && WaterLevel.Value < 0 && Enumerable.Range(0, TileSize.X).Any(x => Tiles[x, TileSize.Y-1].Terrain == Tile.TerrainType.Air);
 
             if (GateData is not null && IsGate)
             {
@@ -568,7 +568,7 @@ namespace Cornifer
             {
                 bool invertedWater = Effects.Any(ef => ef.Name == "InvertedWater");
 
-                int waterLevel = WaterLevel;
+                int waterLevel = WaterLevel.Value;
 
                 if (waterLevel < 0)
                 {
@@ -993,6 +993,33 @@ namespace Cornifer
                 TileMapDirty = true;
                 ShadeTextureDirty = true;
             }));
+
+            list.Elements.Add(new UIPanel
+            {
+                Height = 27,
+                Padding = 4,
+
+                Elements =
+                {
+                    new UILabel
+                    {
+                        Top = 3,
+                        Width = 90,
+                        Height = 20,
+                        Text = "Water level:",
+                        WordWrap = false,
+                    },
+                    new UINumberInput
+                    {
+                        Width = new(-90, 1),
+                        Left = new(0, 1, -1),
+                        Value = WaterLevel.Value,
+                        AllowDecimal = false,
+                        AllowNegative = true,
+
+                    }.OnEvent(UINumberInput.ValueChanged, (inp, _) => { WaterLevel.Value = (int)inp.Value; TileMapDirty = true; }),
+                }
+            });
         }
 
         protected override JsonNode? SaveInnerJson()
@@ -1001,7 +1028,8 @@ namespace Cornifer
             .SaveProperty(Deathpit)
             .SaveProperty(Subregion)
             .SaveProperty(UseBetterTileCutout)
-            .SaveProperty(CutoutAllSolidTiles);
+            .SaveProperty(CutoutAllSolidTiles)
+            .SaveProperty(WaterLevel);
         }
         protected override void LoadInnerJson(JsonNode node)
         {
@@ -1009,6 +1037,7 @@ namespace Cornifer
             Deathpit.LoadFromJson(node);
             UseBetterTileCutout.LoadFromJson(node);
             CutoutAllSolidTiles.LoadFromJson(node);
+            WaterLevel.LoadFromJson(node);
             TileMapDirty = true;
         }
 
