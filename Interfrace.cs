@@ -6,9 +6,9 @@ using Microsoft.Xna.Framework.Input;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Png;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Policy;
 using System.Threading;
 
 namespace Cornifer
@@ -31,6 +31,7 @@ namespace Cornifer
         public static UIPanel ConfigPanel = null!;
 
         public static UIList SubregionColorList = null!;
+        public static Dictionary<string, UIButton> VisibilityPlacedObjects = new();
 
         public static bool Hovered => Root?.Hover is not null;
         public static bool Active => Root?.Active is not null;
@@ -434,6 +435,11 @@ namespace Cornifer
                                     },
                                     new()
                                     {
+                                        Name = "Visibility",
+                                        Element = InitVisibilityTab()
+                                    },
+                                    new()
+                                    {
                                         Name = "Subregions",
                                         Element = InitSubregionsTab(),
                                     },
@@ -490,121 +496,6 @@ namespace Cornifer
 
                         Elements =
                         {
-                            new UIButton
-                            {
-                                Height = 20,
-                                Text = "Draw slugcat icons",
-
-                                Selectable = true,
-
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
-
-                                TextAlign = new(.5f)
-                            }.BindConfig(InterfaceState.DrawSlugcatIcons)
-                            .Assign(out SlugcatIcons),
-
-                            new UIButton
-                            {
-                                Height = 20,
-                                Text = "Use diamonds",
-
-                                HoverText = "Draw diamonds instead of\nslugcat icons",
-
-                                Selectable = true,
- 
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
-
-                                TextAlign = new(.5f)
-                            }.BindConfig(InterfaceState.DrawSlugcatDiamond),
-
-                            new UIButton
-                            {
-                                Height = 20,
-                                Text = "Draw room objects",
-
-                                Selectable = true,
-
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
-
-                                TextAlign = new(.5f)
-                            }.BindConfig(InterfaceState.DrawPlacedObjects),
-
-                            new UIButton
-                            {
-                                Height = 20,
-                                Text = "Draw pickups",
-
-                                HoverText = "Draw placed items",
-
-                                Selectable = true,
-
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
-
-                                TextAlign = new(.5f)
-                            }.BindConfig(InterfaceState.DrawPlacedPickups),
-
-                            new UIButton
-                            {
-                                Height = 20,
-
-                                Selectable = true,
-                                Text = "Draw tile walls",
-
-                                HoverText = "Render room tiles with walls",
-
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
-
-                                TextAlign = new(.5f)
-
-                            }.BindConfig(InterfaceState.DrawTileWalls),
-
-                            new UIButton
-                            {
-                                Height = 20,
-
-                                Selectable = true,
-                                Text = "Mark shortcuts",
-
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
-
-                                TextAlign = new(.5f)
-
-                            }.BindConfig(InterfaceState.MarkShortcuts),
-
-                            new UIButton
-                            {
-                                Height = 20,
-
-                                Selectable = true,
-                                Text = "Mark exits only",
-
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
-
-                                TextAlign = new(.5f)
-
-                            }.BindConfig(InterfaceState.MarkExitsOnly),
-
-                            new UIButton
-                            {
-                                Height = 20,
-
-                                Selectable = true,
-                                Text = "Draw borders",
-
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
-
-                                TextAlign = new(.5f)
-
-                            }.BindConfig(InterfaceState.DrawBorders),
-
                             new UIButton
                             {
                                 Height = 20,
@@ -673,7 +564,7 @@ namespace Cornifer
 
                                 TextAlign = new(.5f)
 
-                            }.OnEvent(UIElement.ClickEvent, (btn, _) => 
+                            }.OnEvent(UIElement.ClickEvent, (btn, _) =>
                             {
                                 Main.WorldObjects.Add(new MapText($"WorldText_{Random.Shared.Next():x}", Main.DefaultSmallMapFont, "Sample text")
                                 {
@@ -688,7 +579,7 @@ namespace Cornifer
                                 Padding = 3,
 
                                 BorderColor = new(100, 100, 100),
-                                Elements = 
+                                Elements =
                                 {
                                     new UILabel
                                     {
@@ -702,7 +593,7 @@ namespace Cornifer
                                         Left = 0,
                                         Width = new(-1, .33f),
                                         Height = new(-20, 1),
-                                        Text = "Open", 
+                                        Text = "Open",
                                         TextAlign = new(.5f)
                                     }.OnEvent(UIElement.ClickEvent, (_, _) => Main.OpenState()),
                                     new UIButton
@@ -747,6 +638,202 @@ namespace Cornifer
 
                         TextAlign = new(.5f)
                     }.OnEvent(UIElement.ClickEvent, CaptureLayeredClicked),
+                }
+            };
+        }
+        static UIElement InitVisibilityTab()
+        {
+            return new UIPanel
+            {
+                BackColor = new(30, 30, 30),
+                BorderColor = new(100, 100, 100),
+
+                Padding = new(5),
+
+                Elements =
+                {
+                    new UIList()
+                    {
+                        ElementSpacing = 2,
+
+                        Elements =
+                        {
+                            new UIButton
+                            {
+                                Height = 20,
+                                Text = "Slugcat icons",
+
+                                Selectable = true,
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+                            }.BindConfig(InterfaceState.DrawSlugcatIcons)
+                            .Assign(out SlugcatIcons),
+
+                            new UIButton
+                            {
+                                Height = 20,
+                                Text = "Diamond icons",
+
+                                HoverText = "Draw diamonds instead of\nslugcat icons",
+
+                                Selectable = true,
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+                            }.BindConfig(InterfaceState.DrawSlugcatDiamond),
+
+                            new UIButton
+                            {
+                                Height = 20,
+                                Text = "Room objects",
+
+                                Selectable = true,
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+                            }.BindConfig(InterfaceState.DrawPlacedObjects),
+
+                            new UIButton
+                            {
+                                Height = 20,
+                                Text = "Room pickups",
+
+                                HoverText = "Draw placed items",
+
+                                Selectable = true,
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+                            }.BindConfig(InterfaceState.DrawPlacedPickups),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Selectable = true,
+                                Text = "Tile walls",
+
+                                HoverText = "Render room tiles with walls",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.DrawTileWalls),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Selectable = true,
+                                Text = "Shortcuts",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.MarkShortcuts),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Selectable = true,
+                                Text = "Only exit shortcuts",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.MarkExitsOnly),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Selectable = true,
+                                Text = "Borders",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.DrawBorders),
+
+                            new UIResizeablePanel
+                            {
+                                Height = 300,
+
+                                Padding = 4,
+
+                                CanGrabTop = false,
+                                CanGrabLeft = false,
+                                CanGrabRight = false,
+                                CanGrabBottom = true,
+
+                                Elements =
+                                {
+                                    new UILabel
+                                    {
+                                        Text = "Room objects",
+                                        Height = 15,
+                                        TextAlign = new(.5f)
+                                    },
+                                    new UIList
+                                    {
+                                        Top = 20,
+                                        Height = new(-20, 1),
+                                        ElementSpacing = 4
+                                    }.Execute((list) =>
+                                    {
+                                        VisibilityPlacedObjects.Clear();
+
+                                        foreach (string objectName in PlacedObject.AllObjectTypes.OrderBy(s => s))
+                                        {
+                                            if (!PlacedObject.CheckValidType(objectName))
+                                                continue;
+
+                                            UIButton btn = new()
+                                            {
+                                                Text = objectName,
+                                                Height = 20,
+                                                TextAlign = new(.5f),
+
+                                                Selectable = true,
+                                                Selected = !PlacedObject.HideObjectTypes.Contains(objectName),
+
+                                                SelectedBackColor = Color.White,
+                                                SelectedTextColor = Color.Black
+                                            };
+                                            btn.OnEvent(UIElement.ClickEvent, (btn, _) => 
+                                            {
+                                                if (btn.Selected)
+                                                    PlacedObject.HideObjectTypes.Remove(objectName);
+                                                else
+                                                    PlacedObject.HideObjectTypes.Add(objectName);
+                                            });
+
+                                            VisibilityPlacedObjects[objectName] = btn;
+                                            list.Elements.Add(btn);
+                                        }
+                                    })
+                                }
+                            }
+                        }
+                    }
                 }
             };
         }

@@ -31,8 +31,36 @@ namespace Cornifer
         public override Vector2 ParentPosAlign => Parent is not Room ? new(.5f) : new Vector2(RoomPos.X / Parent.Size.X, 1 - (RoomPos.Y / Parent.Size.Y));
         public override bool Active
         {
-            get => InterfaceState.DrawPlacedObjects.Value && (Parent is not Room || InterfaceState.DrawPlacedPickups.Value || Room.NonPickupObjectsWhitelist.Contains(Type)) && base.Active;
+            get => InterfaceState.DrawPlacedObjects.Value 
+                && (Parent is not Room || !HideObjectTypes.Contains(Type))
+                && (Parent is not Room || InterfaceState.DrawPlacedPickups.Value || Room.NonPickupObjectsWhitelist.Contains(Type))
+                && base.Active;
         }
+
+        public static HashSet<string> AllObjectTypes = new()
+        {
+            "GreenToken","WhiteToken","Germinator","RedToken","OEsphere","MSArteryPush","GooieDuck","LillyPuck",
+            "GlowWeed","BigJellyFish","RotFlyPaper","MoonCloak","DandelionPeach","KarmaShrine","Stowaway",
+            "HRGuard","DevToken","LightSource","FlareBomb","PuffBall","TempleGuard","LightFixture","DangleFruit",
+            "CoralStem","CoralStemWithNeurons","CoralNeuron","CoralCircuit","WallMycelia","ProjectedStars","ZapCoil",
+            "SuperStructureFuses","GravityDisruptor","SpotLight","DeepProcessing","Corruption","CorruptionTube",
+            "CorruptionDarkness","StuckDaddy","SSLightRod","CentipedeAttractor","DandelionPatch","GhostSpot","DataPearl",
+            "UniqueDataPearl","SeedCob","DeadSeedCob","WaterNut","JellyFish","KarmaFlower","Mushroom","SlimeMold",
+            "FlyLure","CosmeticSlimeMold","CosmeticSlimeMold2","FirecrackerPlant","VultureGrub","DeadVultureGrub",
+            "VoidSpawnEgg","ReliableSpear","SuperJumpInstruction","ProjectedImagePosition","ExitSymbolShelter",
+            "ExitSymbolHidden","NoSpearStickZone","LanternOnStick","ScavengerOutpost","TradeOutpost","ScavengerTreasury",
+            "ScavTradeInstruction","CustomDecal","InsectGroup","PlayerPushback","MultiplayerItem","SporePlant",
+            "GoldToken","BlueToken","DeadTokenStalk","NeedleEgg","BrokenShelterWaterLevel","BubbleGrass","Filter",
+            "ReliableIggyDirection","Hazer","DeadHazer","Rainbow","LightBeam","NoLeviathanStrandingZone",
+            "FairyParticleSettings","DayNightSettings","EnergySwirl","LightningMachine","SteamPipe","WallSteamer",
+            "Vine","VultureMask","SnowSource","DeathFallFocus","CellDistortion","LocalBlizzard","NeuronSpawner",
+            "HangingPearls","Lantern","ExitSymbolAncientShelter","BlinkingFlower"
+        };
+
+        public static HashSet<string> HideObjectTypes = new()
+        {
+            "DevToken"
+        };
 
         public static PlacedObject? Load(string data)
         {
@@ -178,6 +206,11 @@ namespace Cornifer
                 Color = { OriginalValue = atlas.Color },
                 Shade = { OriginalValue = atlas.Shade }
             };
+        }
+
+        public static bool CheckValidType(string type)
+        {
+            return GameAtlases.Sprites.ContainsKey($"Object_{type}");
         }
 
         public void AddAvailabilityIcons()

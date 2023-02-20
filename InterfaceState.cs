@@ -1,7 +1,9 @@
 ﻿using Cornifer.UI.Elements;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 
 namespace Cornifer
@@ -46,6 +48,7 @@ namespace Cornifer
             foreach (Config config in Configs)
                 config.SaveToJson(obj);
 
+            obj["hideObjects"] = new JsonArray(PlacedObject.HideObjectTypes.Select(s => JsonValue.Create(s)).ToArray());
             return obj;
         }
 
@@ -53,6 +56,25 @@ namespace Cornifer
         {
             foreach (Config config in Configs)
                 config.LoadFromJson(node);
+
+            if (node.TryGet("hideObjects", out JsonArray? hideObjects))
+            {
+                PlacedObject.HideObjectTypes.Clear();
+                foreach (JsonNode? objNode in hideObjects)
+                {
+                    if (objNode is not JsonValue)
+                        continue;
+
+                    string? type = objNode.Deserialize<string>();
+                    if (type is null)
+                        continue;
+
+                    PlacedObject.HideObjectTypes.Add(type);
+                }
+
+                foreach (var (objType, button) in Interface.VisibilityPlacedObjects)
+                    button.Selected = !PlacedObject.HideObjectTypes.Contains(objType);
+            }
         }
 
         public abstract class Config
