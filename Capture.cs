@@ -59,7 +59,7 @@ namespace Cornifer
         {
             CaptureRenderer renderer = CreateRenderer();
 
-            Main.DrawMap(renderer, RenderLayers.All, null);
+            Main.DrawMap(renderer, Main.ActiveRenderLayers, null);
 
             return renderer.Image;
         }

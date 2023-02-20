@@ -163,7 +163,7 @@ namespace Cornifer
 
             bool active = OldActive && IsActive;
 
-            if (active)
+            if (active && ActiveRenderLayers.HasFlag(RenderLayers.Connections))
                 Region?.Connections?.Update();
 
             UpdateSelectionAndDrag(active && MouseState.LeftButton == ButtonState.Pressed, active && OldMouseState.LeftButton == ButtonState.Pressed);
@@ -413,7 +413,8 @@ namespace Cornifer
                     foreach (MapObject obj in WorldObjects)
                         obj.Draw(renderer, layers);
 
-                    Region.Connections?.DrawGuideLines(renderer);
+                    if (layers.HasFlag(RenderLayers.Connections))
+                        Region.Connections?.DrawGuideLines(renderer);
                 }
             }
 
@@ -798,7 +799,7 @@ namespace Cornifer
     [Flags]
     public enum RenderLayers
     {
-        All = 0x7f,
+        All = 0x0f,
 
         Rooms = 1,
         Connections = 2,

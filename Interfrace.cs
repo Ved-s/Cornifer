@@ -32,6 +32,7 @@ namespace Cornifer
 
         public static UIList SubregionColorList = null!;
         public static Dictionary<string, UIButton> VisibilityPlacedObjects = new();
+        public static Dictionary<RenderLayers, UIButton> VisibilityRenderLayers = new();
 
         public static bool Hovered => Root?.Hover is not null;
         public static bool Active => Root?.Active is not null;
@@ -775,7 +776,7 @@ namespace Cornifer
 
                             new UIResizeablePanel
                             {
-                                Height = 300,
+                                Height = 150,
 
                                 Padding = 4,
 
@@ -827,6 +828,73 @@ namespace Cornifer
                                             });
 
                                             VisibilityPlacedObjects[objectName] = btn;
+                                            list.Elements.Add(btn);
+                                        }
+                                    })
+                                }
+                            },
+
+                            new UIResizeablePanel
+                            {
+                                Height = 120,
+
+                                Padding = 4,
+
+                                CanGrabTop = false,
+                                CanGrabLeft = false,
+                                CanGrabRight = false,
+                                CanGrabBottom = true,
+
+                                Elements =
+                                {
+                                    new UILabel
+                                    {
+                                        Text = "Map layers",
+                                        Height = 15,
+                                        TextAlign = new(.5f)
+                                    },
+                                    new UIList
+                                    {
+                                        Top = 20,
+                                        Height = new(-20, 1),
+                                        ElementSpacing = 4
+                                    }.Execute((list) =>
+                                    {
+                                        VisibilityRenderLayers.Clear();
+
+                                        int all = (int)RenderLayers.All;
+                                        for (int i = 0; i < 32; i++)
+                                        {
+                                            if ((all >> i) == 0)
+                                                break;
+
+                                            int layerInt = 1 << i;
+                                            if ((layerInt & all) == 0)
+                                                continue;
+
+                                            RenderLayers layer = (RenderLayers)layerInt;
+
+                                            UIButton btn = new()
+                                            {
+                                                Text = layer.ToString(),
+                                                Height = 20,
+                                                TextAlign = new(.5f),
+
+                                                Selectable = true,
+                                                Selected = Main.ActiveRenderLayers.HasFlag(layer),
+
+                                                SelectedBackColor = Color.White,
+                                                SelectedTextColor = Color.Black
+                                            };
+                                            btn.OnEvent(UIElement.ClickEvent, (btn, _) =>
+                                            {
+                                                if (btn.Selected)
+                                                    Main.ActiveRenderLayers |= layer;
+                                                else
+                                                    Main.ActiveRenderLayers &= ~layer;
+                                            });
+
+                                            VisibilityRenderLayers[layer] = btn;
                                             list.Elements.Add(btn);
                                         }
                                     })
