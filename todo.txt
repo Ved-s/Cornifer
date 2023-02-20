@@ -3,5 +3,4 @@ Proper mod loading
 Option to not load mod data
 Warnings system (2 wide gaps in connections)
 Fix spearmaster unlock (DM)
-Layer visibility toggles
 Undos

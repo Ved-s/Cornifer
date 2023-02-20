@@ -23,7 +23,9 @@ namespace Cornifer
         {
             "GhostSpot", "BlueToken", "GoldToken", 
             "RedToken", "WhiteToken", "DevToken", 
-            "DataPearl", "UniqueDataPearl", "ScavengerOutpost" };
+            "DataPearl", "UniqueDataPearl", "ScavengerOutpost",
+            "HRGuard", "TempleGuard"
+        };
         public static Dictionary<string, Vector2> VistaRooms = new()
         {
             ["HI_B04"] = new(214f, 615f),

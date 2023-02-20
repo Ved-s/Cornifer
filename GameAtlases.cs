@@ -100,6 +100,9 @@ namespace Cornifer
 
             {"NeedleEgg", ("needleEggSymbol", new(45, 13, 20))},
             {"WhiteToken", ("Symbol_Satellite", new(255, 255, 255))},
+
+            {"HRGuard", ("Object_KarmaFlower", new(255, 0, 0))},
+            {"TempleGuard", ("Object_KarmaFlower", new(255, 0, 0))},
         };
 
         static Dictionary<string, (Rectangle Frame, Color Color)> ObjectSpriteFrames = new()
@@ -116,6 +119,7 @@ namespace Cornifer
             { "UniqueDataPearl",  (new(39, 39,  11, 11), new(255, 255, 255, 255)) },
             { "Slugcat",          (new(51, 39,  20, 19), new(255, 255, 255, 255)) },
             { "ScavengerOutpost", (new(109, 21, 11, 15), new(255, 255, 255, 255)) },
+            { "KarmaShrine",      (new(72, 45,  17, 17), new(255, 255, 255, 255)) },
         };
 
         static Dictionary<string, (Rectangle Frame, Color Color)> MiscSpriteFrames = new()

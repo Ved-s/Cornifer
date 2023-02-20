@@ -49,7 +49,7 @@ namespace Cornifer
                 config.SaveToJson(obj);
 
             obj["hideObjects"] = new JsonArray(PlacedObject.HideObjectTypes.Select(s => JsonValue.Create(s)).ToArray());
-            obj["renderLayers"] = (int)Main.ActiveRenderLayers;
+            obj["hideRenderLayers"] = (int)(~Main.ActiveRenderLayers & RenderLayers.All);
             return obj;
         }
 
@@ -76,9 +76,9 @@ namespace Cornifer
                 foreach (var (objType, button) in Interface.VisibilityPlacedObjects)
                     button.Selected = !PlacedObject.HideObjectTypes.Contains(objType);
             }
-            if (node.TryGet("renderLayers", out int renderLayers))
+            if (node.TryGet("hideRenderLayers", out int hideRenderLayers))
             {
-                Main.ActiveRenderLayers = (RenderLayers)renderLayers;
+                Main.ActiveRenderLayers = RenderLayers.All & ~(RenderLayers)hideRenderLayers;
 
                 foreach (var (layer, button) in Interface.VisibilityRenderLayers)
                     button.Selected = Main.ActiveRenderLayers.HasFlag(layer);
