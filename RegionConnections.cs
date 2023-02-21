@@ -177,24 +177,35 @@ namespace Cornifer
             var state = Main.SpriteBatch.GetState();
             Main.SpriteBatch.End();
 
-            bool localShadow = false;
-
             foreach (Connection connection in Connections.Values)
             {
                 BeginConnectionCapture(renderer, connection);
                 Main.SpriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
+                bool GetPointShadow(int index)
+                {
+                    if (!overRoomShadow)
+                        return false;
+
+                    ConnectionPoint? point = index >= 0 && index < connection.Points.Count ? connection.Points[index] : null;
+
+                    return point is not null && !point.NoShadow.Value;
+                }
+
                 int totalLength = 0;
 
                 for (int i = 0; i <= connection.Points.Count; i++)
                 {
-                    localShadow = overRoomShadow && i > 0 && i < connection.Points.Count;
+                    bool startPointShadow = GetPointShadow(i - 1);
+                    bool endPointShadow = GetPointShadow(i);
+
+                    bool localShadow = overRoomShadow && startPointShadow && endPointShadow;
 
                     (Vec2 start, Vec2 end) = GetLinePoints(null, connection, i);
 
                     int length = (int)Math.Ceiling((end - start).Length);
 
-                    if (ShouldDrawLine(connection, i) && (!overRoomShadow || localShadow))
+                    if (ShouldDrawLine(connection, i))
                     {
                         float angle = (end - start).Angle.Radians;
 
@@ -206,10 +217,19 @@ namespace Cornifer
                         {
                             source.Width -= 2;
                             origin.X -= 2;
+                            length -= 2;
                         }
                         if (i == connection.Points.Count)
                         {
-                            source.Width -= 2;
+                            int dist = connection.AllowWhiteToRedPixel.Value ? 1 : 2;
+
+                            source.Width -= dist;
+                            length -= dist;
+                        }
+
+                        if (startPointShadow && (endPointShadow || GetPointShadow(i - 2)))
+                        {
+                            Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(start), new Rectangle(0, 0, 5, 5), new(0, 0, 0, 100), angle, new(2.5f), renderer.Scale, SpriteEffects.None, 0);
                         }
 
                         if (localShadow)
@@ -221,13 +241,8 @@ namespace Cornifer
                             color = new(0, 0, 0, 100);
 
                             Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(start), source, color, angle, origin, renderer.Scale, SpriteEffects.None, 0);
-
-                            Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(start), new Rectangle(0, 0, 5, 5), color, angle, new(2.5f), renderer.Scale, SpriteEffects.None, 0);
-
-                            if (i == connection.Points.Count - 1)
-                                Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(end), new Rectangle(0, 0, 5, 5), color, angle, new(2.5f), renderer.Scale, SpriteEffects.None, 0);
                         }
-                        else
+                        else if (!overRoomShadow)
                         {
                             ConnectionPoint? startPoint = i > 0 ? connection.Points[i - 1] : null;
                             ConnectionPoint? endPoint = i < connection.Points.Count ? connection.Points[i] : null;
@@ -448,9 +463,7 @@ namespace Cornifer
         {
             return new JsonObject(Connections
                 .Where(kvp => kvp.Value.Points.Count > 0)
-                .Select(kvp => new KeyValuePair<string, JsonNode?>($"{kvp.Key.src}~{kvp.Key.dst}",
-                    new JsonArray(kvp.Value.Points.Select(p => p.SaveJson()).ToArray())
-                    ))
+                .Select(kvp => new KeyValuePair<string, JsonNode?>($"{kvp.Key.src}~{kvp.Key.dst}", kvp.Value.SaveJson()))
                 );
         }
         public void LoadJson(JsonNode json)
@@ -460,49 +473,19 @@ namespace Cornifer
 
             foreach (var (name, con) in obj)
             {
+                if (con is null)
+                    continue;
+
                 string[] split = name.Split('~', 2);
                 if (split.Length != 2)
                     continue;
 
                 if (!TryGetConnection(split[0], split[1], out Connection? connection, out _))
                     continue;
-
-                connection.Points.Clear();
-
-                if (con is JsonValue value)
-                {
-                    int pointCount = value.Deserialize<int>();
-                    if (pointCount == 0)
-                        continue;
-
-                    Vector2 start = connection.Source.WorldPosition + connection.SourcePoint;
-                    Vector2 end = connection.Destination.WorldPosition + connection.DestinationPoint;
-
-                    float tpp = 1 / (pointCount + 1);
-                    float t = tpp;
-                    for (int i = 0; i < pointCount; i++)
-                    {
-                        ConnectionPoint newPoint = new(connection)
-                        {
-                            WorldPosition = Vector2.Lerp(start, end, t),
-                        };
-                        connection.Points.Add(newPoint);
-                        t += tpp;
-                    }
-                }
-                else if (con is JsonArray points)
-                    foreach (JsonNode? pointNode in points)
-                    {
-                        if (pointNode is null)
-                            continue;
-
-                        ConnectionPoint newPoint = new(connection);
-                        newPoint.LoadJson(pointNode);
-                        connection.Points.Add(newPoint);
-                    }
-
+                connection.LoadJson(con);
             }
         }
+
 
         public class Connection
         {
@@ -548,7 +531,89 @@ namespace Cornifer
                 DestinationPoint = connection.Target!.Exits[connection.TargetExit].ToVector2() + new Vector2(.5f);
             }
 
+            public ObjectProperty<bool> AllowWhiteToRedPixel = new("whiteToRed", true);
+
             public List<ConnectionPoint> Points = new();
+
+            internal void BuildConfig(UIList list)
+            {
+                list.Elements.Add(new UILabel
+                {
+                    Text = "Connection config",
+                    Height = 20,
+                    TextAlign = new(.5f)
+                });
+
+                list.Elements.Add(new UIButton
+                {
+                    Text = "Allow white-red ending",
+                    Height = 20,
+
+                    Selectable = true,
+                    Selected = AllowWhiteToRedPixel.Value,
+
+                    SelectedTextColor = Color.Black,
+                    SelectedBackColor = Color.White,
+
+                }.OnEvent(UIElement.ClickEvent, (btn, _) => AllowWhiteToRedPixel.Value = btn.Selected));
+            }
+
+            public void LoadJson(JsonNode node)
+            {
+                
+                if (node is JsonValue value)
+                {
+                    int pointCount = value.Deserialize<int>();
+                    if (pointCount == 0)
+                        return;
+
+                    Vector2 start = Source.WorldPosition + SourcePoint;
+                    Vector2 end = Destination.WorldPosition + DestinationPoint;
+
+                    Points.Clear();
+                    float tpp = 1 / (pointCount + 1);
+                    float t = tpp;
+                    for (int i = 0; i < pointCount; i++)
+                    {
+                        ConnectionPoint newPoint = new(this)
+                        {
+                            WorldPosition = Vector2.Lerp(start, end, t),
+                        };
+                        Points.Add(newPoint);
+                        t += tpp;
+                    }
+                }
+                else if (node is JsonArray pointsArray)
+                    LoadPointArray(pointsArray);
+                else if (node is JsonObject obj)
+                {
+                    if (obj.TryGet("points", out JsonArray? points))
+                        LoadPointArray(points);
+                    AllowWhiteToRedPixel.LoadFromJson(obj);
+                }
+            }
+
+            public JsonNode SaveJson()
+            {
+                return new JsonObject
+                {
+                    ["points"] = new JsonArray(Points.Select(p => p.SaveJson()).ToArray())
+                }.SaveProperty(AllowWhiteToRedPixel);
+            }
+
+            void LoadPointArray(JsonArray points)
+            {
+                Points.Clear();
+                foreach (JsonNode? pointNode in points)
+                {
+                    if (pointNode is null)
+                        continue;
+
+                    ConnectionPoint newPoint = new(this);
+                    newPoint.LoadJson(pointNode);
+                    Points.Add(newPoint);
+                }
+            }
         }
 
         public class ConnectionPoint : MapObject
@@ -562,6 +627,7 @@ namespace Cornifer
 
             public ObjectProperty<bool> SkipPixelBefore = new("skipBefore", false);
             public ObjectProperty<bool> SkipPixelAfter = new("skipAfter", false);
+            public ObjectProperty<bool> NoShadow = new("noShadow", false);
 
             public ConnectionPoint() { }
             public ConnectionPoint(Connection connection)
@@ -580,7 +646,8 @@ namespace Cornifer
                     ["x"] = ParentPosition.X,
                     ["y"] = ParentPosition.Y,
                 }.SaveProperty(SkipPixelBefore)
-                .SaveProperty(SkipPixelAfter);
+                .SaveProperty(SkipPixelAfter)
+                .SaveProperty(NoShadow);
             }
 
             public new void LoadJson(JsonNode node)
@@ -588,6 +655,7 @@ namespace Cornifer
                 ParentPosition = JsonTypes.LoadVector2(node);
                 SkipPixelBefore.LoadFromJson(node);
                 SkipPixelAfter.LoadFromJson(node);
+                NoShadow.LoadFromJson(node);
             }
 
             protected override void DrawSelf(Renderer renderer) { }
@@ -618,6 +686,20 @@ namespace Cornifer
                     SelectedBackColor = Color.White,
 
                 }.OnEvent(UIElement.ClickEvent, (btn, _) => SkipPixelAfter.Value = btn.Selected));
+                list.Elements.Add(new UIButton
+                {
+                    Text = "Disable shadow",
+                    Height = 20,
+
+                    Selectable = true,
+                    Selected = NoShadow.Value,
+
+                    SelectedTextColor = Color.Black,
+                    SelectedBackColor = Color.White,
+
+                }.OnEvent(UIElement.ClickEvent, (btn, _) => NoShadow.Value = btn.Selected));
+
+                Connection.BuildConfig(list);
             }
         }
     }
