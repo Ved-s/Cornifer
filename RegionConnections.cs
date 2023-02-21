@@ -4,6 +4,7 @@ using Cornifer.Renderers;
 using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Cornifer.UI.Structures;
+using Cornifer.UndoActions;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -113,6 +114,8 @@ namespace Cornifer
                 };
                 HoveredConnection.Points.Insert(HoveredConnectionLine, newPoint);
 
+                Main.Undo.Do(new MapObjectAdded<ConnectionPoint>(newPoint, HoveredConnection.Points, HoveredConnectionLine));
+
                 Main.SelectedObjects.Clear();
                 Main.SelectedObjects.Add(newPoint);
                 Main.Dragging = true;
@@ -120,16 +123,19 @@ namespace Cornifer
 
             if (Main.KeyboardState.IsKeyDown(Keys.Delete) && Main.OldKeyboardState.IsKeyUp(Keys.Delete))
             {
-                HashSet<ConnectionPoint> remove = new();
-
-                foreach (MapObject obj in Main.SelectedObjects)
-                    if (obj is ConnectionPoint point)
+                HashSet<ConnectionPoint> remove = new(Main.SelectedObjects.OfType<ConnectionPoint>());
+                if (remove.Count > 0)
+                {
+                    foreach (var connection in remove.GroupBy(pt => pt.Connection))
                     {
-                        point.Connection.Points.Remove(point);
-                        remove.Add(point);
+                        Main.Undo.Do(new MapObjectsRemoved<ConnectionPoint>(connection, connection.Key.Points));
+
+                        foreach (ConnectionPoint point in connection)
+                            connection.Key.Points.Remove(point);
                     }
 
-                Main.SelectedObjects.ExceptWith(remove);
+                    Main.SelectedObjects.ExceptWith(remove);
+                }
             }
         }
 
@@ -614,6 +620,11 @@ namespace Cornifer
                     Points.Add(newPoint);
                 }
             }
+
+            public override string ToString()
+            {
+                return $"{Source.Name}~{Destination.Name}";
+            }
         }
 
         public class ConnectionPoint : MapObject
@@ -700,6 +711,11 @@ namespace Cornifer
                 }.OnEvent(UIElement.ClickEvent, (btn, _) => NoShadow.Value = btn.Selected));
 
                 Connection.BuildConfig(list);
+            }
+
+            public override string ToString()
+            {
+                return $"Point {Connection.Points.IndexOf(this)} in {Connection}";
             }
         }
     }

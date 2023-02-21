@@ -568,7 +568,7 @@ namespace Cornifer
 
                             }.OnEvent(UIElement.ClickEvent, (btn, _) =>
                             {
-                                Main.WorldObjects.Add(new MapText($"WorldText_{Random.Shared.Next():x}", Main.DefaultSmallMapFont, "Sample text")
+                                Main.AddWorldObject(new MapText($"WorldText_{Random.Shared.Next():x}", Main.DefaultSmallMapFont, "Sample text")
                                 {
                                     WorldPosition = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
                                 });
@@ -1045,7 +1045,7 @@ namespace Cornifer
                 {
                     if (panel.Hovered && panel.Root.MouseLeftKey == KeybindState.JustPressed)
                     {
-                        Main.WorldObjects.Add(new SimpleIcon($"WorldIcon_{name}_{Random.Shared.Next():x}", sprite)
+                        Main.AddWorldObject(new SimpleIcon($"WorldIcon_{name}_{Random.Shared.Next():x}", sprite)
                         {
                             WorldPosition = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
                         });

@@ -505,6 +505,11 @@ namespace Cornifer.MapObjects
             return instance;
         }
 
+        public override string? ToString()
+        {
+            return Name ?? base.ToString();
+        }
+
         public class MapObjectCollection : ICollection<MapObject>
         {
             List<MapObject> Objects = new();

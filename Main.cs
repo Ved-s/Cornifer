@@ -1,6 +1,7 @@
 ﻿using Cornifer.Json;
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
+using Cornifer.UndoActions;
 using Microsoft.Win32;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -55,9 +56,12 @@ namespace Cornifer
         public static string? SelectedSlugcat;
 
         public static List<string> LoadErrors = new();
+        public static bool DrawUndoDebug;
 
         public static SpriteFont DefaultSmallMapFont => Cornifer.Content.Rodondo20;
         public static SpriteFont DefaultBigMapFont => Cornifer.Content.RodondoExt30;
+
+        public static UndoRedo Undo = new();
 
         static Vector2 SelectionStart;
         static Vector2 OldDragPos;
@@ -179,33 +183,48 @@ namespace Cornifer
 
             if (active && !Interface.Active)
             {
+                if (KeyboardState.IsKeyDown(Keys.F8) && OldKeyboardState.IsKeyUp(Keys.F8))
+                    DrawUndoDebug = !DrawUndoDebug;
+
                 if (KeyboardState.IsKeyDown(Keys.Up) && OldKeyboardState.IsKeyUp(Keys.Up))
-                    foreach (MapObject obj in SelectedObjects)
-                        if (obj.Active && !obj.ParentSelected)
-                            obj.ParentPosition += new Vector2(0, -1) * keyMoveMultiplier;
+                    MoveSelectedObjects(new Vector2(0, -1) * keyMoveMultiplier);
 
                 if (KeyboardState.IsKeyDown(Keys.Down) && OldKeyboardState.IsKeyUp(Keys.Down))
-                    foreach (MapObject obj in SelectedObjects)
-                        if (obj.Active && !obj.ParentSelected)
-                            obj.ParentPosition += new Vector2(0, 1) * keyMoveMultiplier;
+                    MoveSelectedObjects(new Vector2(0, 1) * keyMoveMultiplier);
 
                 if (KeyboardState.IsKeyDown(Keys.Left) && OldKeyboardState.IsKeyUp(Keys.Left))
-                    foreach (MapObject obj in SelectedObjects)
-                        if (obj.Active && !obj.ParentSelected)
-                            obj.ParentPosition += new Vector2(-1, 0) * keyMoveMultiplier;
+                    MoveSelectedObjects(new Vector2(-1, 0) * keyMoveMultiplier);
 
                 if (KeyboardState.IsKeyDown(Keys.Right) && OldKeyboardState.IsKeyUp(Keys.Right))
-                    foreach (MapObject obj in SelectedObjects)
-                        if (obj.Active && !obj.ParentSelected)
-                            obj.ParentPosition += new Vector2(1, 0) * keyMoveMultiplier;
+                    MoveSelectedObjects(new Vector2(1, 0) * keyMoveMultiplier);
 
                 if (KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete))
                 {
                     HashSet<MapObject> objectsToDelete = new(SelectedObjects);
                     objectsToDelete.IntersectWith(WorldObjects);
 
-                    WorldObjects.RemoveAll(x => objectsToDelete.Contains(x));
-                    SelectedObjects.ExceptWith(objectsToDelete);
+                    if (objectsToDelete.Count > 0)
+                    {
+                        Undo.Do(new MapObjectsRemoved<MapObject>(objectsToDelete, WorldObjects));
+
+                        WorldObjects.RemoveAll(x => objectsToDelete.Contains(x));
+                        SelectedObjects.ExceptWith(objectsToDelete);
+                    }
+                }
+
+                if (KeyboardState.IsKeyDown(Keys.LeftControl) || KeyboardState.IsKeyDown(Keys.RightControl))
+                {
+                    if (KeyboardState.IsKeyDown(Keys.Z) && OldKeyboardState.IsKeyUp(Keys.Z))
+                    {
+                        StopDragging();
+                        Undo.Undo();
+                    }
+
+                    if (KeyboardState.IsKeyDown(Keys.Y) && OldKeyboardState.IsKeyUp(Keys.Y))
+                    {
+                        StopDragging();
+                        Undo.Redo();
+                    }
                 }
             }
 
@@ -248,7 +267,7 @@ namespace Cornifer
                 SpriteBatch.End();
             }
 
-            if (LoadErrors.Count > 0)
+            if (LoadErrors.Count > 0 && !DrawUndoDebug)
             {
                 int y = 10;
                 int x = 10;
@@ -261,6 +280,34 @@ namespace Cornifer
                 foreach (string error in LoadErrors)
                 {
                     SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, error, new(x, y), Color.White);
+                    y += Cornifer.Content.Consolas10.LineSpacing;
+                }
+
+                SpriteBatch.End();
+            }
+
+            if (DrawUndoDebug)
+            {
+                int y = 10;
+                int x = 10;
+
+                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+                SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Undo stack debug", new(x, y), Color.Yellow);
+                y += Cornifer.Content.Consolas10.LineSpacing * 2 + 10;
+
+                for (int i = 0; i < Undo.RedoBuffer.Count; i++)
+                {
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, Undo.RedoBuffer[i].ToString()!, new(x, y), Color.White);
+                    y += Cornifer.Content.Consolas10.LineSpacing;
+                }
+
+                SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, "--- Current position ---", new(x, y), Color.Lime);
+                y += Cornifer.Content.Consolas10.LineSpacing;
+
+                for (int i = -1; i >= -Undo.UndoBuffer.Count; i--)
+                {
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, Undo.UndoBuffer[i].ToString()!, new(x, y), Color.White);
                     y += Cornifer.Content.Consolas10.LineSpacing;
                 }
 
@@ -320,6 +367,7 @@ namespace Cornifer
                         return;
                     }
 
+                    Undo.PreventNextUndoMerge();
                     Dragging = true;
                     OldDragPos = mouseWorld;
                     return;
@@ -333,6 +381,7 @@ namespace Cornifer
                         if (!KeyboardState.IsKeyDown(Keys.LeftShift))
                             SelectedObjects.Clear();
                         SelectedObjects.Add(obj);
+                        Undo.PreventNextUndoMerge();
                         Dragging = true;
                         OldDragPos = mouseWorld;
                         return;
@@ -349,9 +398,7 @@ namespace Cornifer
                     Vector2 diff = mouseWorld - OldDragPos;
 
                     if (diff.X != 0 || diff.Y != 0)
-                        foreach (MapObject obj in SelectedObjects)
-                            if (!obj.ParentSelected)
-                                obj.ParentPosition += diff;
+                        MoveSelectedObjects(diff);
 
                     OldDragPos = mouseWorld;
                 }
@@ -380,11 +427,36 @@ namespace Cornifer
                         pos.Round();
                         obj.WorldPosition = pos;
                     }
+                    Undo.PreventNextUndoMerge();
                 }
 
                 Dragging = false;
                 Selecting = false;
             }
+        }
+
+        private void MoveSelectedObjects(Vector2 diff)
+        {
+            foreach (MapObject obj in SelectedObjects)
+                if (!obj.ParentSelected)
+                    obj.ParentPosition += diff;
+
+            Undo.Do(new UndoActions.MapObjectsMoved(SelectedObjects, diff));
+        }
+
+        private void StopDragging()
+        {
+            if (!Dragging)
+                return;
+
+            Dragging = false;
+            Undo.PreventNextUndoMerge();
+        }
+
+        public static void AddWorldObject(MapObject obj)
+        {
+            WorldObjects.Add(obj);
+            Undo.Do(new MapObjectAdded<MapObject>(obj, WorldObjects));
         }
 
         public static void DrawMap(Renderer renderer, RenderLayers layers, bool? border)
