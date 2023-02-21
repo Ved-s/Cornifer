@@ -1,4 +1,6 @@
-﻿using Cornifer.Renderers;
+﻿using Cornifer.Json;
+using Cornifer.MapObjects;
+using Cornifer.Renderers;
 using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Cornifer.UI.Helpers;

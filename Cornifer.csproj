@@ -56,8 +56,8 @@
   </Target>
   <Target Name="DeleteRuntimes" AfterTargets="AfterBuild">
 	<ItemGroup>
-	  <UnusedRuntimes Include="$(OutDir)/runtimes/**"/>
-	  <UnusedRuntimes Remove="$(OutDir)runtimes/win*/**"/>
+	  <UnusedRuntimes Include="$(OutDir)/runtimes/**" />
+	  <UnusedRuntimes Remove="$(OutDir)runtimes/win*/**" />
 	</ItemGroup>
     <Delete Files="@(UnusedRuntimes)" />
   </Target>

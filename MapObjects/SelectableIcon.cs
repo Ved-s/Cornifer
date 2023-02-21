@@ -1,7 +1,7 @@
 ﻿using Cornifer.Renderers;
 using Microsoft.Xna.Framework;
 
-namespace Cornifer
+namespace Cornifer.MapObjects
 {
     public abstract class SelectableIcon : MapObject
     {

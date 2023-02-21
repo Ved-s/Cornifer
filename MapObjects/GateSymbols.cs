@@ -1,4 +1,5 @@
-﻿using Cornifer.Renderers;
+﻿using Cornifer.Json;
+using Cornifer.Renderers;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using System;
@@ -9,7 +10,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
-namespace Cornifer
+namespace Cornifer.MapObjects
 {
     public class GateSymbols : SelectableIcon
     {
@@ -24,11 +25,11 @@ namespace Cornifer
         AtlasSprite? LeftArrowSprite;
         AtlasSprite? RightArrowSprite;
 
-        public ObjectProperty<Color> SplitterColor    = new("splitter", Color.White);
-        public ObjectProperty<Color> LeftSymbolColor  = new("leftSymbol", Color.White);
+        public ObjectProperty<Color> SplitterColor = new("splitter", Color.White);
+        public ObjectProperty<Color> LeftSymbolColor = new("leftSymbol", Color.White);
         public ObjectProperty<Color> RightSymbolColor = new("rightSymbol", Color.White);
-        public ObjectProperty<Color> LeftArrowColor   = new("leftArrow", Color.White);
-        public ObjectProperty<Color> RightArrowColor  = new("rightArrow", Color.White);
+        public ObjectProperty<Color> LeftArrowColor = new("leftArrow", Color.White);
+        public ObjectProperty<Color> RightArrowColor = new("rightArrow", Color.White);
 
         public GateSymbols()
         {
@@ -68,7 +69,7 @@ namespace Cornifer
             Vector2 center = WorldPosition + Size / 2;
 
             Vector2 splitterSize = new(5, 64);
-            renderer.DrawTexture(Main.Pixel, center - splitterSize/2, null, splitterSize, SplitterColor.Value);
+            renderer.DrawTexture(Main.Pixel, center - splitterSize / 2, null, splitterSize, SplitterColor.Value);
 
             if (LeftSymbolSprite is not null)
             {

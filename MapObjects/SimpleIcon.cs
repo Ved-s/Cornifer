@@ -1,4 +1,5 @@
-﻿using Cornifer.Renderers;
+﻿using Cornifer.Json;
+using Cornifer.Renderers;
 using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
@@ -7,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
 
-namespace Cornifer
+namespace Cornifer.MapObjects
 {
     public class SimpleIcon : SelectableIcon
     {

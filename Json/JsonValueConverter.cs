@@ -3,7 +3,7 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Cornifer
+namespace Cornifer.Json
 {
     public static class JsonValueConverter<T>
     {

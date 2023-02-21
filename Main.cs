@@ -1,4 +1,6 @@
-﻿using Cornifer.Renderers;
+﻿using Cornifer.Json;
+using Cornifer.MapObjects;
+using Cornifer.Renderers;
 using Microsoft.Win32;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

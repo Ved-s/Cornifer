@@ -5,7 +5,7 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
-namespace Cornifer
+namespace Cornifer.Json
 {
     public class ObjectProperty<T>
     {
@@ -13,7 +13,7 @@ namespace Cornifer
         public T? UserValue = default;
         public T OriginalValue;
 
-        public T Value 
+        public T Value
         {
             get => UserValueSet ? UserValue! : OriginalValue;
             set { UserValue = value; UserValueSet = true; ValueChanged?.Invoke(); }

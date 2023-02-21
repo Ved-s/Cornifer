@@ -1,4 +1,5 @@
-﻿using Cornifer.Renderers;
+﻿using Cornifer.Json;
+using Cornifer.Renderers;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -9,7 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
 
-namespace Cornifer
+namespace Cornifer.MapObjects
 {
     public abstract class MapObject
     {
@@ -404,7 +405,7 @@ namespace Cornifer
                             int x = i + k;
                             int y = j + l;
 
-                            if (x < 0 || y < 0 || x >= width || y >= height || (k == 0 && l == 0))
+                            if (x < 0 || y < 0 || x >= width || y >= height || k == 0 && l == 0)
                                 continue;
 
                             int testIndex = width * y + x;

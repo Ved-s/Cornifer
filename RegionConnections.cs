@@ -1,4 +1,6 @@
-﻿using Cornifer.Renderers;
+﻿using Cornifer.Json;
+using Cornifer.MapObjects;
+using Cornifer.Renderers;
 using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Cornifer.UI.Structures;
@@ -486,7 +488,6 @@ namespace Cornifer
             }
         }
 
-
         public class Connection
         {
             public Room Source;
@@ -560,7 +561,6 @@ namespace Cornifer
 
             public void LoadJson(JsonNode node)
             {
-                
                 if (node is JsonValue value)
                 {
                     int pointCount = value.Deserialize<int>();

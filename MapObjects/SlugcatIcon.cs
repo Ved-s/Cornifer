@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Cornifer
+namespace Cornifer.MapObjects
 {
     public class SlugcatIcon : SelectableIcon
     {
@@ -25,7 +25,7 @@ namespace Cornifer
 
         public override void DrawIcon(Renderer renderer)
         {
-            Rectangle frame = InterfaceState.DrawSlugcatDiamond.Value && !ForceSlugcatIcon ? new(Id*9, 8, 9, 9) : new(Id*8, 0, 8, 8);
+            Rectangle frame = InterfaceState.DrawSlugcatDiamond.Value && !ForceSlugcatIcon ? new(Id * 9, 8, 9, 9) : new(Id * 8, 0, 8, 8);
 
             renderer.DrawTexture(Content.SlugcatIcons, WorldPosition, frame);
         }
