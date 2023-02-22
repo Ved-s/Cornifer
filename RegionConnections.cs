@@ -21,13 +21,32 @@ namespace Cornifer
     {
         public static Texture2D? ConnectionTexture;
 
-        public Dictionary<(string src, string dst), Connection> Connections = new();
+        public Dictionary<(string src, string dst), Connection> RoomConnections = new();
+        public Dictionary<(string room, Point shortcut), Connection> InRoomConnections = new();
+
+        public IEnumerable<Connection> AllConnections => InRoomConnections.Values.Concat(RoomConnections.Values);
+
         public Region Region;
         public CompoundEnumerable<ConnectionPoint> PointObjectLists = new();
 
         public bool Hovered => HoveredConnection is not null;
 
-        public ConnectionPoint? HoveredConnectionPoint;
+        public ConnectionPoint? HoveredConnectionPoint 
+        {
+            get => hoveredConnectionPoint;
+            set
+            {
+                if (hoveredConnectionPoint is not null)
+                    Main.FirstPrioritySelectionObjects.Remove(hoveredConnectionPoint);
+
+                hoveredConnectionPoint = value;
+
+                if (hoveredConnectionPoint is not null)
+                    Main.FirstPrioritySelectionObjects.Add(hoveredConnectionPoint);
+            }
+        }
+
+        private ConnectionPoint? hoveredConnectionPoint;
         public Connection? HoveredConnection;
         public int HoveredConnectionLine;
         public float HoveredLineDist;
@@ -37,6 +56,7 @@ namespace Cornifer
             Region = region;
 
             foreach (Room room in region.Rooms)
+            {
                 foreach (var connection in room.Connections)
                 {
                     if (connection is null)
@@ -45,7 +65,7 @@ namespace Cornifer
                     (string src, string dst) key1 = (room.Name!, connection.Target.Name!);
                     (string src, string dst) key2 = (connection.Target.Name!, room.Name!);
 
-                    if (Connections.ContainsKey(key1) || Connections.ContainsKey(key2))
+                    if (RoomConnections.ContainsKey(key1) || RoomConnections.ContainsKey(key2))
                         continue;
 
                     Connection regionConnection = new(room, connection);
@@ -53,54 +73,102 @@ namespace Cornifer
                         continue;
 
                     PointObjectLists.Add(regionConnection.Points);
-                    Connections[key1] = regionConnection;
+                    RoomConnections[key1] = regionConnection;
                 }
+
+                foreach (Room.Shortcut shortcut in room.Shortcuts)
+                {
+                    if (shortcut.Type != Room.Tile.ShortcutType.Normal)
+                        continue;
+
+                    if (InRoomConnections.ContainsKey((room.Name!, shortcut.Entrance)) || InRoomConnections.ContainsKey((room.Name!, shortcut.Target)))
+                        continue;
+
+                    Connection roomConnection = new(room, shortcut);
+                    if (roomConnection.Invalid)
+                        continue;
+
+                    PointObjectLists.Add(roomConnection.Points);
+                    InRoomConnections[(room.Name!, shortcut.Entrance)] = roomConnection;
+                }
+            }
         }
 
         public void Update()
         {
-            HoveredConnection = null;
-            HoveredConnectionPoint = null;
-
             if (!Main.Dragging && !Main.Selecting && !Interface.Hovered)
             {
                 Vector2 mouseScreen = Main.MouseState.Position.ToVector2();
                 Vector2 mouseWorld = Main.WorldCamera.InverseTransformVector(mouseScreen);
 
-                bool finish = false;
+                float lineBoundsOff = .5f * Main.WorldCamera.Scale;
 
-                foreach (Connection connection in Connections.Values.Reverse())
+                if (HoveredConnection is not null)
                 {
-                    for (int i = connection.Points.Count; i >= 0; i--)
+                    (Vec2 start, Vec2 end) = GetLinePoints(Main.WorldCamera, HoveredConnection, HoveredConnectionLine);
+                    Rect lineRect = GetLineBounds(start, end, lineBoundsOff, out float lineAngle);
+                    if (!RotatedRectContains(lineRect, lineAngle, mouseScreen))
+                        HoveredConnection = null;
+                    else
                     {
-                        (Vec2 start, Vec2 end) = GetLinePoints(Main.WorldCamera, connection, i);
-                        Rect lineRect = GetLineBounds(start, end, out float lineAngle);
-                        if (RotatedRectContains(lineRect, lineAngle, mouseScreen))
-                        {
-                            HoveredConnection = connection;
-                            HoveredConnectionLine = i;
+                        Vec2 mouseLine = (Vec2)mouseScreen - start;
 
-                            Vec2 mouseLine = (Vec2)mouseScreen - start;
-
-                            float mousePosAlong = RotateVector(mouseLine, -lineAngle, Vector2.Zero).X;
-                            HoveredLineDist = mousePosAlong / lineRect.Width;
-                            finish = true;
-                            break;
-                        }
+                        float mousePosAlong = RotateVector(mouseLine, -lineAngle, Vector2.Zero).X;
+                        HoveredLineDist = mousePosAlong / (lineRect.Width + lineBoundsOff * 2);
                     }
-
-                    foreach (ConnectionPoint point in connection.Points)
-                        if (point.ContainsPoint(mouseWorld))
+                }
+                else
+                {
+                    foreach (Connection connection in AllConnections.Reverse())
+                    {
+                        for (int i = connection.Points.Count; i >= 0; i--)
                         {
-                            HoveredConnection = null;
-                            HoveredConnectionPoint = point;
-                            finish = true;
+                            (Vec2 start, Vec2 end) = GetLinePoints(Main.WorldCamera, connection, i);
+                            Rect lineRect = GetLineBounds(start, end, lineBoundsOff, out float lineAngle);
+                            if (RotatedRectContains(lineRect, lineAngle, mouseScreen))
+                            {
+                                HoveredConnection = connection;
+                                HoveredConnectionLine = i;
+
+                                Vec2 mouseLine = (Vec2)mouseScreen - start;
+
+                                float mousePosAlong = RotateVector(mouseLine, -lineAngle, Vector2.Zero).X;
+                                HoveredLineDist = mousePosAlong / (lineBoundsOff * 2);
+                                break;
+                            }
+                        }
+                        if (HoveredConnection is not null)
                             break;
+                    }
+                }
+
+                HoveredConnectionPoint = null;
+                if (HoveredConnection is null)
+                {
+                    float minDistSq = float.MaxValue;
+                    ConnectionPoint? minDistPoint = null;
+                    foreach (Connection connection in AllConnections)
+                        foreach (ConnectionPoint point in connection.Points)
+                        {
+                            if (point.ContainsPoint(mouseWorld))
+                            {
+                                float distSq = Vector2.DistanceSquared(point.WorldPosition, mouseWorld);
+
+                                if (distSq < minDistSq)
+                                {
+                                    minDistSq = distSq;
+                                    minDistPoint = point;
+                                }
+                            }
                         }
 
-                    if (finish)
-                        break;
+                    HoveredConnectionPoint = minDistPoint;
                 }
+            }
+            else
+            {
+                HoveredConnection = null;
+                HoveredConnectionPoint = null;
             }
 
             if (HoveredConnection is not null && Main.MouseState.LeftButton == ButtonState.Pressed && Main.OldMouseState.LeftButton == ButtonState.Released)
@@ -146,7 +214,7 @@ namespace Cornifer
 
             int size = 5;
 
-            foreach (Connection connection in Connections.Values)
+            foreach (Connection connection in AllConnections)
             {
                 BeginConnectionCapture(renderer, connection);
                 Main.SpriteBatch.Begin(samplerState: SamplerState.PointWrap);
@@ -185,7 +253,7 @@ namespace Cornifer
             var state = Main.SpriteBatch.GetState();
             Main.SpriteBatch.End();
 
-            foreach (Connection connection in Connections.Values)
+            foreach (Connection connection in AllConnections)
             {
                 BeginConnectionCapture(renderer, connection);
                 Main.SpriteBatch.Begin(samplerState: SamplerState.PointWrap);
@@ -200,6 +268,7 @@ namespace Cornifer
                     return point is not null && !point.NoShadow.Value;
                 }
 
+                Color connectionColor = connection.Color;
                 int totalLength = 0;
 
                 for (int i = 0; i <= connection.Points.Count; i++)
@@ -219,7 +288,6 @@ namespace Cornifer
 
                         Rectangle source = new Rectangle(totalLength, 0, length + 1, 1);
                         Vector2 origin = new(.5f);
-                        Color color = Color.White;
 
                         if (i == 0)
                         {
@@ -246,9 +314,8 @@ namespace Cornifer
                             source.Height = 5;
                             origin.Y += 2f;
                             origin.X -= 3;
-                            color = new(0, 0, 0, 100);
 
-                            Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(start), source, color, angle, origin, renderer.Scale, SpriteEffects.None, 0);
+                            Main.SpriteBatch.Draw(Main.Pixel, renderer.TransformVector(start), source, new(0, 0, 0, 100), angle, origin, renderer.Scale, SpriteEffects.None, 0);
                         }
                         else if (!overRoomShadow)
                         {
@@ -269,7 +336,7 @@ namespace Cornifer
                                 length -= 1;
                             }
 
-                            Main.SpriteBatch.Draw(ConnectionTexture, renderer.TransformVector(start), source, color, angle, origin, renderer.Scale, SpriteEffects.None, 0);
+                            Main.SpriteBatch.Draw(ConnectionTexture, renderer.TransformVector(start), source, connectionColor, angle, origin, renderer.Scale, SpriteEffects.None, 0);
                         }
                     }
                     totalLength += length;
@@ -295,8 +362,8 @@ namespace Cornifer
             for (int i = 0; i < connection.Points.Count + 2; i++)
             {
                 Vector2 pos =
-                    i == 0 ? connection.Source.WorldPosition + connection.SourcePoint :
-                    i == 1 ? connection.Destination.WorldPosition + connection.DestinationPoint :
+                    i == 0 ? connection.Source.WorldPosition + connection.SourcePoint.ToVector2() :
+                    i == 1 ? connection.Destination.WorldPosition + connection.DestinationPoint.ToVector2() :
                     connection.Points[i - 2].WorldPosition;
 
                 tl.X = Math.Min(tl.X, pos.X);
@@ -333,7 +400,7 @@ namespace Cornifer
 
         public void DrawGuideLines(Renderer renderer)
         {
-            foreach (Connection connection in Connections.Values)
+            foreach (Connection connection in AllConnections)
                 for (int i = 0; i <= connection.Points.Count; i++)
                 {
                     (Vec2 start, Vec2 end) = GetLinePoints(renderer, connection, i);
@@ -341,7 +408,7 @@ namespace Cornifer
                     float lineAngle = 0;
                     if (connection == HoveredConnection && i == HoveredConnectionLine)
                     {
-                        Rect lineRect = GetLineBounds(start, end, out lineAngle);
+                        Rect lineRect = GetLineBounds(start, end, .5f * Main.WorldCamera.Scale, out lineAngle);
                         Main.SpriteBatch.Draw(Main.Pixel, lineRect.Position, null, Color.Yellow * .6f, lineAngle, Vector2.Zero, lineRect.Size, SpriteEffects.None, 0f);
                     }
 
@@ -381,7 +448,7 @@ namespace Cornifer
                         Main.SpriteBatch.DrawRect(start - new Vector2(2), new(5), Color.Yellow);
                     }
 
-                    if (connection == HoveredConnection && i == HoveredConnectionLine)
+                    if (connection == HoveredConnection && i == HoveredConnectionLine && HoveredLineDist >= 0 && HoveredLineDist <= 1)
                     {
                         Vector2 point = Vector2.Lerp(start, end, HoveredLineDist);
                         Main.SpriteBatch.Draw(Main.Pixel, point, null, Color.Black, lineAngle, new Vector2(.5f), 9, SpriteEffects.None, 0f);
@@ -390,16 +457,32 @@ namespace Cornifer
                 }
         }
 
-        public bool TryGetConnection(string from, string to, [NotNullWhen(true)] out Connection? connection, out bool reversed)
+        public bool TryGetRoomConnection(string from, string to, [NotNullWhen(true)] out Connection? connection, out bool reversed)
         {
-            if (Connections.TryGetValue((from, to), out connection))
+            if (RoomConnections.TryGetValue((from, to), out connection))
             {
                 reversed = false;
                 return true;
             }
             reversed = true;
+            return RoomConnections.TryGetValue((to, from), out connection);
+        }
 
-            return Connections.TryGetValue((to, from), out connection);
+        public bool TryGetInRoomConnection(string room, Point a, Point b, [NotNullWhen(true)] out Connection? connection, out bool reversed)
+        {
+            if (InRoomConnections.TryGetValue((room, a), out connection))
+            {
+                reversed = false;
+                return true;
+            }
+            reversed = true;
+            return InRoomConnections.TryGetValue((room, b), out connection);
+        }
+
+        public bool TryGetInRoomConnection(string room, Point pt, [NotNullWhen(true)] out Connection? connection)
+        {
+            connection = InRoomConnections.FirstOrDefault(kvp => kvp.Key.room == room && (kvp.Value.SourcePoint == pt || kvp.Value.DestinationPoint == pt)).Value;
+            return connection is not null;
         }
 
         static bool ShouldDrawLine(Connection connection, int line)
@@ -415,12 +498,15 @@ namespace Cornifer
         static (Vec2, Vec2) GetLinePoints(Renderer? transformer, Connection connection, int line)
         {
             Vec2 start = (Vec2)(line == 0
-                        ? connection.SourcePoint + connection.Source.WorldPosition
-                        : connection.Points[line - 1].WorldPosition + new Vector2(.5f));
+                        ? connection.SourcePoint.ToVector2() + connection.Source.WorldPosition
+                        : connection.Points[line - 1].WorldPosition);
 
             Vec2 end = (Vec2)(line == connection.Points.Count
-                ? connection.DestinationPoint + connection.Destination.WorldPosition
-                : connection.Points[line].WorldPosition + new Vector2(.5f));
+                ? connection.DestinationPoint.ToVector2() + connection.Destination.WorldPosition
+                : connection.Points[line].WorldPosition);
+
+            start += new Vec2(.5f);
+            end += new Vec2(.5f);
 
             if (transformer is not null)
             {
@@ -431,23 +517,32 @@ namespace Cornifer
             return (start, end);
         }
 
-        static Rect GetLineBounds(Vec2 start, Vec2 end, out float angle)
+        static Rect GetLineBounds(Vec2 start, Vec2 end, float offset, out float angle)
         {
+            float rectHeight = 20;
+
             Vec2 diff = end - start;
             angle = diff.Angle.Radians;
 
-            if (diff.Length <= 0)
+            float length = diff.Length;
+            if (length <= 0)
                 return default;
 
-            float rectHeight = 20;
+            Vec2 dir = diff / length;
 
-            Vec2 rectTL = diff / diff.Length;
+            start += dir * offset;
+            length -= offset * 2;
+
+            if (length <= 0)
+                return default;
+
+            Vec2 rectTL = dir;
             rectTL = new(rectTL.Y, -rectTL.X);
 
             rectTL *= rectHeight * .5f;
             rectTL += start;
 
-            return new(rectTL, new(diff.Length, rectHeight));
+            return new(rectTL, new(length, rectHeight));
         }
 
         static bool RotatedRectContains(Rect rect, float angle, Vector2 pos)
@@ -469,9 +564,9 @@ namespace Cornifer
 
         public JsonNode SaveJson()
         {
-            return new JsonObject(Connections
-                .Where(kvp => kvp.Value.Points.Count > 0)
-                .Select(kvp => new KeyValuePair<string, JsonNode?>($"{kvp.Key.src}~{kvp.Key.dst}", kvp.Value.SaveJson()))
+            return new JsonObject(AllConnections
+                .Where(c => c.Points.Count > 0)
+                .Select(c => new KeyValuePair<string, JsonNode?>(c.JsonKey, c.SaveJson()))
                 );
         }
         public void LoadJson(JsonNode json)
@@ -484,25 +579,73 @@ namespace Cornifer
                 if (con is null)
                     continue;
 
-                string[] split = name.Split('~', 2);
-                if (split.Length != 2)
-                    continue;
+                string[] split;
+                Connection? connection;
+                if (name.StartsWith("#"))
+                {
+                    split = name.Substring(1).Split('~', 3);
+                    if (split.Length != 3 || !int.TryParse(split[1], out int scX) || !int.TryParse(split[2], out int scY))
+                        continue;
 
-                if (!TryGetConnection(split[0], split[1], out Connection? connection, out _))
-                    continue;
+                    Point scPt = new(scX, scY);
+                    if (!TryGetInRoomConnection(split[0], scPt, out connection))
+                        continue;
+                }
+                else
+                {
+                    split = name.Split('~', 2);
+                    if (split.Length != 2)
+                        continue;
+
+                    if (!TryGetRoomConnection(split[0], split[1], out connection, out _))
+                        continue;
+                }
                 connection.LoadJson(con);
             }
         }
 
         public class Connection
         {
+            static List<Point> ShortcutTracingCache = new();
+
             public Room Source;
             public Room Destination;
 
-            public Vector2 SourcePoint;
-            public Vector2 DestinationPoint;
+            public Point SourcePoint;
+            public Point DestinationPoint;
 
             public bool Invalid;
+            public bool IsInRoomShortcut = false;
+
+            public Color Color => IsInRoomShortcut ? Color.Lerp(Color.White, Source.Region.Subregions[Source.Subregion.Value].BackgroundColor, .5f) : Color.White;
+
+            public string JsonKey => IsInRoomShortcut ? $"#{Source.Name}~{SourcePoint.X}~{SourcePoint.Y}" : $"{Source.Name}~{Destination.Name}";
+
+            public ObjectProperty<bool> AllowWhiteToRedPixel = new("whiteToRed", true);
+
+            public List<ConnectionPoint> Points = new();
+
+            public Connection(Room room, Room.Shortcut shortcut)
+            {
+                Source = Destination = room;
+                IsInRoomShortcut = true;
+
+                SourcePoint = shortcut.Entrance;
+                DestinationPoint = shortcut.Target;
+
+                ShortcutTracingCache.Clear();
+
+                room.TraceShotrcut(SourcePoint, ShortcutTracingCache);
+
+                foreach (Point point in ShortcutTracingCache)
+                {
+                    Points.Add(new(this)
+                    {
+                        Parent = Source,
+                        ParentPosition = point.ToVector2()
+                    });
+                }
+            }
 
             public Connection(Room source, Room.Connection connection)
             {
@@ -534,13 +677,9 @@ namespace Cornifer
                 Source = source!;
                 Destination = connection.Target!;
 
-                SourcePoint = source!.Exits[connection.Exit].ToVector2() + new Vector2(.5f);
-                DestinationPoint = connection.Target!.Exits[connection.TargetExit].ToVector2() + new Vector2(.5f);
+                SourcePoint = source!.Exits[connection.Exit];
+                DestinationPoint = connection.Target!.Exits[connection.TargetExit];
             }
-
-            public ObjectProperty<bool> AllowWhiteToRedPixel = new("whiteToRed", true);
-
-            public List<ConnectionPoint> Points = new();
 
             internal void BuildConfig(UIList list)
             {
@@ -573,8 +712,8 @@ namespace Cornifer
                     if (pointCount == 0)
                         return;
 
-                    Vector2 start = Source.WorldPosition + SourcePoint;
-                    Vector2 end = Destination.WorldPosition + DestinationPoint;
+                    Vector2 start = Source.WorldPosition + SourcePoint.ToVector2();
+                    Vector2 end = Destination.WorldPosition + DestinationPoint.ToVector2();
 
                     Points.Clear();
                     float tpp = 1 / (pointCount + 1);
@@ -583,7 +722,7 @@ namespace Cornifer
                     {
                         ConnectionPoint newPoint = new(this)
                         {
-                            WorldPosition = Vector2.Lerp(start, end, t),
+                            ParentPosition = Vector2.Lerp(start, end, t),
                         };
                         Points.Add(newPoint);
                         t += tpp;
@@ -618,12 +757,15 @@ namespace Cornifer
                     ConnectionPoint newPoint = new(this);
                     newPoint.LoadJson(pointNode);
                     Points.Add(newPoint);
+
+                    if (IsInRoomShortcut)
+                        newPoint.Parent = Source;
                 }
             }
 
             public override string ToString()
             {
-                return $"{Source.Name}~{Destination.Name}";
+                return JsonKey;
             }
         }
 
@@ -644,6 +786,9 @@ namespace Cornifer
             public ConnectionPoint(Connection connection)
             {
                 Connection = connection;
+
+                if (connection.IsInRoomShortcut)
+                    NoShadow.OriginalValue = true;
             }
 
             public override RenderLayers RenderLayer => RenderLayers.None;

@@ -174,7 +174,7 @@ namespace Cornifer
             Region = region;
             Name = id;
         }
-        public Point TraceShotrcut(Point pos)
+        public Point TraceShotrcut(Point pos, List<Point>? turns = null)
         {
             Point lastPos = pos;
             int? dir = null;
@@ -216,6 +216,9 @@ namespace Cornifer
                     Tile tile = Tiles[testTilePos.X, testTilePos.Y];
                     if (tile.Shortcut == Tile.ShortcutType.Normal)
                     {
+                        if (dir is not null) // not the first iteration
+                            turns?.Add(pos);
+
                         dir = j;
                         foundDir = true;
                         break;

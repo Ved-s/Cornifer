@@ -39,6 +39,7 @@ namespace Cornifer
 
         public static CameraRenderer WorldCamera = null!;
 
+        public static List<MapObject> FirstPrioritySelectionObjects = new();
         public static List<MapObject> WorldObjects = new();
         public static CompoundEnumerable<MapObject> WorldObjectLists = new();
         public static HashSet<MapObject> SelectedObjects = new();
@@ -608,6 +609,7 @@ namespace Cornifer
             WorldObjectLists.Clear();
             WorldObjectLists.Add(region.Rooms);
             WorldObjectLists.Add(WorldObjects);
+            WorldObjectLists.Add(FirstPrioritySelectionObjects);
             if (region.Connections is not null)
                 WorldObjectLists.Add(region.Connections.PointObjectLists);
             WorldObjects.Clear();
