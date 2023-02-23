@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using SixLabors.Fonts;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.ConstrainedExecution;
 using System.Security.Permissions;
+using System.Windows.Markup;
 
 namespace Cornifer
 {
@@ -18,10 +20,6 @@ namespace Cornifer
         static readonly HashSet<Type> ContentTypes = new() { typeof(Texture2D), typeof(SpriteFont) };
 
 #nullable disable
-        public static SpriteFont Rodondo20;
-        public static SpriteFont Rodondo30;
-        public static SpriteFont RodondoExt20;
-        public static SpriteFont RodondoExt30;
         [ManualSpriteFont]
         public static SpriteFont RodondoExt20M;
         [ManualSpriteFont]
@@ -61,6 +59,25 @@ namespace Cornifer
 
             Fonts = new(fonts);
             Textures = new(textures);
+        }
+
+        public static SpriteFont GetFontByName(string name, SpriteFont @default)
+        {
+            if (Fonts.TryGetValue(name, out SpriteFont? font))
+                return font;
+
+            switch (name)
+            {
+                case "Rodondo20":
+                case "RodondoExt20":
+                    return RodondoExt20M;
+
+                case "Rodondo30":
+                case "RodondoExt30":
+                    return RodondoExt30M;
+            }
+
+            return @default;
         }
 
         static SpriteFont LoadManualSpritefont(string path)

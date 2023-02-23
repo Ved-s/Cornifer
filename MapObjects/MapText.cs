@@ -48,7 +48,7 @@ namespace Cornifer
             Scale.ValueChanged = ParamsChanged;
 
             Font.SaveValue = f => Content.Fonts.FirstOrDefault(kvp => kvp.Value == f, new("", null!)).Key;
-            Font.LoadValue = s => Content.Fonts.GetValueOrDefault(s) ?? Main.DefaultSmallMapFont;
+            Font.LoadValue = s => Content.GetFontByName(s, Font.OriginalValue);
         }
 
         public MapText(string name, SpriteFont font, string text) : this()

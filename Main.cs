@@ -59,8 +59,8 @@ namespace Cornifer
         public static List<string> LoadErrors = new();
         public static bool DrawUndoDebug;
 
-        public static SpriteFont DefaultSmallMapFont => Cornifer.Content.Rodondo20;
-        public static SpriteFont DefaultBigMapFont => Cornifer.Content.RodondoExt30;
+        public static SpriteFont DefaultSmallMapFont => Cornifer.Content.RodondoExt20M;
+        public static SpriteFont DefaultBigMapFont => Cornifer.Content.RodondoExt30M;
 
         public static UndoRedo Undo = new();
 
@@ -134,23 +134,8 @@ namespace Cornifer
             SpriteBatch = new SpriteBatch(GraphicsDevice);
             Cornifer.Content.Load(Content);
 
-            FontAlphaHack.Apply(Cornifer.Content.Rodondo20, 5);
-            FontAlphaHack.Apply(Cornifer.Content.Rodondo30, 1);
-            FontAlphaHack.Apply(Cornifer.Content.RodondoExt20, 5);
-            FontAlphaHack.Apply(Cornifer.Content.RodondoExt30, 1);
-
-            Cornifer.Content.RodondoExt20M.LineSpacing -= 3;
+            Cornifer.Content.RodondoExt20M.LineSpacing -= 2;
             Cornifer.Content.RodondoExt30M.LineSpacing -= 5;
-
-            Cornifer.Content.Rodondo20.Spacing += 1;
-            Cornifer.Content.Rodondo20.LineSpacing += 2;
-            Cornifer.Content.Rodondo30.LineSpacing += 5;
-            Cornifer.Content.RodondoExt20.Spacing += 1;
-            Cornifer.Content.RodondoExt20.LineSpacing -= 9;
-            Cornifer.Content.RodondoExt30.LineSpacing -= 12;
-
-            FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt20] = 4;
-            FormattedText.FontSpaceOverride[Cornifer.Content.RodondoExt30] = 4;
 
             Pixel = new(GraphicsDevice, 1, 1);
             Pixel.SetData(new[] { Color.White });

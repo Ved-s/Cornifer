@@ -7,7 +7,7 @@ ignoreCase true
 defaultChar ?
 
 pos 1 81
-chars A 15 B 11 C 12 D 13 E 9 F 8 G 15 H 12 I 3 J 7 K 12 L 9
+chars A 15 B 11 C 12 D 13 E 9 F 9 G 15 H 12 I 3 J 7 K 12 L 9
 chars M 19 N 13 O 18 P 10 Q 18 R 11 S 10 T 11 U 14 V 13 W 20
 chars X 15 Y 13 Z 12
 
