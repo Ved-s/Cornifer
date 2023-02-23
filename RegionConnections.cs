@@ -103,7 +103,10 @@ namespace Cornifer
 
                 float lineBoundsOff = .5f * Main.WorldCamera.Scale;
 
-                if (HoveredConnection is not null && HoveredConnection.Active && (HoveredConnection.IsInRoomShortcut ? inRooms : betweenRooms))
+                if (HoveredConnection is not null 
+                 && HoveredConnectionLine <= HoveredConnection.Points.Count 
+                 && HoveredConnection.Active 
+                 && (HoveredConnection.IsInRoomShortcut ? inRooms : betweenRooms))
                 {
                     (Vec2 start, Vec2 end) = GetLinePoints(Main.WorldCamera, HoveredConnection, HoveredConnectionLine);
                     Rect lineRect = GetLineBounds(start, end, lineBoundsOff, out float lineAngle);
