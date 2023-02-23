@@ -354,8 +354,11 @@ namespace Cornifer
             if (OverlayImage is null || !InterfaceState.OverlayEnabled.Value)
                 return;
 
+            Vector2 pos = -(OverlayImage.Size() / 2);
+            pos.Floor();
+
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-            WorldCamera.DrawTexture(OverlayImage, Vector2.Zero, null, null, Color.White * InterfaceState.OverlayTransparency.Value);
+            WorldCamera.DrawTexture(OverlayImage, pos, null, null, Color.White * InterfaceState.OverlayTransparency.Value);
             SpriteBatch.End();
         }
 
