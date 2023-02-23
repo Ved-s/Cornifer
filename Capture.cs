@@ -70,9 +70,17 @@ namespace Cornifer
             Directory.CreateDirectory(dirPath);
             CaptureRenderer renderer = CreateRenderer();
 
-            for (int i = 0; i < 4; i++)
+            int all = (int)RenderLayers.All;
+            for (int i = 0; i < 32; i++)
             {
-                RenderLayers layer = (RenderLayers)(1 << i);
+                if ((all >> i) == 0)
+                    break;
+
+                int layerInt = 1 << i;
+                if ((layerInt & all) == 0)
+                    continue;
+
+                RenderLayers layer = (RenderLayers)layerInt;
 
                 CaptureMapLayer(renderer, layer, true, dirPath);
                 CaptureMapLayer(renderer, layer, false, dirPath);

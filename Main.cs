@@ -158,8 +158,12 @@ namespace Cornifer
 
             bool active = OldActive && IsActive;
 
-            if (active && ActiveRenderLayers.HasFlag(RenderLayers.Connections))
-                Region?.Connections?.Update();
+            bool betweenRoomConnections = ActiveRenderLayers.HasFlag(RenderLayers.Connections);
+            bool inRoomConnections = ActiveRenderLayers.HasFlag(RenderLayers.InRoomShortcuts);
+            bool anyConnections = betweenRoomConnections || inRoomConnections;
+
+            if (active && anyConnections)
+                Region?.Connections?.Update(betweenRoomConnections, inRoomConnections);
 
             UpdateSelectionAndDrag(active && MouseState.LeftButton == ButtonState.Pressed, active && OldMouseState.LeftButton == ButtonState.Pressed);
 
@@ -452,12 +456,16 @@ namespace Cornifer
         {
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
+            bool betweenRoomConnections = layers.HasFlag(RenderLayers.Connections);
+            bool inRoomConnections = layers.HasFlag(RenderLayers.InRoomShortcuts);
+            bool anyConnections = betweenRoomConnections || inRoomConnections;
+
             if (Region is not null)
             {
                 if (border is null && InterfaceState.DrawBorders.Value || border is true)
                 {
-                    if (layers.HasFlag(RenderLayers.Connections))
-                        Region.Connections?.DrawShadows(renderer);
+                    if (anyConnections)
+                        Region.Connections?.DrawShadows(renderer, betweenRoomConnections, inRoomConnections);
 
                     foreach (MapObject obj in WorldObjectLists)
                         obj.DrawShade(renderer, layers);
@@ -468,16 +476,16 @@ namespace Cornifer
                     foreach (MapObject obj in Region.Rooms)
                         obj.Draw(renderer, layers);
 
-                    if (layers.HasFlag(RenderLayers.Connections))
+                    if (anyConnections)
                     {
-                        Region.Connections?.DrawConnections(renderer, true);
-                        Region.Connections?.DrawConnections(renderer, false);
+                        Region.Connections?.DrawConnections(renderer, true, betweenRoomConnections, inRoomConnections);
+                        Region.Connections?.DrawConnections(renderer, false, betweenRoomConnections, inRoomConnections);
                     }
                     foreach (MapObject obj in WorldObjects)
                         obj.Draw(renderer, layers);
 
-                    if (layers.HasFlag(RenderLayers.Connections))
-                        Region.Connections?.DrawGuideLines(renderer);
+                    if (anyConnections)
+                        Region.Connections?.DrawGuideLines(renderer, betweenRoomConnections, inRoomConnections);
                 }
             }
 
@@ -863,10 +871,11 @@ namespace Cornifer
     [Flags]
     public enum RenderLayers
     {
-        All = 0x0f,
+        All = 0x1f,
 
         Rooms = 1,
         Connections = 2,
+        InRoomShortcuts = 16,
         Icons = 4,
         Texts = 8,
 

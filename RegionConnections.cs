@@ -31,7 +31,7 @@ namespace Cornifer
 
         public bool Hovered => HoveredConnection is not null;
 
-        public ConnectionPoint? HoveredConnectionPoint 
+        public ConnectionPoint? HoveredConnectionPoint
         {
             get => hoveredConnectionPoint;
             set
@@ -94,7 +94,7 @@ namespace Cornifer
             }
         }
 
-        public void Update()
+        public void Update(bool betweenRooms, bool inRooms)
         {
             if (!Main.Dragging && !Main.Selecting && !Interface.Hovered)
             {
@@ -103,7 +103,7 @@ namespace Cornifer
 
                 float lineBoundsOff = .5f * Main.WorldCamera.Scale;
 
-                if (HoveredConnection is not null)
+                if (HoveredConnection is not null && HoveredConnection.Active && (HoveredConnection.IsInRoomShortcut ? inRooms : betweenRooms))
                 {
                     (Vec2 start, Vec2 end) = GetLinePoints(Main.WorldCamera, HoveredConnection, HoveredConnectionLine);
                     Rect lineRect = GetLineBounds(start, end, lineBoundsOff, out float lineAngle);
@@ -119,8 +119,13 @@ namespace Cornifer
                 }
                 else
                 {
+                    HoveredConnection = null;
+
                     foreach (Connection connection in AllConnections.Reverse())
                     {
+                        if (!connection.Active || (connection.IsInRoomShortcut ? !inRooms : !betweenRooms))
+                            continue;
+
                         for (int i = connection.Points.Count; i >= 0; i--)
                         {
                             (Vec2 start, Vec2 end) = GetLinePoints(Main.WorldCamera, connection, i);
@@ -148,6 +153,10 @@ namespace Cornifer
                     float minDistSq = float.MaxValue;
                     ConnectionPoint? minDistPoint = null;
                     foreach (Connection connection in AllConnections)
+                    {
+                        if (!connection.Active || (connection.IsInRoomShortcut ? !inRooms : !betweenRooms))
+                            continue;
+
                         foreach (ConnectionPoint point in connection.Points)
                         {
                             if (point.ContainsPoint(mouseWorld))
@@ -161,6 +170,7 @@ namespace Cornifer
                                 }
                             }
                         }
+                    }
 
                     HoveredConnectionPoint = minDistPoint;
                 }
@@ -207,7 +217,7 @@ namespace Cornifer
             }
         }
 
-        public void DrawShadows(Renderer renderer)
+        public void DrawShadows(Renderer renderer, bool betweenRooms, bool inRooms)
         {
             var state = Main.SpriteBatch.GetState();
             Main.SpriteBatch.End();
@@ -216,6 +226,9 @@ namespace Cornifer
 
             foreach (Connection connection in AllConnections)
             {
+                if (!connection.Active || (connection.IsInRoomShortcut ? !inRooms : !betweenRooms))
+                    continue;
+
                 BeginConnectionCapture(renderer, connection);
                 Main.SpriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
@@ -242,7 +255,7 @@ namespace Cornifer
             Main.SpriteBatch.Begin(state);
         }
 
-        public void DrawConnections(Renderer renderer, bool overRoomShadow)
+        public void DrawConnections(Renderer renderer, bool overRoomShadow, bool betweenRooms, bool inRooms)
         {
             if (ConnectionTexture is null)
             {
@@ -255,6 +268,9 @@ namespace Cornifer
 
             foreach (Connection connection in AllConnections)
             {
+                if (!connection.Active || (connection.IsInRoomShortcut ? !inRooms : !betweenRooms))
+                    continue;
+
                 BeginConnectionCapture(renderer, connection);
                 Main.SpriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
@@ -398,9 +414,13 @@ namespace Cornifer
             capture.EndCapture(pos, PrevCaptureSize.X, PrevCaptureSize.Y);
         }
 
-        public void DrawGuideLines(Renderer renderer)
+        public void DrawGuideLines(Renderer renderer, bool betweenRooms, bool inRooms)
         {
             foreach (Connection connection in AllConnections)
+            {
+                if (!connection.Active || (connection.IsInRoomShortcut ? !inRooms : !betweenRooms))
+                    continue;
+
                 for (int i = 0; i <= connection.Points.Count; i++)
                 {
                     (Vec2 start, Vec2 end) = GetLinePoints(renderer, connection, i);
@@ -455,6 +475,7 @@ namespace Cornifer
                         Main.SpriteBatch.Draw(Main.Pixel, point, null, Color.Yellow, lineAngle, new Vector2(.5f), 7, SpriteEffects.None, 0f);
                     }
                 }
+            }
         }
 
         public bool TryGetRoomConnection(string from, string to, [NotNullWhen(true)] out Connection? connection, out bool reversed)
@@ -617,8 +638,8 @@ namespace Cornifer
             public bool Invalid;
             public bool IsInRoomShortcut = false;
 
+            public bool Active => !IsInRoomShortcut || Source.DrawInRoomShortcuts.Value;
             public Color Color => IsInRoomShortcut ? Color.Lerp(Color.White, Source.Region.Subregions[Source.Subregion.Value].BackgroundColor, .5f) : Color.White;
-
             public string JsonKey => IsInRoomShortcut ? $"#{Source.Name}~{SourcePoint.X}~{SourcePoint.Y}" : $"{Source.Name}~{Destination.Name}";
 
             public ObjectProperty<bool> AllowWhiteToRedPixel = new("whiteToRed", true);
@@ -773,6 +794,7 @@ namespace Cornifer
         {
             public override string? Name => $"Connection_{Connection.Source.Name}_{Connection.Destination.Name}_{Connection.Points.IndexOf(this)}";
 
+            public override bool Active => Connection.Active && Main.ActiveRenderLayers.HasFlag(Connection.IsInRoomShortcut ? RenderLayers.InRoomShortcuts : RenderLayers.Connections);
             public override bool LoadCreationForbidden => true;
             public override bool NeedsSaving => false;
 

@@ -109,6 +109,7 @@ namespace Cornifer
         public ObjectProperty<bool> Deathpit = new("deathpit", false);
         public ObjectProperty<bool> UseBetterTileCutout = new("betterTileCutout", true);
         public ObjectProperty<bool> CutoutAllSolidTiles = new("cutAllSolid", false);
+        public ObjectProperty<bool> DrawInRoomShortcuts = new("inRoomShortcuts", false);
 
         public Effect[] Effects = Array.Empty<Effect>();
         public Connection?[] Connections = Array.Empty<Connection>();
@@ -999,6 +1000,21 @@ namespace Cornifer
                 ShadeTextureDirty = true;
             }));
 
+            list.Elements.Add(new UIButton
+            {
+                Height = 20,
+
+                Selectable = true,
+                Selected = DrawInRoomShortcuts.Value,
+                Text = "Draw in-room shortcuts",
+
+                SelectedBackColor = Color.White,
+                SelectedTextColor = Color.Black,
+
+                TextAlign = new(.5f)
+
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => DrawInRoomShortcuts.Value = btn.Selected));
+
             list.Elements.Add(new UIPanel
             {
                 Height = 27,
@@ -1034,7 +1050,8 @@ namespace Cornifer
             .SaveProperty(Subregion)
             .SaveProperty(UseBetterTileCutout)
             .SaveProperty(CutoutAllSolidTiles)
-            .SaveProperty(WaterLevel);
+            .SaveProperty(WaterLevel)
+            .SaveProperty(DrawInRoomShortcuts);
         }
         protected override void LoadInnerJson(JsonNode node)
         {
@@ -1043,6 +1060,7 @@ namespace Cornifer
             UseBetterTileCutout.LoadFromJson(node);
             CutoutAllSolidTiles.LoadFromJson(node);
             WaterLevel.LoadFromJson(node);
+            DrawInRoomShortcuts.LoadFromJson(node);
             TileMapDirty = true;
         }
 
