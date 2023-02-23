@@ -455,7 +455,7 @@ namespace Cornifer
                 if (!obj.ParentSelected)
                     obj.ParentPosition += diff;
 
-            Undo.Do(new UndoActions.MapObjectsMoved(SelectedObjects, diff));
+            Undo.Do(new MapObjectsMoved(SelectedObjects.Where(o => !o.ParentSelected), diff));
         }
 
         private void StopDragging()
