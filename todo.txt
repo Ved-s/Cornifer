@@ -3,4 +3,3 @@ Option to not load mod data
 Warnings system (2 wide gaps in connections)
 Fix spearmaster unlock (DM)
 Color selection for shortcut types
-Load overlap image

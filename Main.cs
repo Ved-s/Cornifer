@@ -101,11 +101,11 @@ namespace Cornifer
                 try
                 {
 #endif
-                    using FileStream fs = File.OpenRead("state.json");
+                using FileStream fs = File.OpenRead("state.json");
 
-                    JsonNode? node = JsonSerializer.Deserialize<JsonNode>(fs);
-                    if (node is not null)
-                        LoadJson(node);
+                JsonNode? node = JsonSerializer.Deserialize<JsonNode>(fs);
+                if (node is not null)
+                    LoadJson(node);
 #if !DEBUG
                 }
                 catch (Exception ex)
@@ -435,11 +435,12 @@ namespace Cornifer
                 if (!drag && oldDrag)
                 {
                     foreach (MapObject obj in SelectedObjects)
-                    {
-                        Vector2 pos = obj.WorldPosition;
-                        pos.Round();
-                        obj.WorldPosition = pos;
-                    }
+                        if (!obj.ParentSelected)
+                        {
+                            Vector2 pos = obj.WorldPosition;
+                            pos.Round();
+                            obj.WorldPosition = pos;
+                        }
                     Undo.PreventNextUndoMerge();
                 }
 
