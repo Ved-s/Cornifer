@@ -36,6 +36,7 @@ namespace Cornifer
         public static Region? Region;
 
         public static Texture2D Pixel = null!;
+        public static Texture2D? OverlayImage = null;
 
         public static CameraRenderer WorldCamera = null!;
 
@@ -231,6 +232,9 @@ namespace Cornifer
             GraphicsDevice.ScissorRectangle = new(0, 0, vp.Width, vp.Height);
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
+            if (InterfaceState.OverlayBelow.Value)
+                DrawOverlayImage();
+
             if (SelectedObjects.Count > 0)
             {
                 SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
@@ -240,6 +244,9 @@ namespace Cornifer
             }
 
             DrawMap(WorldCamera, ActiveRenderLayers, null);
+
+            if (!InterfaceState.OverlayBelow.Value)
+                DrawOverlayImage();
 
             if (SelectedObjects.Count > 0)
             {
@@ -340,6 +347,16 @@ namespace Cornifer
             ms.Position = 0;
             ms.CopyTo(fs);
             fs.Flush();
+        }
+
+        private void DrawOverlayImage()
+        {
+            if (OverlayImage is null || !InterfaceState.OverlayEnabled.Value)
+                return;
+
+            SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            WorldCamera.DrawTexture(OverlayImage, Vector2.Zero, null, null, Color.White * InterfaceState.OverlayTransparency.Value);
+            SpriteBatch.End();
         }
 
         private void UpdateSelectionAndDrag(bool drag, bool oldDrag)

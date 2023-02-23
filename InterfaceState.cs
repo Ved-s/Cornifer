@@ -27,6 +27,10 @@ namespace Cornifer
 
         public static Slider WaterTransparency = new("waterTransparency", .3f);
 
+        public static Switch OverlayEnabled = new(null, false);
+        public static Switch OverlayBelow = new(null, false);
+        public static Slider OverlayTransparency = new(null, .3f);
+
         static List<Config> Configs = new();
         static InterfaceState()
         {
@@ -93,7 +97,7 @@ namespace Cornifer
         }
         public abstract class Config<T> : Config
         {
-            public string JsonName;
+            public string? JsonName;
             private T value;
 
             public Action? OnChanged;
@@ -115,7 +119,7 @@ namespace Cornifer
                 }
             }
 
-            public Config(string jsonName, T value)
+            public Config(string? jsonName, T value)
             {
                 JsonName = jsonName;
                 this.value = value;
@@ -132,11 +136,17 @@ namespace Cornifer
 
             public override void SaveToJson(JsonNode node)
             {
+                if (JsonName is null)
+                    return;
+
                 node[JsonName] = JsonValueConverter<T>.SaveValue(Value);
             }
 
             public override void LoadFromJson(JsonNode node)
             {
+                if (JsonName is null)
+                    return;
+
                 JsonNode? value = node[JsonName];
                 if (value is null)
                     return;
@@ -150,7 +160,7 @@ namespace Cornifer
 
         public class Switch : Config<bool>
         {
-            public Switch(string jsonName, bool value) : base(jsonName, value)
+            public Switch(string? jsonName, bool value) : base(jsonName, value)
             {
             }
 
@@ -168,7 +178,7 @@ namespace Cornifer
         }
         public class Slider : Config<float>
         {
-            public Slider(string jsonName, float value) : base(jsonName, value)
+            public Slider(string? jsonName, float value) : base(jsonName, value)
             {
             }
 
@@ -184,5 +194,6 @@ namespace Cornifer
                     scroller.ScrollPosition = Value;
             }
         }
+
     }
 }

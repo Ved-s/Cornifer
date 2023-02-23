@@ -3,6 +3,7 @@ using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Png;
@@ -575,6 +576,79 @@ namespace Cornifer
                             }),
 
                             new UIElement { Height = 10 },
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Selectable = true,
+                                Text = "Overlay image enabled",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.OverlayEnabled),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Text = "Select overlay image",
+                                TextAlign = new(.5f)
+
+                            }.OnEvent(UIElement.ClickEvent, SelectOverlayClicked),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Selectable = true,
+                                Text = "Background overlay",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.OverlayBelow),
+
+                            new UIPanel
+                            {
+                                Height = 40,
+                                Padding = 3,
+
+                                BorderColor = new(100, 100, 100),
+
+                                Elements =
+                                {
+                                    new UILabel
+                                    {
+                                        Height = 20,
+                                        Text = $"Overlay transparency: {InterfaceState.OverlayTransparency.Value*100:0}%",
+                                        TextAlign = new(0, .5f)
+                                    }.OnConfigChange(InterfaceState.OverlayTransparency, (label, value) => label.Text = $"Overlay transparency: {value*100:0}%"),
+                                    new UIScrollBar
+                                    {
+                                        Top = 20,
+                                        Height = 8,
+                                        Margin = new(0, 5),
+
+                                        BackColor = new(36, 36, 36),
+                                        BorderColor = new(100, 100, 100),
+
+                                        Horizontal = true,
+                                        BarPadding = -4,
+                                        BarSize = 7,
+                                        BarSizeAbsolute = true,
+                                        ScrollMin = 0,
+                                        ScrollMax = 1,
+                                    }.BindConfig(InterfaceState.OverlayTransparency)
+                                }
+                            },
+
+                            new UIElement { Height = 10 },
                             new UIPanel
                             {
                                 Height = 50,
@@ -1093,6 +1167,30 @@ namespace Cornifer
             }
         }
 
+        static void SelectOverlayClicked(UIButton btn, Empty _)
+        {
+            string? filename = null;
+            Thread thd = new(() =>
+            {
+                System.Windows.Forms.OpenFileDialog ofd = new();
+                ofd.Title = "Select overlay image file";
+                ofd.Filter = "All supported images|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tga;*.psd;*.hdr";
+                if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    filename = ofd.FileName;
+            });
+            thd.SetApartmentState(ApartmentState.STA);
+            thd.Start();
+            thd.Join();
+
+            try
+            {
+                Main.OverlayImage = Texture2D.FromFile(Main.Instance.GraphicsDevice, filename);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.Forms.MessageBox.Show(ex.ToString(), "Could not load overlay image");
+            }
+        }
         static void CaptureClicked(UIButton btn, Empty _)
         {
             if (Main.Region is null)
