@@ -391,8 +391,8 @@ namespace Cornifer
                 br.Y = Math.Max(br.Y, pos.Y);
             }
 
-            tl -= new Vector2(5);
-            br += new Vector2(5);
+            tl -= new Vector2(6);
+            br += new Vector2(7);
 
             tl.Floor();
             br.Ceiling();
