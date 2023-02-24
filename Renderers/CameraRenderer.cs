@@ -27,7 +27,7 @@ namespace Cornifer.Renderers
 
             Vector2 screenPos = state.Position.ToVector2();
 
-            bool drag = state.RightButton == ButtonState.Pressed && !Interface.Hovered;
+            bool drag = Main.inputHandler.CheckAction(InputHandler.InputType.Pan, InputHandler.KeybindState.Pressed, true) && !Interface.Hovered;
 
             UpdateDragging(drag, screenPos);
 
