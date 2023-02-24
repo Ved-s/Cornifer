@@ -192,7 +192,8 @@ namespace Cornifer
                 if (KeyboardState.IsKeyDown(Keys.Right) && OldKeyboardState.IsKeyUp(Keys.Right))
                     MoveSelectedObjects(new Vector2(1, 0) * keyMoveMultiplier);
 
-                if (KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete))
+                if (KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete)
+                 || KeyboardState.IsKeyDown(Keys.Back) && OldKeyboardState.IsKeyUp(Keys.Back))
                 {
                     HashSet<MapObject> objectsToDelete = new(SelectedObjects);
                     objectsToDelete.IntersectWith(WorldObjects);

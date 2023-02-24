@@ -202,7 +202,8 @@ namespace Cornifer
                 Main.Dragging = true;
             }
 
-            if (Main.KeyboardState.IsKeyDown(Keys.Delete) && Main.OldKeyboardState.IsKeyUp(Keys.Delete))
+            if (Main.KeyboardState.IsKeyDown(Keys.Delete) && Main.OldKeyboardState.IsKeyUp(Keys.Delete)
+             || Main.KeyboardState.IsKeyDown(Keys.Back) && Main.OldKeyboardState.IsKeyUp(Keys.Back))
             {
                 HashSet<ConnectionPoint> remove = new(Main.SelectedObjects.OfType<ConnectionPoint>());
                 if (remove.Count > 0)
