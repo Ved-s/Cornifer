@@ -23,6 +23,7 @@ namespace Cornifer
         public static UIModal SlugcatSelect = null!;
         public static UIModal AddIconSelect = null!;
         public static UIModal TextFormatting = null!;
+        public static UIModal KeybindSelector = null!;
 
         public static UIPanel SidePanel = null!;
         public static UIButton SlugcatIcons = null!;
@@ -31,6 +32,7 @@ namespace Cornifer
         public static UILabel NoConfigObjectLabel = null!;
         public static UILabel NoConfigLabel = null!;
         public static UIPanel ConfigPanel = null!;
+        public static UIList KeybindsTabList = null!;
 
         public static UIList SubregionColorList = null!;
         public static Dictionary<string, UIButton> VisibilityPlacedObjects = new();
@@ -44,6 +46,7 @@ namespace Cornifer
         static bool slugcatSelectVisible = true;
         static bool addIconSelectVisible = false;
         static bool textFormattingVisible = false;
+        static bool keybindSelectorVisible = false;
 
         public static bool RegionSelectVisible
         {
@@ -65,9 +68,22 @@ namespace Cornifer
             get => textFormattingVisible;
             set { textFormattingVisible = value; if (TextFormatting is not null) TextFormatting.Visible = value; }
         }
+        public static bool KeybindSelectorVisible
+        {
+            get => keybindSelectorVisible;
+            set { keybindSelectorVisible = value; if (KeybindSelector is not null) KeybindSelector.Visible = value; }
+        }
 
         static UIElement? ConfigElement;
         static MapObject? configurableObject;
+
+        static List<InputHandler.KeybindInput> KeybindSelectorInputs = new();
+        static InputHandler.Keybind? CurrentKeybind;
+        static UIList? CurrentKeybindInputList;
+        static UILabel KeybindSelectorCurrentKeybindInputs = null!;
+        static UILabel KeybindSelectorCurrentKeybind = null!;
+        static bool KeybindSelectorUpdateSkipped = false;
+
         public static MapObject? ConfigurableObject
         {
             get => configurableObject;
@@ -406,6 +422,88 @@ namespace Cornifer
                     }
                     .Assign(out TextFormatting),
 
+                    new UIModal
+                    {
+                        Top = new(0, .5f, -.5f),
+                        Left = new(0, .5f, -.5f),
+
+                        Width = 450,
+                        Height = 300,
+
+                        Margin = 5,
+                        Padding = 5,
+
+                        Visible = KeybindSelectorVisible,
+
+                        Elements =
+                        {
+                            new UILabel
+                            {
+                                Text = "Adding keybind for",
+                                Height = 18,
+                                TextAlign = new(.5f),
+                            },
+                            new UILabel
+                            {
+                                Height = 18,
+                                Top = 18,
+                                TextAlign = new(.5f),
+                            }.Assign(out KeybindSelectorCurrentKeybind),
+                            new UILabel
+                            {
+                                Height = 0,
+                                Top = new(0, .5f, -.5f),
+                                TextAlign = new(.5f),
+
+                            }.Assign(out KeybindSelectorCurrentKeybindInputs),
+                            new UILabel
+                            {
+                                Text = "Press any key to add or remove it.\nPress modifier key twice to select any of its modifier keys\n(LeftControl -> Control).",
+                                Height = 50,
+                                Top = new(-20, 1, -1),
+                                TextAlign = new(.5f, 1),
+                            },
+                            new UIButton
+                            {
+                                Width = 80,
+                                Height = 20,
+                                Text = "Apply",
+                                TextAlign = new(.5f),
+                                Left = new(-2, .5f, -1),
+                                Top = new(0, 1, -1),
+                            }.OnEvent(UIElement.ClickEvent, (_, _) =>
+                            {
+                                if (KeybindSelectorInputs.Count > 0 && CurrentKeybind is not null && CurrentKeybindInputList is not null)
+                                {
+                                    CurrentKeybind.Inputs.Add(new(KeybindSelectorInputs));
+                                    AddKeyComboPanel(CurrentKeybindInputList, CurrentKeybind, KeybindSelectorInputs);
+                                    KeybindSelectorInputs.Clear();
+                                    InputHandler.SaveKeybinds();
+                                    KeybindsTabList.Recalculate();
+                                }
+
+                                KeybindSelectorVisible = false;
+                                CurrentKeybind = null;
+                                CurrentKeybindInputList = null;
+                            }),
+                            new UIButton
+                            {
+                                Width = 80,
+                                Height = 20,
+                                Text = "Cancel",
+                                TextAlign = new(.5f),
+                                Left = new(2, .5f),
+                                Top = new(0, 1, -1),
+                            }.OnEvent(UIElement.ClickEvent, (_, _) => 
+                            {
+                                KeybindSelectorVisible = false;
+                                CurrentKeybind = null;
+                                CurrentKeybindInputList = null;
+                            })
+                        }
+                    }
+                    .Assign(out KeybindSelector),
+
                     new UIResizeablePanel()
                     {
                         Left = new(0, 1, -1),
@@ -450,6 +548,11 @@ namespace Cornifer
                                     {
                                         Name = "Config",
                                         Element = InitObjectConfigTab(),
+                                    },
+                                    new()
+                                    {
+                                        Name = "Keybinds",
+                                        Element = InitKeybindsTab(),
                                     }
                                 }
                             }
@@ -894,7 +997,7 @@ namespace Cornifer
                                                 SelectedBackColor = Color.White,
                                                 SelectedTextColor = Color.Black
                                             };
-                                            btn.OnEvent(UIElement.ClickEvent, (btn, _) => 
+                                            btn.OnEvent(UIElement.ClickEvent, (btn, _) =>
                                             {
                                                 if (btn.Selected)
                                                     PlacedObject.HideObjectTypes.Remove(objectName);
@@ -1037,6 +1140,64 @@ namespace Cornifer
                 if (ConfigElement is not null)
                     panel.Elements.Add(ConfigElement);
             });
+        }
+        static UIElement InitKeybindsTab()
+        {
+            return new UIPanel
+            {
+                BackColor = new(30, 30, 30),
+                BorderColor = new(100, 100, 100),
+
+                Padding = new(5),
+
+                Elements =
+                {
+                    new UIList
+                    {
+                        ElementSpacing = 2,
+                    }.Assign(out KeybindsTabList)
+                    .Execute(list =>
+                    {
+                        foreach (InputHandler.Keybind keybind in InputHandler.Keybinds.Values)
+                        {
+                            if (keybind.Name.Length == 0)
+                                continue;
+
+                            list.Elements.Add(new UILabel
+                            {
+                                Text = keybind.Name,
+                                AutoSize = true,
+                                Height = 0,
+                                TextAlign = new(.5f)
+                            });
+
+                            UIList combos = new()
+                            {
+                                ElementSpacing = 4,
+                                AutoSize = true,
+                                Height = 0,
+                            };
+
+                            foreach (List<InputHandler.KeybindInput> inputs in keybind.Inputs)
+                                AddKeyComboPanel(list, keybind, inputs);
+
+                            list.Elements.Add(combos);
+                            list.Elements.Add(new UIButton
+                            {
+                                Text = "Add keybind",
+                                TextAlign = new(.5f),
+                                Height = 20
+                            }.OnEvent(UIElement.ClickEvent, (_, _) => 
+                            {
+                                CurrentKeybindInputList = combos;
+
+                                OpenKeybindSelector(keybind);
+                            }));
+                            list.Elements.Add(new UIElement { Height = 10 });
+                        }
+                    })
+                }
+            };
         }
 
         static void PopulateSlugcatSelect(UIModal select)
@@ -1309,6 +1470,66 @@ namespace Cornifer
             }
         }
 
+        public static void OpenKeybindSelector(InputHandler.Keybind keybind)
+        {
+            CurrentKeybind = keybind;
+            KeybindSelectorInputs.Clear();
+            KeybindSelectorCurrentKeybind.Text = keybind.Name;
+            KeybindSelectorCurrentKeybindInputs.Text = "None";
+            KeybindSelectorUpdateSkipped = false;
+            KeybindSelectorVisible = true;
+        }
+        static void AddKeyComboPanel(UIList list, InputHandler.Keybind keybind, List<InputHandler.KeybindInput> inputs)
+        {
+            UIPanel panel = new()
+            {
+                Height = 18,
+
+                BackColor = Color.Transparent,
+                BorderColor = Color.Transparent,
+
+                Elements =
+                {
+                    new UIPanel
+                    {
+                        Height = 18,
+                        Width = new(-20, 1),
+                        BackColor = new(48, 48, 48),
+                        BorderColor = new(100, 100, 100),
+
+                        Elements =
+                        {
+                            new UILabel
+                            {
+                                Left = 3,
+                                Top = 1,
+                                Width = new(-3, 1),
+                                Text = string.Join(" + ", inputs.Select(i => i.KeyName)),
+                                TextAlign = new(.5f),
+                                AutoSize = false,
+                            },
+                        }
+                    },
+                }
+            };
+
+            panel.Elements.Add(new UIButton
+            {
+                Text = "D",
+                Height = 18,
+                Width = 18,
+                Left = new(0, 1, -1),
+            }.OnEvent(UIElement.ClickEvent, (_, _) =>
+            {
+                list.Elements.Remove(panel);
+                keybind.Inputs.Remove(inputs);
+                list.Recalculate();
+                InputHandler.SaveKeybinds();
+            }));
+
+            list.Elements.Add(panel);
+        }
+
         public static void Update()
         {
             Root?.Update();
@@ -1320,6 +1541,52 @@ namespace Cornifer
                 ConfigurableObject = null;
             else
                 ConfigurableObject = Main.SelectedObjects.First();
+
+            if (Main.Instance.IsActive && KeybindSelectorVisible && KeybindSelectorUpdateSkipped)
+            {
+                bool keysChanged = false;
+
+                foreach (Keys key in InputHandler.AllKeys)
+                {
+                    if (!InputHandler.KeyboardState.IsKeyDown(key) || !InputHandler.OldKeyboardState.IsKeyUp(key))
+                        continue;
+
+                    InputHandler.ModifierKeys? modifier = InputHandler.GetKeyModifiers(key);
+                    bool hadKey = KeybindSelectorInputs.RemoveAll(ki => ki is InputHandler.KeyboardInput keyboardInput && keyboardInput.Key == key) > 0;
+                    bool hadMod = modifier.HasValue && KeybindSelectorInputs.RemoveAll(ki => ki is InputHandler.ModifierInput modifierInput && modifierInput.Key == modifier) > 0;
+
+                    // None => Key => Possible modifier => None
+
+                    if (!hadKey && !hadMod)
+                    {
+                        KeybindSelectorInputs.Add(new InputHandler.KeyboardInput(key));
+                    }
+                    else if (hadKey && modifier.HasValue)
+                    {
+                        KeybindSelectorInputs.Add(new InputHandler.ModifierInput(modifier.Value));
+                    }
+
+                    keysChanged = true;
+                }
+
+                foreach (InputHandler.MouseKeys key in InputHandler.AllMouseKeys)
+                {
+                    if (!InputHandler.MouseState.IsKeyDown(key) || !InputHandler.OldMouseState.IsKeyUp(key))
+                        continue;
+
+                    bool hadKey = KeybindSelectorInputs.RemoveAll(ki => ki is InputHandler.MouseInput mouseInput && mouseInput.Key == key) > 0;
+                    if (!hadKey)
+                        KeybindSelectorInputs.Add(new InputHandler.MouseInput(key));
+
+                    keysChanged = true;
+                }
+
+                if (keysChanged)
+                {
+                    KeybindSelectorCurrentKeybindInputs.Text = KeybindSelectorInputs.Count == 0 ? "None" : string.Join(" + ", KeybindSelectorInputs.Select(ki => ki.KeyName));
+                }
+            }
+            KeybindSelectorUpdateSkipped = true;
         }
         public static void Draw()
         {

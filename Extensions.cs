@@ -2,6 +2,7 @@
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -258,6 +259,32 @@ namespace Cornifer
         {
             config.OnChanged += () => handler(element, config.Value);
             return element;
+        }
+
+        public static bool IsKeyDown(this MouseState state, InputHandler.MouseKeys key)
+        {
+            return key switch
+            {
+                InputHandler.MouseKeys.LeftButton => state.LeftButton == ButtonState.Pressed,
+                InputHandler.MouseKeys.RightButton => state.RightButton == ButtonState.Pressed,
+                InputHandler.MouseKeys.MiddleButton => state.MiddleButton == ButtonState.Pressed,
+                InputHandler.MouseKeys.XButton1 => state.XButton1 == ButtonState.Pressed,
+                InputHandler.MouseKeys.XButton2 => state.XButton2 == ButtonState.Pressed,
+                _ => false
+            };
+        }
+
+        public static bool IsKeyUp(this MouseState state, InputHandler.MouseKeys key)
+        {
+            return key switch
+            {
+                InputHandler.MouseKeys.LeftButton => state.LeftButton == ButtonState.Released,
+                InputHandler.MouseKeys.RightButton => state.RightButton == ButtonState.Released,
+                InputHandler.MouseKeys.MiddleButton => state.MiddleButton == ButtonState.Released,
+                InputHandler.MouseKeys.XButton1 => state.XButton1 == ButtonState.Released,
+                InputHandler.MouseKeys.XButton2 => state.XButton2 == ButtonState.Released,
+                _ => false
+            };
         }
     }
 }

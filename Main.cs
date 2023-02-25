@@ -60,8 +60,8 @@ namespace Cornifer
 
         public static UndoRedo Undo = new();
 
-        static Vector2 SelectionStart;
-        static Vector2 OldDragPos;
+        internal static Vector2 SelectionStart;
+        internal static Vector2 OldDragPos;
         internal static bool Selecting;
         internal static bool Dragging;
 
@@ -359,8 +359,11 @@ namespace Cornifer
 
             InputHandler.KeybindState dragState = InputHandler.Drag.State;
 
-            if (!prevented && dragState == InputHandler.KeybindState.JustPressed)
+            if (dragState == InputHandler.KeybindState.JustPressed)
             {
+                if (prevented)
+                    return;
+
                 // Clicked on already selected object
                 MapObject? underMouse = MapObject.FindSelectableAtPos(SelectedObjects, mouseWorld, false);
                 if (underMouse is not null)
@@ -422,8 +425,11 @@ namespace Cornifer
                 Dragging = false;
             }
 
-            if (!prevented && InputHandler.Select.JustPressed)
+            if (InputHandler.Select.JustPressed)
             {
+                if (prevented)
+                    return;
+
                 SelectionStart = mouseWorld;
                 Selecting = true;
             }

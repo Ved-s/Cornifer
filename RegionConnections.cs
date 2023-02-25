@@ -200,6 +200,7 @@ namespace Cornifer
                 Main.SelectedObjects.Clear();
                 Main.SelectedObjects.Add(newPoint);
                 Main.Dragging = true;
+                Main.OldDragPos = Main.WorldCamera.InverseTransformVector(InputHandler.MouseState.Position.ToVector2());
             }
 
             if (InputHandler.DeleteConnection.JustPressed)

@@ -17,30 +17,35 @@ namespace Cornifer
         public static MouseState MouseState;
         public static MouseState OldMouseState;
 
-        static Dictionary<string, Keybind> Keybinds = new();
+        public static bool DisableInputs => Interface.KeybindSelectorVisible;
+
+        public static Keys[] AllKeys = Enum.GetValues<Keys>();
+        public static MouseKeys[] AllMouseKeys = Enum.GetValues<MouseKeys>();
+
+        public static Dictionary<string, Keybind> Keybinds = new();
         const string KeybindsFile = "keybinds.txt";
 
         public static Keybind ReinitUI = new("", Keys.F12);
-        public static Keybind ClearErrors = new("", Keys.Escape);
-        public static Keybind MoveMultiplier = new("", ModifierKeys.Shift);
+        public static Keybind ClearErrors = new("Clear errors", Keys.Escape);
+        public static Keybind MoveMultiplier = new("Move multiplier", ModifierKeys.Shift);
         public static Keybind UndoDebug = new("", Keys.F8);
-        public static Keybind MoveUp = new("", Keys.Up);
-        public static Keybind MoveDown = new("", Keys.Down);
-        public static Keybind MoveLeft = new("", Keys.Left);
-        public static Keybind MoveRight = new("", Keys.Right);
-        public static Keybind DeleteObject = new("", new KeybindInput[] { Keys.Delete }, new KeybindInput[] { Keys.Back });
-        public static Keybind DeleteConnection = new("", new KeybindInput[] { Keys.Delete }, new KeybindInput[] { Keys.Back });
-        public static Keybind NewConnectionPoint = new("", MouseKeys.LeftButton);
+        public static Keybind MoveUp = new("Move up", Keys.Up);
+        public static Keybind MoveDown = new("Move down", Keys.Down);
+        public static Keybind MoveLeft = new("Move left", Keys.Left);
+        public static Keybind MoveRight = new("Move right", Keys.Right);
+        public static Keybind DeleteObject = new("Delete object", new KeybindInput[] { Keys.Delete }, new KeybindInput[] { Keys.Back });
+        public static Keybind DeleteConnection = new("Delete connection point", new KeybindInput[] { Keys.Delete }, new KeybindInput[] { Keys.Back });
+        public static Keybind NewConnectionPoint = new("Create connection point", MouseKeys.LeftButton);
 
-        public static Keybind Pan = new("", MouseKeys.RightButton);
-        public static Keybind Drag = new("", MouseKeys.LeftButton);
-        public static Keybind Select = new("", MouseKeys.LeftButton);
+        public static Keybind Pan = new("Pan", MouseKeys.RightButton);
+        public static Keybind Drag = new("Drag", MouseKeys.LeftButton);
+        public static Keybind Select = new("Select", MouseKeys.LeftButton);
 
-        public static Keybind AddToSelection = new("", ModifierKeys.Shift);
-        public static Keybind SubFromSelection = new("", ModifierKeys.Control);
+        public static Keybind AddToSelection = new("Add to selection", ModifierKeys.Shift);
+        public static Keybind SubFromSelection = new("Sub from selection", ModifierKeys.Control);
 
-        public static Keybind Undo = new("", ModifierKeys.Control, Keys.Z);
-        public static Keybind Redo = new("", ModifierKeys.Control, Keys.Y);
+        public static Keybind Undo = new("Undo", ModifierKeys.Control, Keys.Z);
+        public static Keybind Redo = new("Redo", ModifierKeys.Control, Keys.Y);
 
         public static void Init()
         {
@@ -53,9 +58,9 @@ namespace Cornifer
             }
 
             if (!File.Exists(KeybindsFile))
-                SaveKeybinds(KeybindsFile);
+                SaveKeybinds();
             else
-                LoadKeybinds(KeybindsFile);
+                LoadKeybinds();
         }
 
         public static void Update()
@@ -67,9 +72,9 @@ namespace Cornifer
             KeyboardState = Keyboard.GetState();
         }
 
-        public static void SaveKeybinds(string filepath)
+        public static void SaveKeybinds()
         {
-            using FileStream fs = File.Create(filepath);
+            using FileStream fs = File.Create(KeybindsFile);
             using StreamWriter writer = new(fs);
 
             writer.WriteLine("// Cornifer keybindings file");
@@ -87,6 +92,14 @@ namespace Cornifer
 
             foreach (var (name, keybind) in Keybinds)
             {
+                if (keybind.Inputs.Count == 0)
+                {
+                    writer.Write(name);
+                    writer.Write('=');
+                    writer.WriteLine();
+                    continue;
+                }
+
                 foreach (List<KeybindInput> keyCombo in keybind.Inputs)
                 {
                     writer.Write(name);
@@ -101,13 +114,13 @@ namespace Cornifer
                 }
             }
         }
-        public static void LoadKeybinds(string filepath)
+        public static void LoadKeybinds()
         {
             HashSet<string> keybindsReset = new();
 
             try
             {
-                string[] lines = File.ReadAllLines(filepath);
+                string[] lines = File.ReadAllLines(KeybindsFile);
                 foreach (string line in lines)
                 {
                     if (line.StartsWith("//"))
@@ -135,6 +148,9 @@ namespace Cornifer
                         keybind.Inputs.Clear();
                         keybindsReset.Add(keybindNameString);
                     }
+                    if (parts[1].Length == 0)
+                        continue;
+
                     List<KeybindInput> inputs = new();
                     // Convert the key strings to inputs and add them to the dictionary
                     foreach (string keyString in keyStrings)
@@ -164,6 +180,22 @@ namespace Cornifer
                 // Handle any file I/O errors by logging an error message and returning an empty list
                 Debug.WriteLine($"Error loading key bindings from file: {ex.Message}");
             }
+        }
+
+        public static ModifierKeys? GetKeyModifiers(Keys key)
+        {
+            return key switch
+            {
+                Keys.LeftShift => ModifierKeys.Shift,
+                Keys.RightShift => ModifierKeys.Shift,
+                Keys.LeftControl => ModifierKeys.Control,
+                Keys.RightControl => ModifierKeys.Control,
+                Keys.LeftAlt => ModifierKeys.Alt,
+                Keys.RightAlt => ModifierKeys.Alt,
+                Keys.LeftWindows => ModifierKeys.Windows,
+                Keys.RightWindows => ModifierKeys.Windows,
+                _ => null
+            };
         }
 
         public enum MouseKeys
@@ -306,8 +338,8 @@ namespace Cornifer
         {
             public Keys Key { get; set; }
 
-            public override bool CurrentState => KeyboardState.IsKeyDown(Key);
-            public override bool OldState => OldKeyboardState.IsKeyDown(Key);
+            public override bool CurrentState => !DisableInputs && KeyboardState.IsKeyDown(Key);
+            public override bool OldState => !DisableInputs && OldKeyboardState.IsKeyDown(Key);
             public override string KeyName => Key.ToString();
 
             public KeyboardInput(Keys key)
@@ -315,7 +347,6 @@ namespace Cornifer
                 Key = key;
             }
         }
-
         public class ModifierInput : KeybindInput
         {
             public ModifierKeys Key { get; set; }
@@ -331,6 +362,9 @@ namespace Cornifer
 
             bool GetModifierState(KeyboardState state)
             {
+                if (DisableInputs)
+                    return false;
+
                 return Key switch
                 {
                     ModifierKeys.Shift => state.IsKeyDown(Keys.LeftShift) || state.IsKeyDown(Keys.RightShift),
@@ -341,8 +375,6 @@ namespace Cornifer
                 };
             }
         }
-
-
         public class MouseInput : KeybindInput
         {
             public MouseKeys Key { get; set; }
@@ -358,6 +390,9 @@ namespace Cornifer
 
             bool GetMouseInput(MouseState state)
             {
+                if (DisableInputs)
+                    return false;
+
                 return Key switch
                 {
                     MouseKeys.LeftButton => state.LeftButton == ButtonState.Pressed,
