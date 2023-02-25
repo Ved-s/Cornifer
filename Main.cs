@@ -49,11 +49,7 @@ namespace Cornifer
 
         public static RenderLayers ActiveRenderLayers = RenderLayers.All;
 
-        public static KeyboardState KeyboardState;
-        public static KeyboardState OldKeyboardState;
-
-        public static MouseState MouseState;
-        public static MouseState OldMouseState;
+        public static InputHandler inputHandler = new InputHandler();
 
         public static string? SelectedSlugcat;
 
@@ -149,11 +145,7 @@ namespace Cornifer
         {
             base.Update(gameTime);
 
-            OldMouseState = MouseState;
-            MouseState = Mouse.GetState();
-
-            OldKeyboardState = KeyboardState;
-            KeyboardState = Keyboard.GetState();
+            inputHandler.Update();
 
             OldActive = IsActive;
 
@@ -166,34 +158,33 @@ namespace Cornifer
             if (active && anyConnections)
                 Region?.Connections?.Update(betweenRoomConnections, inRoomConnections);
 
-            UpdateSelectionAndDrag(active && MouseState.LeftButton == ButtonState.Pressed, active && OldMouseState.LeftButton == ButtonState.Pressed);
+            UpdateSelectionAndDrag(active && inputHandler.CheckActionInclusive(InputHandler.InputType.Drag), active && inputHandler.CheckActionInclusive(InputHandler.InputType.Drag, true));
 
-            if (KeyboardState.IsKeyDown(Keys.Escape) && OldKeyboardState.IsKeyUp(Keys.Escape))
+            if (inputHandler.CheckAction(InputHandler.InputType.ClearErrors, InputHandler.KeybindState.JustPressed, true))
                 LoadErrors.Clear();
 
             float keyMoveMultiplier = 1;
-            if (KeyboardState.IsKeyDown(Keys.LeftShift))
+            if (inputHandler.CheckAction(InputHandler.InputType.MoveMultiplier))
                 keyMoveMultiplier = 10;
 
             if (active && !Interface.Active)
             {
-                if (KeyboardState.IsKeyDown(Keys.F8) && OldKeyboardState.IsKeyUp(Keys.F8))
+                if (inputHandler.CheckAction(InputHandler.InputType.UndoDebug, InputHandler.KeybindState.JustPressed, true))
                     DrawUndoDebug = !DrawUndoDebug;
 
-                if (KeyboardState.IsKeyDown(Keys.Up) && OldKeyboardState.IsKeyUp(Keys.Up))
+                if (inputHandler.CheckAction(InputHandler.InputType.MoveUp, InputHandler.KeybindState.JustPressed))
                     MoveSelectedObjects(new Vector2(0, -1) * keyMoveMultiplier);
 
-                if (KeyboardState.IsKeyDown(Keys.Down) && OldKeyboardState.IsKeyUp(Keys.Down))
+                if (inputHandler.CheckAction(InputHandler.InputType.MoveDown, InputHandler.KeybindState.JustPressed))
                     MoveSelectedObjects(new Vector2(0, 1) * keyMoveMultiplier);
 
-                if (KeyboardState.IsKeyDown(Keys.Left) && OldKeyboardState.IsKeyUp(Keys.Left))
+                if (inputHandler.CheckAction(InputHandler.InputType.MoveLeft, InputHandler.KeybindState.JustPressed))
                     MoveSelectedObjects(new Vector2(-1, 0) * keyMoveMultiplier);
 
-                if (KeyboardState.IsKeyDown(Keys.Right) && OldKeyboardState.IsKeyUp(Keys.Right))
+                if (inputHandler.CheckAction(InputHandler.InputType.MoveRight, InputHandler.KeybindState.JustPressed))
                     MoveSelectedObjects(new Vector2(1, 0) * keyMoveMultiplier);
 
-                if (KeyboardState.IsKeyDown(Keys.Delete) && OldKeyboardState.IsKeyUp(Keys.Delete)
-                 || KeyboardState.IsKeyDown(Keys.Back) && OldKeyboardState.IsKeyUp(Keys.Back))
+                if (inputHandler.CheckAction(InputHandler.InputType.DeleteObject, InputHandler.KeybindState.JustPressed))
                 {
                     HashSet<MapObject> objectsToDelete = new(SelectedObjects);
                     objectsToDelete.IntersectWith(WorldObjects);
@@ -207,19 +198,10 @@ namespace Cornifer
                     }
                 }
 
-                if (KeyboardState.IsKeyDown(Keys.LeftControl) || KeyboardState.IsKeyDown(Keys.RightControl))
+                if (inputHandler.CheckAction(InputHandler.InputType.StopDragging, InputHandler.KeybindState.JustPressed))
                 {
-                    if (KeyboardState.IsKeyDown(Keys.Z) && OldKeyboardState.IsKeyUp(Keys.Z))
-                    {
-                        StopDragging();
-                        Undo.Undo();
-                    }
-
-                    if (KeyboardState.IsKeyDown(Keys.Y) && OldKeyboardState.IsKeyUp(Keys.Y))
-                    {
-                        StopDragging();
-                        Undo.Redo();
-                    }
+                    StopDragging();
+                    Undo.Undo();
                 }
             }
 
@@ -259,7 +241,7 @@ namespace Cornifer
 
             if (Selecting)
             {
-                Vector2 mouseWorld = WorldCamera.InverseTransformVector(MouseState.Position.ToVector2());
+                Vector2 mouseWorld = WorldCamera.InverseTransformVector(inputHandler.MouseState.Position.ToVector2());
                 Vector2 tl = new(Math.Min(mouseWorld.X, SelectionStart.X), Math.Min(mouseWorld.Y, SelectionStart.Y));
                 Vector2 br = new(Math.Max(mouseWorld.X, SelectionStart.X), Math.Max(mouseWorld.Y, SelectionStart.Y));
 
@@ -365,7 +347,7 @@ namespace Cornifer
 
         private void UpdateSelectionAndDrag(bool drag, bool oldDrag)
         {
-            Vector2 mouseWorld = WorldCamera.InverseTransformVector(MouseState.Position.ToVector2());
+            Vector2 mouseWorld = WorldCamera.InverseTransformVector(inputHandler.MouseState.Position.ToVector2());
 
             bool prevented = !Dragging && !Selecting && (Interface.Hovered || (Region?.Connections?.Hovered ?? false));
 
@@ -375,7 +357,7 @@ namespace Cornifer
                 MapObject? underMouse = MapObject.FindSelectableAtPos(SelectedObjects, mouseWorld, false);
                 if (underMouse is not null)
                 {
-                    if (KeyboardState.IsKeyDown(Keys.LeftControl))
+                    if (inputHandler.CheckAction(InputHandler.InputType.AddToSelection))
                     {
                         SelectedObjects.Remove(underMouse);
                         return;
@@ -392,7 +374,7 @@ namespace Cornifer
                     MapObject? obj = MapObject.FindSelectableAtPos(WorldObjectLists, mouseWorld, true);
                     if (obj is not null)
                     {
-                        if (!KeyboardState.IsKeyDown(Keys.LeftShift))
+                        if (!inputHandler.CheckAction(InputHandler.InputType.SubFromSelection))
                             SelectedObjects.Clear();
                         SelectedObjects.Add(obj);
                         Undo.PreventNextUndoMerge();
@@ -422,10 +404,10 @@ namespace Cornifer
                     Vector2 tl = new(Math.Min(mouseWorld.X, SelectionStart.X), Math.Min(mouseWorld.Y, SelectionStart.Y));
                     Vector2 br = new(Math.Max(mouseWorld.X, SelectionStart.X), Math.Max(mouseWorld.Y, SelectionStart.Y));
 
-                    if (!KeyboardState.IsKeyDown(Keys.LeftControl) && !KeyboardState.IsKeyDown(Keys.LeftShift))
+                    if (!inputHandler.CheckAction(InputHandler.InputType.AddToSelection) && !inputHandler.CheckAction(InputHandler.InputType.SubFromSelection))
                         SelectedObjects.Clear();
 
-                    if (KeyboardState.IsKeyDown(Keys.LeftControl))
+                    if (inputHandler.CheckAction(InputHandler.InputType.AddToSelection))
                         SelectedObjects.ExceptWith(MapObject.FindIntersectingSelectables(SelectedObjects, tl, br, true));
                     else if (Region is not null)
                         SelectedObjects.UnionWith(MapObject.FindIntersectingSelectables(WorldObjectLists, tl, br, true));

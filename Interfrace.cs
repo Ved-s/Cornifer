@@ -38,7 +38,7 @@ namespace Cornifer
 
         public static bool Hovered => Root?.Hover is not null;
         public static bool Active => Root?.Active is not null;
-        public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.MouseState.RightButton == ButtonState.Pressed && !Hovered;
+        public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.inputHandler.CheckAction(InputHandler.InputType.Pan) && !Hovered;
 
         static bool regionSelectVisible = false;
         static bool slugcatSelectVisible = true;
@@ -1310,7 +1310,7 @@ namespace Cornifer
         {
             Root?.Update();
 
-            if (Main.KeyboardState.IsKeyDown(Keys.F12) && Main.OldKeyboardState.IsKeyUp(Keys.F12))
+            if (Main.inputHandler.CheckAction(InputHandler.InputType.Init,InputHandler.KeybindState.JustPressed))
                 Init();
 
             if (Main.SelectedObjects.Count != 1)
