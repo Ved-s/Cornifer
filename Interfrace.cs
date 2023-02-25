@@ -38,7 +38,7 @@ namespace Cornifer
 
         public static bool Hovered => Root?.Hover is not null;
         public static bool Active => Root?.Active is not null;
-        public static bool BlockUIHover => Main.Selecting || Main.Dragging || Main.inputHandler.CheckAction(InputHandler.InputType.Pan) && !Hovered;
+        public static bool BlockUIHover => Main.Selecting || Main.Dragging || InputHandler.Pan.Pressed && !Hovered;
 
         static bool regionSelectVisible = false;
         static bool slugcatSelectVisible = true;
@@ -1182,6 +1182,9 @@ namespace Cornifer
             thd.Start();
             thd.Join();
 
+            if (filename is null)
+                return;
+
             try
             {
                 Main.OverlayImage = Texture2D.FromFile(Main.Instance.GraphicsDevice, filename);
@@ -1310,7 +1313,7 @@ namespace Cornifer
         {
             Root?.Update();
 
-            if (Main.inputHandler.CheckAction(InputHandler.InputType.Init,InputHandler.KeybindState.JustPressed))
+            if (InputHandler.ReinitUI.JustPressed)
                 Init();
 
             if (Main.SelectedObjects.Count != 1)

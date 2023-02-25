@@ -1,26 +1,64 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
+﻿using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework.Input;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace Cornifer
 {
-    public class InputHandler
+    public static class InputHandler
     {
+        public static KeyboardState KeyboardState;
+        public static KeyboardState OldKeyboardState;
 
-        public InputHandler()
+        public static MouseState MouseState;
+        public static MouseState OldMouseState;
+
+        static Dictionary<string, Keybind> Keybinds = new();
+        const string KeybindsFile = "keybinds.txt";
+
+        public static Keybind ReinitUI = new("", Keys.F12);
+        public static Keybind ClearErrors = new("", Keys.Escape);
+        public static Keybind MoveMultiplier = new("", ModifierKeys.Shift);
+        public static Keybind UndoDebug = new("", Keys.F8);
+        public static Keybind MoveUp = new("", Keys.Up);
+        public static Keybind MoveDown = new("", Keys.Down);
+        public static Keybind MoveLeft = new("", Keys.Left);
+        public static Keybind MoveRight = new("", Keys.Right);
+        public static Keybind DeleteObject = new("", new KeybindInput[] { Keys.Delete }, new KeybindInput[] { Keys.Back });
+        public static Keybind DeleteConnection = new("", new KeybindInput[] { Keys.Delete }, new KeybindInput[] { Keys.Back });
+        public static Keybind NewConnectionPoint = new("", MouseKeys.LeftButton);
+
+        public static Keybind Pan = new("", MouseKeys.RightButton);
+        public static Keybind Drag = new("", MouseKeys.LeftButton);
+        public static Keybind Select = new("", MouseKeys.LeftButton);
+
+        public static Keybind AddToSelection = new("", ModifierKeys.Shift);
+        public static Keybind SubFromSelection = new("", ModifierKeys.Control);
+
+        public static Keybind Undo = new("", ModifierKeys.Control, Keys.Z);
+        public static Keybind Redo = new("", ModifierKeys.Control, Keys.Y);
+
+        public static void Init()
         {
-            string path = "keybinds.txt";
-            if (!File.Exists(path)) CreateDefaultFile(path);
+            foreach (FieldInfo field in typeof(InputHandler).GetFields(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (!field.FieldType.IsAssignableTo(typeof(Keybind)))
+                    continue;
 
-            keyBindings = LoadKeyBindingsFromFile(path);
+                Keybinds[field.Name] = (Keybind)field.GetValue(null)!;
+            }
+
+            if (!File.Exists(KeybindsFile))
+                SaveKeybinds(KeybindsFile);
+            else
+                LoadKeybinds(KeybindsFile);
         }
 
-        public void Update()
+        public static void Update()
         {
             OldMouseState = MouseState;
             MouseState = Mouse.GetState();
@@ -29,243 +67,120 @@ namespace Cornifer
             KeyboardState = Keyboard.GetState();
         }
 
-        public struct InputState
+        public static void SaveKeybinds(string filepath)
         {
-            public InputType type;
-            public KeyboardState keyboardState;
-            public MouseState mouseState;
+            using FileStream fs = File.Create(filepath);
+            using StreamWriter writer = new(fs);
 
-            public InputState(InputType type, KeyboardState keyboardState, MouseState mouseState)
+            writer.WriteLine("// Cornifer keybindings file");
+
+            writer.WriteLine("//");
+            writer.WriteLine($"// Keyboard key names: \n//    {string.Join(", ", Enum.GetNames<Keys>().Skip(1))}");
+
+            writer.WriteLine("//");
+            writer.WriteLine($"// Mouse key names: \n//    {string.Join(", ", Enum.GetNames<MouseKeys>())}");
+
+            writer.WriteLine("//");
+            writer.WriteLine($"// Modifier key names: \n//    {string.Join(", ", Enum.GetNames<ModifierKeys>())}");
+
+            writer.WriteLine();
+
+            foreach (var (name, keybind) in Keybinds)
             {
-                this.type = type;
-                this.keyboardState = keyboardState;
-                this.mouseState = mouseState;
+                foreach (List<KeybindInput> keyCombo in keybind.Inputs)
+                {
+                    writer.Write(name);
+                    writer.Write('=');
+                    for (int i = 0; i < keyCombo.Count; i++)
+                    {
+                        if (i > 0)
+                            writer.Write("&");
+                        writer.Write(keyCombo[i].KeyName);
+                    }
+                    writer.WriteLine();
+                }
             }
         }
-
-
-        public static List<InputState> LoadKeyBindingsFromFile(string filepath)
+        public static void LoadKeybinds(string filepath)
         {
-            List<InputState> keyBindings = new List<InputState>();
+            HashSet<string> keybindsReset = new();
+
             try
             {
                 string[] lines = File.ReadAllLines(filepath);
                 foreach (string line in lines)
                 {
-                    // Split the line into InputType and key list parts
+                    if (line.StartsWith("//"))
+                        continue;
+
+                    // Split the line into keybind name and key list parts
                     string[] parts = line.Split('=');
                     if (parts.Length != 2)
                     {
                         // Ignore the line if it doesn't contain exactly one equals sign
                         continue;
                     }
-                    string inputTypeString = parts[0].Trim();
+                    string keybindNameString = parts[0].Trim();
                     string[] keyStrings = parts[1].Split('&');
 
                     // Convert the input type string to an enum value
-                    InputType inputType;
-                    if (!Enum.TryParse(inputTypeString, out inputType))
+                    if (!Keybinds.TryGetValue(keybindNameString, out Keybind? keybind))
                     {
-                        // Ignore the line if the input type string is not a valid enum value
+                        // Ignore the line if the keybind name string is not a valid name
                         continue;
                     }
 
-                    // Convert the key strings to Keys values and add them to the dictionary
-                    List<MouseType> mouseTypes = new List<MouseType>();
-                    
-                    List<Keys> keys = new List<Keys>();
+                    if (!keybindsReset.Contains(keybindNameString))
+                    {
+                        keybind.Inputs.Clear();
+                        keybindsReset.Add(keybindNameString);
+                    }
+                    List<KeybindInput> inputs = new();
+                    // Convert the key strings to inputs and add them to the dictionary
                     foreach (string keyString in keyStrings)
                     {
-                        if (Enum.TryParse(keyString.Trim(), out Keys key))
+                        string trimmedKey = keyString.Trim();
+
+                        if (Enum.TryParse(trimmedKey, out ModifierKeys modifierKey))
                         {
-                            keys.Add(key);
+                            inputs.Add(modifierKey);
                         }
 
-                        if (Enum.TryParse(keyString.Trim(), out MouseType mouseType))
+                        if (Enum.TryParse(trimmedKey, out MouseKeys mouseKey))
                         {
-                            mouseTypes.Add(mouseType);
+                            inputs.Add(mouseKey);
+                        }
+
+                        else if (Enum.TryParse(trimmedKey, out Keys key))
+                        {
+                            inputs.Add(key);
                         }
                     }
-                    if (keys.Count > 0 || mouseTypes.Count > 0)
-                    {
-                        MouseState mouseState = new MouseState(
-                            0,0,0,
-                            mouseTypes.Contains(MouseType.LeftButton)? ButtonState.Pressed : ButtonState.Released,
-                            mouseTypes.Contains(MouseType.MiddleButton)? ButtonState.Pressed : ButtonState.Released,
-                            mouseTypes.Contains(MouseType.RightButton) ? ButtonState.Pressed : ButtonState.Released,
-                            mouseTypes.Contains(MouseType.XButton1) ? ButtonState.Pressed : ButtonState.Released,
-                            mouseTypes.Contains(MouseType.XButton2) ? ButtonState.Pressed : ButtonState.Released);
-                        KeyboardState keyboardState = new KeyboardState(keys.ToArray());
-
-                        keyBindings.Add(new InputState(inputType, keyboardState, mouseState));
-                    }
+                    keybind.Inputs.Add(inputs);
                 }
             }
             catch (Exception ex)
             {
                 // Handle any file I/O errors by logging an error message and returning an empty list
                 Debug.WriteLine($"Error loading key bindings from file: {ex.Message}");
-                keyBindings = new List<InputState>();
-            }
-
-            return keyBindings;
-        }
-
-        public static void CreateDefaultFile(string filepath)
-        {
-            File.WriteAllText(filepath, 
-                "Init=F12\r\n" +
-                "ClearErrors=Esc\r\n" +
-                "MoveMultiplier=LeftShift\r\n" +
-                "UndoDebug=F8\r\n" +
-                "MoveUp=W\r\n" +
-                "MoveDown=S\r\n" +
-                "MoveLeft=A\r\n" +
-                "MoveRight=D\r\n" +
-                "DeleteObject=Delete\r\n" +
-                "DeleteConnection=Delete\r\n" +
-                "DeleteConnection=Back\r\n" +
-                "NewConnectionPoint=LeftButton\r\n" +
-                "StopDragging=LeftControl&Y\r\n" +
-                "StopDragging=LeftControl&Z\r\n" +
-                "StopDragging=RightControl&Y\r\n" +
-                "StopDragging=RightControl&Z\r\n" +
-                "Drag=LeftButton\r\n" +
-                "AddToSelection=LeftControl\r\n" +
-                "SubFromSelection=LeftShift\r\n" +
-                "Pan=RightButton");
-        }
-
-        /// <summary>
-        /// Returns whether or not the given InputType is pressed.
-        /// This is the preferred way of accessing InputHandler.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="keybindState"></param>
-        /// <param name="exclusive"></param>
-        /// <returns></returns>
-        public bool CheckAction(InputType type, KeybindState keybindState = InputHandler.KeybindState.Pressed, bool exclusive = false)
-        {
-
-            bool newPress = exclusive ? CheckActionExclusive(type, KeyboardState, MouseState) : CheckActionInclusive(type, KeyboardState, MouseState);
-            bool oldPress = exclusive ? CheckActionExclusive(type, OldKeyboardState, OldMouseState) : CheckActionInclusive(type, OldKeyboardState, OldMouseState);
-            //this should use the logic of UIRoot.GetKeyState but this is what I'm doing for now
-            switch (keybindState)
-            {
-                case KeybindState.Pressed:
-                    return newPress;
-
-                case KeybindState.JustPressed:
-                    return newPress && !oldPress;
-
-                case KeybindState.Released:
-                    return !newPress;
-
-                case KeybindState.JustReleased:
-                    return !newPress && oldPress;
-
-                default:
-                    return false;
             }
         }
 
-        private bool CheckActionExclusive(InputType type, KeyboardState keyboardState, MouseState mouseState)
+        public enum MouseKeys
         {
-            MouseState mouseState2 = new MouseState(0, 0, 0,
-                mouseState.LeftButton,
-                mouseState.MiddleButton,
-                mouseState.RightButton,
-                mouseState.XButton1,
-                mouseState.XButton2);
-
-            foreach (InputState inputState in keyBindings)
-            {
-                if (inputState.Equals(new InputState(type, keyboardState, mouseState2))) { return true; }
-            }
-
-            return false;
-        }
-
-        private bool CheckActionInclusive(InputType type, KeyboardState keyboardState, MouseState mouseState)
-        {
-
-            foreach (InputState inputState in keyBindings)
-            {
-                if (inputState.type != type) continue;
-
-                bool match = true;
-
-                foreach (Keys key in inputState.keyboardState.GetPressedKeys())
-                { if (!keyboardState.IsKeyDown(key)) match = false; }
-
-                if (match == false) continue;
-
-                if (inputState.mouseState.LeftButton == ButtonState.Pressed && mouseState.LeftButton != ButtonState.Pressed)
-                { continue; }
-
-                if (inputState.mouseState.RightButton == ButtonState.Pressed && mouseState.RightButton != ButtonState.Pressed)
-                { continue; }
-
-                if (inputState.mouseState.MiddleButton == ButtonState.Pressed && mouseState.MiddleButton != ButtonState.Pressed)
-                { continue; }
-
-                if (inputState.mouseState.XButton1 == ButtonState.Pressed && mouseState.XButton1 != ButtonState.Pressed)
-                { continue; }
-
-                if (inputState.mouseState.XButton2 == ButtonState.Pressed && mouseState.XButton2 != ButtonState.Pressed)
-                { continue; }
-
-                return true;
-            }
-
-            return false;
-        }
-
-
-        public bool CheckActionInclusive(InputType type, bool old = false) => CheckActionInclusive(type, old ? OldKeyboardState : KeyboardState, old ? OldMouseState : MouseState);
-
-        public bool CheckActionExclusive(InputType type, bool old = false) => CheckActionExclusive(type, old ? OldKeyboardState : KeyboardState, old ? OldMouseState : MouseState);
-
-
-
-        public KeyboardState KeyboardState;
-        public KeyboardState OldKeyboardState;
-
-        public MouseState MouseState;
-        public MouseState OldMouseState;
-
-        // Define a dictionary to hold key bindings
-        List<InputState> keyBindings = new List<InputState>();
-
-        public enum InputType
-        {
-            None,
-            Init,
-            ClearErrors,
-            MoveMultiplier,
-            UndoDebug,
-            MoveUp,
-            MoveDown,
-            MoveLeft,
-            MoveRight,
-            DeleteObject,
-            DeleteConnection,
-            NewConnectionPoint,
-            StopDragging,
-            Drag,
-            AddToSelection,
-            SubFromSelection,
-            Pan
-        }
-
-        public enum MouseType
-        {
-            None,
             LeftButton,
             RightButton,
             MiddleButton,
             XButton1,
             XButton2
+        }
+
+        public enum ModifierKeys
+        {
+            Shift,
+            Control,
+            Alt,
+            Windows
         }
 
         public enum KeybindState
@@ -274,6 +189,185 @@ namespace Cornifer
             JustReleased = 1,
             Pressed = 3,
             JustPressed = 2,
+        }
+
+        public class Keybind
+        {
+            public string Name { get; }
+
+            // KeyA & KeyB, KeyA & KeyC
+            public List<List<KeybindInput>> Inputs = new();
+
+            public KeybindState State
+            {
+                get 
+                {
+                    KeybindState state = KeybindState.Released;
+
+                    foreach (List<KeybindInput> combo in Inputs)
+                    {
+                        KeybindState comboState = GetComboState(combo);
+                        if (comboState == KeybindState.Pressed)
+                            return KeybindState.Pressed;
+
+                        if (comboState == KeybindState.JustReleased && state < KeybindState.JustReleased)
+                            state = KeybindState.JustReleased;
+
+                        if (comboState == KeybindState.JustPressed && state < KeybindState.JustPressed)
+                            state = KeybindState.JustPressed;
+                    }
+
+                    return state;
+                }
+            }
+
+            public bool Released => State == KeybindState.Released;
+            public bool JustReleased => State == KeybindState.JustReleased;
+            public bool JustPressed => State == KeybindState.JustPressed;
+            public bool Pressed => State == KeybindState.Pressed;
+
+            public bool AnyKeyPressed
+            {
+                get 
+                {
+                    foreach (List<KeybindInput> combo in Inputs)
+                        foreach (KeybindInput input in combo)
+                            if (input.CurrentState)
+                                return true;
+                    return false;
+                }
+            }
+            public bool AnyOldKeyPressed
+            {
+                get
+                {
+                    foreach (List<KeybindInput> combo in Inputs)
+                        foreach (KeybindInput input in combo)
+                            if (input.OldState)
+                                return true;
+                    return false;
+                }
+            }
+
+            KeybindState GetComboState(List<KeybindInput> inputs)
+            {
+                KeybindState state = KeybindState.Pressed;
+
+                foreach (KeybindInput input in inputs)
+                {
+                    KeybindState keyState = input.State;
+                    if (keyState == KeybindState.Released)
+                        return KeybindState.Released;
+
+                    if (keyState == KeybindState.JustReleased && state >= KeybindState.JustPressed)
+                        state = KeybindState.JustReleased;
+
+                    if (keyState == KeybindState.JustPressed && state > KeybindState.JustPressed)
+                        state = KeybindState.JustPressed;
+                }
+
+                return state;
+            }
+
+            public Keybind(string name, IEnumerable<KeybindInput> defaults)
+            {
+                Name = name;
+                Inputs.Add(new(defaults));
+            }
+
+            public Keybind(string name, IEnumerable<IEnumerable<KeybindInput>> defaults)
+            {
+                Name = name;
+
+                foreach (var keyCombo in defaults)
+                    Inputs.Add(new(keyCombo));
+            }
+
+            public Keybind(string name, params KeybindInput[][] @default) : this(name, (IEnumerable<KeybindInput[]>)@default) { }
+
+            public Keybind(string name, params KeybindInput[] @default) : this(name, (IEnumerable<KeybindInput>)@default) { }
+        }
+
+        public abstract class KeybindInput
+        {
+            public abstract bool CurrentState { get; }
+            public abstract bool OldState { get; }
+
+            public abstract string KeyName { get; }
+
+            public KeybindState State => (KeybindState)((CurrentState ? 1 : 0) << 1 | (OldState ? 1 : 0));
+
+            public static implicit operator KeybindInput(Keys key) => new KeyboardInput(key);
+            public static implicit operator KeybindInput(ModifierKeys key) => new ModifierInput(key);
+            public static implicit operator KeybindInput(MouseKeys key) => new MouseInput(key);
+        }
+
+        public class KeyboardInput : KeybindInput
+        {
+            public Keys Key { get; set; }
+
+            public override bool CurrentState => KeyboardState.IsKeyDown(Key);
+            public override bool OldState => OldKeyboardState.IsKeyDown(Key);
+            public override string KeyName => Key.ToString();
+
+            public KeyboardInput(Keys key)
+            {
+                Key = key;
+            }
+        }
+
+        public class ModifierInput : KeybindInput
+        {
+            public ModifierKeys Key { get; set; }
+
+            public override bool CurrentState => GetModifierState(KeyboardState);
+            public override bool OldState => GetModifierState(OldKeyboardState);
+            public override string KeyName => Key.ToString();
+
+            public ModifierInput(ModifierKeys key)
+            {
+                Key = key;
+            }
+
+            bool GetModifierState(KeyboardState state)
+            {
+                return Key switch
+                {
+                    ModifierKeys.Shift => state.IsKeyDown(Keys.LeftShift) || state.IsKeyDown(Keys.RightShift),
+                    ModifierKeys.Control => state.IsKeyDown(Keys.LeftControl) || state.IsKeyDown(Keys.RightControl),
+                    ModifierKeys.Alt => state.IsKeyDown(Keys.LeftAlt) || state.IsKeyDown(Keys.RightAlt),
+                    ModifierKeys.Windows => state.IsKeyDown(Keys.LeftWindows) || state.IsKeyDown(Keys.RightWindows),
+                    _ => false
+                };
+            }
+        }
+
+
+        public class MouseInput : KeybindInput
+        {
+            public MouseKeys Key { get; set; }
+
+            public override bool CurrentState => GetMouseInput(MouseState);
+            public override bool OldState => GetMouseInput(OldMouseState);
+            public override string KeyName => Key.ToString();
+
+            public MouseInput(MouseKeys key)
+            {
+                Key = key;
+            }
+
+            bool GetMouseInput(MouseState state)
+            {
+                return Key switch
+                {
+                    MouseKeys.LeftButton => state.LeftButton == ButtonState.Pressed,
+                    MouseKeys.RightButton => state.RightButton == ButtonState.Pressed,
+                    MouseKeys.MiddleButton => state.MiddleButton == ButtonState.Pressed,
+                    MouseKeys.XButton1 => state.XButton1 == ButtonState.Pressed,
+                    MouseKeys.XButton2 => state.XButton2 == ButtonState.Pressed,
+                    _ => false,
+                };
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
-Proper mod loading
+Proper asset loading
 Option to not load mod data
 Warnings system (2 wide gaps in connections)
 Fix spearmaster unlock (DM)
 Color selection for shortcut types
 Better room selection - check if clicked pixel is transparent
+UI for key binding

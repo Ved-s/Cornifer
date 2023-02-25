@@ -1,6 +1,7 @@
 ﻿using Cornifer.Json;
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
+using Cornifer.UI.Structures;
 using Cornifer.UndoActions;
 using Microsoft.Win32;
 using Microsoft.Xna.Framework;
@@ -48,8 +49,6 @@ namespace Cornifer
         public static string? RainWorldRoot;
 
         public static RenderLayers ActiveRenderLayers = RenderLayers.All;
-
-        public static InputHandler inputHandler = new InputHandler();
 
         public static string? SelectedSlugcat;
 
@@ -123,6 +122,7 @@ namespace Cornifer
 #endif
             }
 
+            InputHandler.Init();
             Interface.Init();
         }
 
@@ -145,7 +145,7 @@ namespace Cornifer
         {
             base.Update(gameTime);
 
-            inputHandler.Update();
+            InputHandler.Update();
 
             OldActive = IsActive;
 
@@ -158,33 +158,33 @@ namespace Cornifer
             if (active && anyConnections)
                 Region?.Connections?.Update(betweenRoomConnections, inRoomConnections);
 
-            UpdateSelectionAndDrag(active && inputHandler.CheckActionInclusive(InputHandler.InputType.Drag), active && inputHandler.CheckActionInclusive(InputHandler.InputType.Drag, true));
+            UpdateSelectionAndDrag(active);
 
-            if (inputHandler.CheckAction(InputHandler.InputType.ClearErrors, InputHandler.KeybindState.JustPressed, true))
+            if (InputHandler.ClearErrors.JustPressed)
                 LoadErrors.Clear();
 
             float keyMoveMultiplier = 1;
-            if (inputHandler.CheckAction(InputHandler.InputType.MoveMultiplier))
+            if (InputHandler.MoveMultiplier.Pressed)
                 keyMoveMultiplier = 10;
 
             if (active && !Interface.Active)
             {
-                if (inputHandler.CheckAction(InputHandler.InputType.UndoDebug, InputHandler.KeybindState.JustPressed, true))
+                if (InputHandler.UndoDebug.JustPressed)
                     DrawUndoDebug = !DrawUndoDebug;
 
-                if (inputHandler.CheckAction(InputHandler.InputType.MoveUp, InputHandler.KeybindState.JustPressed))
+                if (InputHandler.MoveUp.JustPressed)
                     MoveSelectedObjects(new Vector2(0, -1) * keyMoveMultiplier);
 
-                if (inputHandler.CheckAction(InputHandler.InputType.MoveDown, InputHandler.KeybindState.JustPressed))
+                if (InputHandler.MoveDown.JustPressed)
                     MoveSelectedObjects(new Vector2(0, 1) * keyMoveMultiplier);
 
-                if (inputHandler.CheckAction(InputHandler.InputType.MoveLeft, InputHandler.KeybindState.JustPressed))
+                if (InputHandler.MoveLeft.JustPressed)
                     MoveSelectedObjects(new Vector2(-1, 0) * keyMoveMultiplier);
 
-                if (inputHandler.CheckAction(InputHandler.InputType.MoveRight, InputHandler.KeybindState.JustPressed))
+                if (InputHandler.MoveRight.JustPressed)
                     MoveSelectedObjects(new Vector2(1, 0) * keyMoveMultiplier);
 
-                if (inputHandler.CheckAction(InputHandler.InputType.DeleteObject, InputHandler.KeybindState.JustPressed))
+                if (InputHandler.DeleteObject.JustPressed)
                 {
                     HashSet<MapObject> objectsToDelete = new(SelectedObjects);
                     objectsToDelete.IntersectWith(WorldObjects);
@@ -198,10 +198,16 @@ namespace Cornifer
                     }
                 }
 
-                if (inputHandler.CheckAction(InputHandler.InputType.StopDragging, InputHandler.KeybindState.JustPressed))
+                if (InputHandler.Undo.JustPressed)
                 {
                     StopDragging();
                     Undo.Undo();
+                }
+
+                if (InputHandler.Redo.JustPressed)
+                {
+                    StopDragging();
+                    Undo.Redo();
                 }
             }
 
@@ -241,7 +247,7 @@ namespace Cornifer
 
             if (Selecting)
             {
-                Vector2 mouseWorld = WorldCamera.InverseTransformVector(inputHandler.MouseState.Position.ToVector2());
+                Vector2 mouseWorld = WorldCamera.InverseTransformVector(InputHandler.MouseState.Position.ToVector2());
                 Vector2 tl = new(Math.Min(mouseWorld.X, SelectionStart.X), Math.Min(mouseWorld.Y, SelectionStart.Y));
                 Vector2 br = new(Math.Max(mouseWorld.X, SelectionStart.X), Math.Max(mouseWorld.Y, SelectionStart.Y));
 
@@ -345,19 +351,21 @@ namespace Cornifer
             SpriteBatch.End();
         }
 
-        private void UpdateSelectionAndDrag(bool drag, bool oldDrag)
+        private void UpdateSelectionAndDrag(bool active)
         {
-            Vector2 mouseWorld = WorldCamera.InverseTransformVector(inputHandler.MouseState.Position.ToVector2());
+            Vector2 mouseWorld = WorldCamera.InverseTransformVector(InputHandler.MouseState.Position.ToVector2());
 
-            bool prevented = !Dragging && !Selecting && (Interface.Hovered || (Region?.Connections?.Hovered ?? false));
+            bool prevented = !active || Dragging || Selecting || Interface.Hovered || (Region?.Connections?.Hovered ?? false);
 
-            if (drag && !oldDrag && !prevented)
+            InputHandler.KeybindState dragState = InputHandler.Drag.State;
+
+            if (!prevented && dragState == InputHandler.KeybindState.JustPressed)
             {
                 // Clicked on already selected object
                 MapObject? underMouse = MapObject.FindSelectableAtPos(SelectedObjects, mouseWorld, false);
                 if (underMouse is not null)
                 {
-                    if (inputHandler.CheckAction(InputHandler.InputType.AddToSelection))
+                    if (InputHandler.SubFromSelection.Pressed)
                     {
                         SelectedObjects.Remove(underMouse);
                         return;
@@ -374,8 +382,9 @@ namespace Cornifer
                     MapObject? obj = MapObject.FindSelectableAtPos(WorldObjectLists, mouseWorld, true);
                     if (obj is not null)
                     {
-                        if (!inputHandler.CheckAction(InputHandler.InputType.SubFromSelection))
+                        if (InputHandler.AddToSelection.Released)
                             SelectedObjects.Clear();
+
                         SelectedObjects.Add(obj);
                         Undo.PreventNextUndoMerge();
                         Dragging = true;
@@ -383,11 +392,8 @@ namespace Cornifer
                         return;
                     }
                 }
-
-                SelectionStart = mouseWorld;
-                Selecting = true;
             }
-            else if (drag && oldDrag)
+            else if (active && InputHandler.Drag.AnyKeyPressed)
             {
                 if (Dragging)
                 {
@@ -398,24 +404,10 @@ namespace Cornifer
 
                     OldDragPos = mouseWorld;
                 }
-
-                if (Selecting)
-                {
-                    Vector2 tl = new(Math.Min(mouseWorld.X, SelectionStart.X), Math.Min(mouseWorld.Y, SelectionStart.Y));
-                    Vector2 br = new(Math.Max(mouseWorld.X, SelectionStart.X), Math.Max(mouseWorld.Y, SelectionStart.Y));
-
-                    if (!inputHandler.CheckAction(InputHandler.InputType.AddToSelection) && !inputHandler.CheckAction(InputHandler.InputType.SubFromSelection))
-                        SelectedObjects.Clear();
-
-                    if (inputHandler.CheckAction(InputHandler.InputType.AddToSelection))
-                        SelectedObjects.ExceptWith(MapObject.FindIntersectingSelectables(SelectedObjects, tl, br, true));
-                    else if (Region is not null)
-                        SelectedObjects.UnionWith(MapObject.FindIntersectingSelectables(WorldObjectLists, tl, br, true));
-                }
             }
             else
             {
-                if (!drag && oldDrag)
+                if (dragState == InputHandler.KeybindState.JustReleased)
                 {
                     foreach (MapObject obj in SelectedObjects)
                         if (!obj.ParentSelected)
@@ -428,6 +420,31 @@ namespace Cornifer
                 }
 
                 Dragging = false;
+            }
+
+            if (!prevented && InputHandler.Select.JustPressed)
+            {
+                SelectionStart = mouseWorld;
+                Selecting = true;
+            }
+            else if (active && InputHandler.Select.AnyKeyPressed)
+            {
+                if (Selecting)
+                {
+                    Vector2 tl = new(Math.Min(mouseWorld.X, SelectionStart.X), Math.Min(mouseWorld.Y, SelectionStart.Y));
+                    Vector2 br = new(Math.Max(mouseWorld.X, SelectionStart.X), Math.Max(mouseWorld.Y, SelectionStart.Y));
+
+                    if (InputHandler.AddToSelection.Released && InputHandler.SubFromSelection.Released)
+                        SelectedObjects.Clear();
+
+                    if (InputHandler.SubFromSelection.Pressed)
+                        SelectedObjects.ExceptWith(MapObject.FindIntersectingSelectables(SelectedObjects, tl, br, true));
+                    else if (Region is not null)
+                        SelectedObjects.UnionWith(MapObject.FindIntersectingSelectables(WorldObjectLists, tl, br, true));
+                }
+            }
+            else
+            {
                 Selecting = false;
             }
         }

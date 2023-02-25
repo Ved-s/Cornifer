@@ -98,7 +98,7 @@ namespace Cornifer
         {
             if (!Main.Dragging && !Main.Selecting && !Interface.Hovered)
             {
-                Vector2 mouseScreen = Main.inputHandler.MouseState.Position.ToVector2();
+                Vector2 mouseScreen = InputHandler.MouseState.Position.ToVector2();
                 Vector2 mouseWorld = Main.WorldCamera.InverseTransformVector(mouseScreen);
 
                 float lineBoundsOff = .5f * Main.WorldCamera.Scale;
@@ -184,7 +184,7 @@ namespace Cornifer
                 HoveredConnectionPoint = null;
             }
 
-            if (HoveredConnection is not null && Main.inputHandler.CheckAction(InputHandler.InputType.NewConnectionPoint,InputHandler.KeybindState.JustPressed))
+            if (HoveredConnection is not null && InputHandler.NewConnectionPoint.JustPressed)
             {
                 (Vec2 start, Vec2 end) = GetLinePoints(null, HoveredConnection, HoveredConnectionLine);
                 Vector2 pos = Vector2.Lerp(start, end, HoveredLineDist);
@@ -202,7 +202,7 @@ namespace Cornifer
                 Main.Dragging = true;
             }
 
-            if (Main.inputHandler.CheckAction(InputHandler.InputType.DeleteConnection,InputHandler.KeybindState.JustPressed))
+            if (InputHandler.DeleteConnection.JustPressed)
             {
                 HashSet<ConnectionPoint> remove = new(Main.SelectedObjects.OfType<ConnectionPoint>());
                 if (remove.Count > 0)
