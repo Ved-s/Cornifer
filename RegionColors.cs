@@ -28,7 +28,11 @@ namespace Cornifer
                     case "Communications Array": return RGBColor(0xFF8FD2);
                     default: return RGBColor(0xFFD0AA);
                 }
-                case "SH": return RGBColor(0x515151);
+                case "SH": switch (subregion)
+                {
+                    case "Memory Crypts": return RGBColor(0x6464D3);
+                    default: return RGBColor(0x515151);
+                }
                 case "SL": switch (subregion)
                 {
                     case "The Precipice": return RGBColor(0xE7C164);
