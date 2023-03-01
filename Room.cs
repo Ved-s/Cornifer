@@ -24,7 +24,7 @@ namespace Cornifer
         public static HashSet<string> NonPickupObjectsWhitelist = new() 
         {
             "GhostSpot", "BlueToken", "GoldToken", 
-            "RedToken", "WhiteToken", "DevToken", 
+            "RedToken", "WhiteToken", "DevToken", "GreenToken",
             "DataPearl", "UniqueDataPearl", "ScavengerOutpost",
             "HRGuard", "TempleGuard", "MoonCloak"
         };

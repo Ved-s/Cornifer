@@ -64,6 +64,12 @@ namespace Cornifer
             "DevToken"
         };
 
+        static Dictionary<string, string> GreenTokenSlugcatMap = new()
+        {
+            ["Hunter"] = "Red",
+            ["Spearmaster"] = "Spear"
+        };
+
         public static PlacedObject? Load(string data)
         {
             string[] split = data.Split("><", 4);
@@ -111,7 +117,9 @@ namespace Cornifer
                 switch (objName)
                 {
                     case "GreenToken":
-                        int slugcatId = Array.IndexOf(Main.SlugCatNames, subname);
+                        string slugcatName = GreenTokenSlugcatMap.GetValueOrDefault(subname, subname);
+
+                        int slugcatId = Array.IndexOf(Main.SlugCatNames, slugcatName);
                         if (slugcatId >= 0)
                         {
                             obj.Children.Add(new SlugcatIcon("GreenTokenSlugcat")
