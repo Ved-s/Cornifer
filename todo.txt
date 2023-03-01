@@ -4,3 +4,4 @@ Warnings system (2 wide gaps in connections)
 Fix spearmaster unlock (DM)
 Color selection for shortcut types
 Better room selection - check if clicked pixel is transparent
+Exclusive keybinds

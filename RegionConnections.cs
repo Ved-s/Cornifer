@@ -459,7 +459,8 @@ namespace Cornifer
                     if (smallEndPoint)
                         Main.SpriteBatch.DrawRect(end - new Vector2(3), new(5), Color.Black);
 
-                    Main.SpriteBatch.DrawLine(start, end, Color.Yellow, 1);
+                    bool visible = ShouldDrawLine(connection, i);
+                    Main.SpriteBatch.DrawLine(start, end, visible ? Color.Yellow : Color.Red, 1);
 
                     if (smallStartPoint)
                         Main.SpriteBatch.DrawRect(start - new Vector2(2), new(3), Color.Yellow);
