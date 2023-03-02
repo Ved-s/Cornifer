@@ -1,10 +1,12 @@
 ﻿using Cornifer.MapObjects;
 using Cornifer.UI;
 using Cornifer.UI.Elements;
+using Cornifer.UI.Modals;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Png;
 using System;
@@ -18,12 +20,6 @@ namespace Cornifer
     public static class Interface
     {
         public static UIRoot? Root;
-
-        public static UIModal RegionSelect = null!;
-        public static UIModal SlugcatSelect = null!;
-        public static UIModal AddIconSelect = null!;
-        public static UIModal TextFormatting = null!;
-        public static UIModal KeybindSelector = null!;
 
         public static UIPanel SidePanel = null!;
         public static UIButton SlugcatIcons = null!;
@@ -42,47 +38,8 @@ namespace Cornifer
         public static bool Active => Root?.Active is not null;
         public static bool BlockUIHover => Main.Selecting || Main.Dragging || InputHandler.Pan.Pressed && !Hovered;
 
-        static bool regionSelectVisible = false;
-        static bool slugcatSelectVisible = true;
-        static bool addIconSelectVisible = false;
-        static bool textFormattingVisible = false;
-        static bool keybindSelectorVisible = false;
-
-        public static bool RegionSelectVisible
-        {
-            get => regionSelectVisible;
-            set { regionSelectVisible = value; if (RegionSelect is not null) RegionSelect.Visible = value; }
-        }
-        public static bool SlugcatSelectVisible
-        {
-            get => slugcatSelectVisible;
-            set { slugcatSelectVisible = value; if (SlugcatSelect is not null) SlugcatSelect.Visible = value; }
-        }
-        public static bool AddIconSelectVisible
-        {
-            get => addIconSelectVisible;
-            set { addIconSelectVisible = value; if (AddIconSelect is not null) AddIconSelect.Visible = value; }
-        }
-        public static bool TextFormattingVisible
-        {
-            get => textFormattingVisible;
-            set { textFormattingVisible = value; if (TextFormatting is not null) TextFormatting.Visible = value; }
-        }
-        public static bool KeybindSelectorVisible
-        {
-            get => keybindSelectorVisible;
-            set { keybindSelectorVisible = value; if (KeybindSelector is not null) KeybindSelector.Visible = value; }
-        }
-
         static UIElement? ConfigElement;
         static MapObject? configurableObject;
-
-        static List<InputHandler.KeybindInput> KeybindSelectorInputs = new();
-        static InputHandler.Keybind? CurrentKeybind;
-        static UIList? CurrentKeybindInputList;
-        static UILabel KeybindSelectorCurrentKeybindInputs = null!;
-        static UILabel KeybindSelectorCurrentKeybind = null!;
-        static bool KeybindSelectorUpdateSkipped = false;
 
         public static MapObject? ConfigurableObject
         {
@@ -115,75 +72,6 @@ namespace Cornifer
             }
         }
 
-        static (bool format, string text)[] FormattingInfo = new[]
-        {
-            (false,
-            "Cornifer supports text formatting similar to BBCode.\n" +
-            "Format consists of tags, formatted [tagName:tagData]tagContent[/tagName] or just [tagName:tagData].\n" +
-            "Tags can be inside other tags. If tag is never closed, it will apply to the rest of the text.\n" +
-            "Current tag list:\n"),
-
-            (false, ""),
-            (false,
-            "[c:RRGGBB] Colored text\n" +
-            "Color data can be RRGGBBAA, RRGGBB, RGB, or single grayscale hex letter."),
-            (true, "\\[c:f00\\]Red text\\[/c\\] - [c:f00]Red text[/c]"),
-
-            (false, ""),
-            (false,
-            "[s:RRGGBB] Shaded text\n" +
-            "Shade color data can be RRGGBBAA, RRGGBB, RGB, or single grayscale hex letter."),
-            (true, "\\[s:0\\]Shaded text\\[/s\\] - [s:0]Shaded text[/s]"),
-
-            (false, ""),
-            (false,
-            "[ns] Non-Shaded text\n" +
-            "Removes text shade."),
-            (true, "\\[s:0\\]Shaded and \\[ns\\]non-shaded\\[/ns\\] text\\[/s\\] - [s:0]Shaded and [ns]non-shaded[/ns] text[/s]"),
-
-            (false, ""),
-            (false,
-            "[i] Italic text\n" +
-            "Makes text appear italic."),
-            (true, "\\[i\\]Italic text\\[/i\\] - [i]Italic text[/i]"),
-
-            (false, ""),
-            (false,
-            "[b] Bold text\n" +
-            "Makes text appear bold."),
-            (true, "\\[b\\]Bold text\\[/b\\] - [b]Bold text[/b]"),
-
-            (false, ""),
-            (false,
-            "[u] Underlined text\n" +
-            "Makes text underlined."),
-            (true, "\\[u\\]Underlined text\\[/u\\] - [u]Underlined text[/u]"),
-
-            (false, ""),
-            (false,
-            "[sc:float] Scaled text\n" +
-            "Scales text."),
-            (true, "\\[sc:0.5\\]Small text\\[/sc\\] and \\[sc:2\\]big text\\[/sc\\] - [sc:0.5]Small text[/sc] and [sc:2]big text[/sc]"),
-
-            (false, ""),
-            (false,
-            "[a:float] Aligned text\n" +
-            "Makes text aligned with text before by some value."),
-            (true, "\\[sc:2\\]Big text,\\[/sc\\] normal \\[a:.6\\]and aligned\\[/a\\] - [sc:2]Big text,[/sc] normal [a:.6]and aligned[/a]"),
-
-            (false, ""),
-            (false,
-            "[ic:name] [ic:name:color] Icon (this tag does not need to be closed)\n" +
-            "Draws icons, found in \"Add icons to map\" menu."),
-            (true, "Slugcat \\[ic:Slugcat_White\\] and their bat \\[ic:batSymbol:0\\] - Slugcat [ic:Slugcat_White] and their bat [ic:batSymbol:0]"),
-
-            (false, ""),
-            (false,
-            "[ds:color] Dropshadow\n" +
-            "Adds dropshadow effect to text and icons."),
-            (true, "\\[ds:555\\]Text\\[/ds\\] - [ds:555]Text[/ds]"),
-        };
-
         public static void Init()
         {
             if (ConfigurableObject is not null)
@@ -202,307 +90,11 @@ namespace Cornifer
 
                 Elements =
                 {
-                    new UIModal
-                    {
-                        Top = new(0, .5f, -.5f),
-                        Left = new(0, .5f, -.5f),
-
-                        Width = 300,
-                        Height = new(0, .9f),
-
-                        Margin = 5,
-                        Padding = new(5, 40),
-
-                        Visible = RegionSelectVisible,
-
-                        Elements =
-                        {
-                            new UILabel()
-                            {
-                                Top = 10,
-                                Height = 20,
-
-                                Text = "Select region",
-                                TextAlign = new(.5f)
-                            },
-                            new UIList()
-                            {
-                                Top = 40,
-                                Height = new(-100, 1),
-                                ElementSpacing = 5,
-
-                            }.Execute(list =>
-                            {
-                                foreach (var (id, name, path) in Main.FindRegions())
-                                {
-                                    list.Elements.Add(new UIButton
-                                    {
-                                        Text = $"{name} ({id})",
-                                        Height = 20,
-                                        TextAlign = new(.5f)
-                                    }.OnEvent(UIElement.ClickEvent, (_, _) =>
-                                    {
-                                        RegionSelectVisible = false;
-                                        Main.LoadRegion(path);
-                                    }));
-                                }
-
-                                list.Recalculate();
-                            }),
-                            new UIButton
-                            {
-                                Top = new(-50, 1),
-
-                                Height = 20,
-                                Text = "Manual select",
-                                TextAlign = new(.5f)
-
-                            }.OnEvent(UIElement.ClickEvent, (_, _) =>
-                            {
-                                Thread dirSelect = new(() =>
-                                {
-                                    System.Windows.Forms.FolderBrowserDialog fd = new();
-                                    fd.UseDescriptionForTitle = true;
-                                    fd.Description = "Select Rain World region folder. For example RainWorld_Data/StreamingAssets/world/su";
-                                    if (fd.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                                        return;
-
-                                    RegionSelectVisible = false;
-                                    Main.LoadRegion(fd.SelectedPath);
-                                });
-                                dirSelect.SetApartmentState(ApartmentState.STA);
-                                dirSelect.Start();
-                                dirSelect.Join();
-                            }),
-                            new UIButton
-                            {
-                                Top = new(-20, 1),
-                                Left = new(0, .5f, -.5f),
-                                Width = 80,
-                                Height = 20,
-                                Text = "Close",
-                                TextAlign = new(.5f)
-                            }.OnEvent(UIElement.ClickEvent, (_, _) => RegionSelectVisible = false)
-                        }
-                    }.Assign(out RegionSelect),
-
-                    new UIModal
-                    {
-                        Top = new(0, .5f, -.5f),
-                        Left = new(0, .5f, -.5f),
-
-                        Width = 200,
-                        Height = 100,
-
-                        Margin = 5,
-                        Padding = new(5, 40),
-
-                        Visible = SlugcatSelectVisible,
-
-                        Elements =
-                        {
-                            new UILabel
-                            {
-                                Top = 15,
-                                Height = 20,
-                                Text = "Select slugcat",
-                                TextAlign = new(.5f)
-                            },
-                            new UIButton
-                            {
-                                Top = new(-20, 1),
-                                Left = new(0, .5f, -.5f),
-                                Width = 80,
-                                Height = 20,
-                                Text = "Close",
-                                TextAlign = new(.5f)
-                            }.OnEvent(UIElement.ClickEvent, (_, _) => SlugcatSelectVisible = false)
-                        }
-
-                    }.Execute(PopulateSlugcatSelect)
-                    .Assign(out SlugcatSelect),
-
-                    new UIModal
-                    {
-                        Top = new(0, .5f, -.5f),
-                        Left = new(0, .5f, -.5f),
-
-                        Width = new(0, .83f),
-                        Height = new(0, .8f),
-
-                        Margin = 5,
-                        Padding = 5,
-
-                        Visible = AddIconSelectVisible,
-
-                        Elements =
-                        {
-                            new UILabel
-                            {
-                                Top = 10,
-                                Height = 20,
-                                Text = "Add icon to the map",
-                                TextAlign = new(.5f)
-                            },
-                            new UIList
-                            {
-                                Top = 35,
-                                Height = new(-60, 1),
-                                Elements =
-                                {
-                                    new UIFlow
-                                    {
-                                        ElementSpacing = 5
-                                    }
-                                    .Execute(PopulateObjectSelect),
-                                }
-                            },
-
-                            new UILabel
-                            {
-                                Top = new(-15, 1),
-                                Height = 20,
-                                Width = new(-80, 1),
-                                Text = "Hold Shift to add multiple icons. To delete icons, select them and press Delete.",
-                                TextAlign = new(.5f)
-                            },
-                            new UIButton
-                            {
-                                Top = new(-20, 1),
-                                Left = new(-80, 1),
-                                Width = 80,
-                                Height = 20,
-                                Text = "Close",
-                                TextAlign = new(.5f)
-                            }.OnEvent(UIElement.ClickEvent, (_, _) => AddIconSelectVisible = false)
-                        }
-
-                    }
-                    .Assign(out AddIconSelect),
-
-                    new UIModal
-                    {
-                        Top = new(0, .5f, -.5f),
-                        Left = new(0, .5f, -.5f),
-
-                        Width = new(0, .9f),
-                        Height = new(0, .9f),
-
-                        Margin = 5,
-                        Padding = 5,
-
-                        Visible = TextFormattingVisible,
-
-                        Elements =
-                        {
-                            new UILabel
-                            {
-                                Top = 10,
-                                Height = 20,
-                                Text = "Text formatting",
-                                TextAlign = new(.5f)
-                            },
-                            new UIList
-                            {
-                                Top = 35,
-                                Height = new(-60, 1),
-                            }.Execute(GenerateFormattingInfoList),
-
-                            new UIButton
-                            {
-                                Top = new(-20, 1),
-                                Left = new(0, .5f, -.5f),
-                                Width = 80,
-                                Height = 20,
-                                Text = "Close",
-                                TextAlign = new(.5f)
-                            }.OnEvent(UIElement.ClickEvent, (_, _) => TextFormattingVisible = false)
-                        }
-
-                    }
-                    .Assign(out TextFormatting),
-
-                    new UIModal
-                    {
-                        Top = new(0, .5f, -.5f),
-                        Left = new(0, .5f, -.5f),
-
-                        Width = 450,
-                        Height = 300,
-
-                        Margin = 5,
-                        Padding = 5,
-
-                        Visible = KeybindSelectorVisible,
-
-                        Elements =
-                        {
-                            new UILabel
-                            {
-                                Text = "Adding keybind for",
-                                Height = 18,
-                                TextAlign = new(.5f),
-                            },
-                            new UILabel
-                            {
-                                Height = 18,
-                                Top = 18,
-                                TextAlign = new(.5f),
-                            }.Assign(out KeybindSelectorCurrentKeybind),
-                            new UILabel
-                            {
-                                Height = 0,
-                                Top = new(0, .5f, -.5f),
-                                TextAlign = new(.5f),
-
-                            }.Assign(out KeybindSelectorCurrentKeybindInputs),
-                            new UILabel
-                            {
-                                Text = "Press any key to add or remove it.\nPress modifier key twice to select any of its modifier keys\n(LeftControl -> Control).",
-                                Height = 50,
-                                Top = new(-20, 1, -1),
-                                TextAlign = new(.5f, 1),
-                            },
-                            new UIButton
-                            {
-                                Width = 80,
-                                Height = 20,
-                                Text = "Apply",
-                                TextAlign = new(.5f),
-                                Left = new(-2, .5f, -1),
-                                Top = new(0, 1, -1),
-                            }.OnEvent(UIElement.ClickEvent, (_, _) =>
-                            {
-                                if (KeybindSelectorInputs.Count > 0 && CurrentKeybind is not null && CurrentKeybindInputList is not null)
-                                {
-                                    CurrentKeybind.Inputs.Add(new(KeybindSelectorInputs));
-                                    AddKeyComboPanel(CurrentKeybindInputList, CurrentKeybind, KeybindSelectorInputs);
-                                    KeybindSelectorInputs.Clear();
-                                    InputHandler.SaveKeybinds();
-                                    KeybindsTabList.Recalculate();
-                                }
-
-                                KeybindSelectorVisible = false;
-                                CurrentKeybind = null;
-                                CurrentKeybindInputList = null;
-                            }),
-                            new UIButton
-                            {
-                                Width = 80,
-                                Height = 20,
-                                Text = "Cancel",
-                                TextAlign = new(.5f),
-                                Left = new(2, .5f),
-                                Top = new(0, 1, -1),
-                            }.OnEvent(UIElement.ClickEvent, (_, _) => 
-                            {
-                                KeybindSelectorVisible = false;
-                                CurrentKeybind = null;
-                                CurrentKeybindInputList = null;
-                            })
-                        }
-                    }
-                    .Assign(out KeybindSelector),
+                    RegionSelect.CreateUIElement(),
+                    SlugcatSelect.CreateUIElement(),
+                    AddIconSelect.CreateUIElement(),
+                    TextFormatting.CreateUIElement(),
+                    KeybindSelector.CreateUIElement(),
 
                     new UIResizeablePanel()
                     {
@@ -592,7 +184,22 @@ namespace Cornifer
                         Text = "Select region",
 
                         TextAlign = new(.5f)
-                    }.OnEvent(UIElement.ClickEvent, (_, _) => SlugcatSelectVisible = true),
+                    }.OnEvent(UIElement.ClickEvent, async (_, _) => 
+                    {
+                        SlugcatSelect.Show();
+                        SlugcatSelect.Result? slugcat = await SlugcatSelect.Task;
+                        if (!slugcat.HasValue)
+                            return;
+
+                        RegionSelect.Show();
+                        RegionSelect.Result? region = await RegionSelect.Task;
+                        if (!region.HasValue)
+                            return;
+
+                        Main.SelectedSlugcat = slugcat.Value.Slugcat;
+                        InterfaceState.DrawSlugcatIcons.Value = slugcat.Value.Slugcat is null;
+                        Main.LoadRegion(region.Value.Path);
+                    }),
 
                     new UIList()
                     {
@@ -660,7 +267,7 @@ namespace Cornifer
 
                                 TextAlign = new(.5f)
 
-                            }.OnEvent(UIElement.ClickEvent, (btn, _) => AddIconSelectVisible = true),
+                            }.OnEvent(UIElement.ClickEvent, (btn, _) => AddIconSelect.Show()),
 
                             new UIButton
                             {
@@ -716,7 +323,7 @@ namespace Cornifer
                                 TextAlign = new(.5f)
 
                             }.BindConfig(InterfaceState.OverlayBelow),
-
+                            
                             new UIPanel
                             {
                                 Height = 40,
@@ -1187,145 +794,23 @@ namespace Cornifer
                                 Text = "Add keybind",
                                 TextAlign = new(.5f),
                                 Height = 20
-                            }.OnEvent(UIElement.ClickEvent, (_, _) => 
+                            }.OnEvent(UIElement.ClickEvent, async (_, _) => 
                             {
-                                CurrentKeybindInputList = combos;
+                                KeybindSelector.Show(keybind);
+                                List<InputHandler.KeybindInput>? inputs = await KeybindSelector.Task;
+                                if (inputs is null)
+                                    return;
 
-                                OpenKeybindSelector(keybind);
+                                keybind.Inputs.Add(inputs);
+                                AddKeyComboPanel(combos, keybind, inputs);
+                                InputHandler.SaveKeybinds();
+                                KeybindsTabList.Recalculate();
                             }));
                             list.Elements.Add(new UIElement { Height = 10 });
                         }
                     })
                 }
             };
-        }
-
-        static void PopulateSlugcatSelect(UIModal select)
-        {
-            float y = 50;
-
-            foreach (string slugcat in Main.SlugCatNames)
-            {
-                UIButton button = new()
-                {
-                    Text = slugcat,
-                    Height = 20,
-                    TextAlign = new(.5f),
-                    Top = y
-                };
-                button.OnEvent(UIElement.ClickEvent, (_, _) =>
-                {
-                    Main.SelectedSlugcat = slugcat;
-                    InterfaceState.DrawSlugcatIcons.Value = false;
-                    SlugcatSelectVisible = false;
-                    RegionSelectVisible = true;
-                });
-                select.Elements.Add(button);
-
-                y += 25;
-            }
-
-            UIButton all = new()
-            {
-                Text = "All",
-                Height = 20,
-                TextAlign = new(.5f),
-                Top = y
-            };
-            all.OnEvent(UIElement.ClickEvent, (_, _) =>
-            {
-                Main.SelectedSlugcat = null;
-                InterfaceState.DrawSlugcatIcons.Value = false;
-                SlugcatSelectVisible = false;
-                RegionSelectVisible = true;
-            });
-            select.Elements.Add(all);
-
-            y += 25;
-
-            select.Height = y + 40;
-        }
-        static void PopulateObjectSelect(UIFlow list)
-        {
-            foreach (var (name, sprite) in GameAtlases.Sprites.OrderBy(kvp => kvp.Key))
-            {
-                UIHoverPanel panel = new()
-                {
-                    Width = 120,
-                    Height = 100,
-
-                    Padding = 3,
-
-                    Elements =
-                    {
-                        new UIImage
-                        {
-                            Width = 114,
-                            Height = 79,
-
-                            Texture = sprite.Texture,
-                            TextureColor = sprite.Color,
-                            TextureFrame = sprite.Frame,
-                        },
-                        new UILabel
-                        {
-                            Top = new(-15, 1),
-                            Height = 15,
-                            Text = name,
-                            TextAlign = new(.5f)
-                        }
-                    }
-                };
-                panel.OnEvent(UIElement.UpdateEvent, (panel, _) =>
-                {
-                    if (panel.Hovered && panel.Root.MouseLeftKey == KeybindState.JustPressed)
-                    {
-                        Main.AddWorldObject(new SimpleIcon($"WorldIcon_{name}_{Random.Shared.Next():x}", sprite)
-                        {
-                            WorldPosition = Main.WorldCamera.Position + Main.WorldCamera.Size / Main.WorldCamera.Scale * .5f
-                        });
-
-                        if (Root!.ShiftKey == KeybindState.Released)
-                            AddIconSelectVisible = false;
-                    }
-                });
-
-                list.Elements.Add(panel);
-            }
-        }
-
-        static void GenerateFormattingInfoList(UIList list)
-        {
-            foreach (var (formatted, text) in FormattingInfo)
-            {
-                if (text == "")
-                {
-                    list.Elements.Add(new UIElement { Height = 20 });
-                    continue;
-                }
-
-                if (formatted)
-                {
-                    list.Elements.Add(new UIFormattedLabel
-                    {
-                        Height = 0,
-                        Width = 0,
-
-                        Text = text,
-                    });
-                }
-                else
-                {
-                    list.Elements.Add(new UILabel
-                    {
-                        WordWrap = true,
-                        Height = 0,
-                        Width = 0,
-
-                        Text = text,
-                    });
-                }
-            }
         }
 
         static void SelectOverlayClicked(UIButton btn, Empty _)
@@ -1470,15 +955,6 @@ namespace Cornifer
             }
         }
 
-        public static void OpenKeybindSelector(InputHandler.Keybind keybind)
-        {
-            CurrentKeybind = keybind;
-            KeybindSelectorInputs.Clear();
-            KeybindSelectorCurrentKeybind.Text = keybind.Name;
-            KeybindSelectorCurrentKeybindInputs.Text = "None";
-            KeybindSelectorUpdateSkipped = false;
-            KeybindSelectorVisible = true;
-        }
         static void AddKeyComboPanel(UIList list, InputHandler.Keybind keybind, List<InputHandler.KeybindInput> inputs)
         {
             UIPanel panel = new()
@@ -1541,52 +1017,6 @@ namespace Cornifer
                 ConfigurableObject = null;
             else
                 ConfigurableObject = Main.SelectedObjects.First();
-
-            if (Main.Instance.IsActive && KeybindSelectorVisible && KeybindSelectorUpdateSkipped)
-            {
-                bool keysChanged = false;
-
-                foreach (Keys key in InputHandler.AllKeys)
-                {
-                    if (!InputHandler.KeyboardState.IsKeyDown(key) || !InputHandler.OldKeyboardState.IsKeyUp(key))
-                        continue;
-
-                    InputHandler.ModifierKeys? modifier = InputHandler.GetKeyModifiers(key);
-                    bool hadKey = KeybindSelectorInputs.RemoveAll(ki => ki is InputHandler.KeyboardInput keyboardInput && keyboardInput.Key == key) > 0;
-                    bool hadMod = modifier.HasValue && KeybindSelectorInputs.RemoveAll(ki => ki is InputHandler.ModifierInput modifierInput && modifierInput.Key == modifier) > 0;
-
-                    // None => Key => Possible modifier => None
-
-                    if (!hadKey && !hadMod)
-                    {
-                        KeybindSelectorInputs.Add(new InputHandler.KeyboardInput(key));
-                    }
-                    else if (hadKey && modifier.HasValue)
-                    {
-                        KeybindSelectorInputs.Add(new InputHandler.ModifierInput(modifier.Value));
-                    }
-
-                    keysChanged = true;
-                }
-
-                foreach (InputHandler.MouseKeys key in InputHandler.AllMouseKeys)
-                {
-                    if (!InputHandler.MouseState.IsKeyDown(key) || !InputHandler.OldMouseState.IsKeyUp(key))
-                        continue;
-
-                    bool hadKey = KeybindSelectorInputs.RemoveAll(ki => ki is InputHandler.MouseInput mouseInput && mouseInput.Key == key) > 0;
-                    if (!hadKey)
-                        KeybindSelectorInputs.Add(new InputHandler.MouseInput(key));
-
-                    keysChanged = true;
-                }
-
-                if (keysChanged)
-                {
-                    KeybindSelectorCurrentKeybindInputs.Text = KeybindSelectorInputs.Count == 0 ? "None" : string.Join(" + ", KeybindSelectorInputs.Select(ki => ki.KeyName));
-                }
-            }
-            KeybindSelectorUpdateSkipped = true;
         }
         public static void Draw()
         {

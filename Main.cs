@@ -1,6 +1,7 @@
 ﻿using Cornifer.Json;
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
+using Cornifer.UI.Modals;
 using Cornifer.UI.Structures;
 using Cornifer.UndoActions;
 using Microsoft.Win32;
@@ -640,9 +641,6 @@ namespace Cornifer
                 pos.Round();
                 obj.WorldPosition = pos;
             }
-
-            Interface.RegionSelectVisible = false;
-            Interface.SlugcatSelectVisible = false;
 
             Interface.RegionChanged(region);
         }

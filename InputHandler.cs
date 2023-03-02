@@ -1,4 +1,5 @@
 ﻿using Cornifer.UI.Elements;
+using Cornifer.UI.Modals;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
@@ -17,7 +18,7 @@ namespace Cornifer
         public static MouseState MouseState;
         public static MouseState OldMouseState;
 
-        public static bool DisableInputs => Interface.KeybindSelectorVisible;
+        public static bool DisableInputs => KeybindSelector.ModalVisible;
 
         public static Keys[] AllKeys = Enum.GetValues<Keys>();
         public static MouseKeys[] AllMouseKeys = Enum.GetValues<MouseKeys>();

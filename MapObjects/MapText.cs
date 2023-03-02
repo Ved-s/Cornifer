@@ -4,6 +4,7 @@ using Cornifer.Renderers;
 using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Cornifer.UI.Helpers;
+using Cornifer.UI.Modals;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -139,7 +140,7 @@ namespace Cornifer
             {
                 Text = "View formatting guide",
                 Height = 20
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.TextFormattingVisible = true));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => TextFormatting.Show()));
             list.Elements.Add(new UIElement { Height = 10 });
             list.Elements.Add(new UIButton
             {
