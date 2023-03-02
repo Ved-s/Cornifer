@@ -35,7 +35,6 @@ namespace Cornifer.UI.Modals
                 else
                     ModalInstance?.Hidden();
                 
-
                 if (Instance is not null)
                     Instance.Visible = value;
 
@@ -56,6 +55,8 @@ namespace Cornifer.UI.Modals
 
         public static void Show()
         {
+            if (ModalVisible)
+                ModalVisible = false;
             Instance ??= new();
             ModalVisible = true;
         }
@@ -68,7 +69,7 @@ namespace Cornifer.UI.Modals
             Instance = this as TModal;
         }
 
-        protected void ReturnResult(TResult result)
+        protected static void ReturnResult(TResult result)
         {
             taskCompletionSource?.SetResult(result);
             ModalVisible = false;

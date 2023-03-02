@@ -36,7 +36,6 @@ namespace Cornifer.UI.Elements
                         lineMaxHeight = element.ScreenRect.Height + element.Margin.Vertical;
                         continue;
                     }
-
                     pos.X = 0;
                     pos.Y += lineMaxHeight + ElementSpacing;
                     if (size.Y > 0)

@@ -95,6 +95,7 @@ namespace Cornifer
                     AddIconSelect.CreateUIElement(),
                     TextFormatting.CreateUIElement(),
                     KeybindSelector.CreateUIElement(),
+                    MessageBox.CreateUIElement(),
 
                     new UIResizeablePanel()
                     {
