@@ -1,4 +1,5 @@
-﻿using Cornifer.Json;
+﻿using CommunityToolkit.HighPerformance.Buffers;
+using Cornifer.Json;
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
 using Cornifer.UI;
@@ -26,9 +27,9 @@ namespace Cornifer
 
         public override Vector2 Size => size + new Vector2(10);
 
-        public ObjectProperty<Color> Color = new("color", Microsoft.Xna.Framework.Color.White);
+        public ObjectProperty<ColorRef> Color = new("color", ColorRef.White);
         public ObjectProperty<bool> Shade = new("shade", true);
-        public ObjectProperty<Color> ShadeColor = new("shadeColor", Microsoft.Xna.Framework.Color.Black);
+        public ObjectProperty<ColorRef> ShadeColor = new("shadeColor", ColorRef.Black);
 
         public ObjectProperty<string> Text = new("text", "");
         public ObjectProperty<SpriteFont, string> Font = new("font", null!);
@@ -102,7 +103,7 @@ namespace Cornifer
                 OriginalPos = renderer.TransformVector(WorldPosition + new Vector2(5)),
                 SpriteBatch = Main.SpriteBatch,
                 Scale = Scale.Value * renderer.Scale,
-                Color = Color.Value,
+                Color = Color.Value.Color,
             });
 
             if (renderer is CaptureRenderer captureEnd)
@@ -134,6 +135,13 @@ namespace Cornifer
                     {
                         Text = Text.Value,
                     }.OnEvent(UIInput.TextChangedEvent, (inp, _) => { if (inp.Active) Text.Value = inp.Text; })
+                    .OnEvent(UIElement.ActiveChangedEvent, (_, active) => 
+                    {
+                        if (!active)
+                            FormattedText.StringPool.Reset();
+                        Debug.WriteLine($"MapText editor active: {active}, FormattedText.StringPool.Size: {FormattedText.StringPool.Size}");
+
+                    })
                 }
             });
             list.Elements.Add(new UIButton

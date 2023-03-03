@@ -1,12 +1,10 @@
-﻿using Cornifer.Renderers;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Security.Policy;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -405,7 +403,7 @@ namespace Cornifer
                 Rooms.RemoveAll(r => unmappedRooms.Contains(r));
             }
 
-            Subregions = subregions.Select(s => new Subregion(s)).ToArray();
+            Subregions = subregions.Select(s => new Subregion(Id, s)).ToArray();
             ResetSubregionColors();
 
             foreach (var (roomName, roomConnections) in connections)
@@ -456,10 +454,11 @@ namespace Cornifer
         {
             foreach (Subregion subregion in Subregions)
             {
-                Color? mainColor = RegionColors.GetMainColor(Id, subregion.Name);
-                if (mainColor.HasValue)
-                    subregion.BackgroundColor = mainColor.Value;
+                string? subregionName = subregion.Name.Length == 0 ? null : subregion.Name;
+                ColorDatabase.GetRegionColor(Id, subregionName, false).ResetToDefault();
+                ColorDatabase.GetRegionColor(Id, subregionName, true).ResetToDefault();
             }
+
             MarkRoomTilemapsDirty();
         }
 
@@ -512,8 +511,8 @@ namespace Cornifer
                 ["subregions"] = new JsonArray(Subregions.Select(s => new JsonObject
                 {
                     ["name"] = s.Name,
-                    ["background"] = s.BackgroundColor.PackedValue,
-                    ["water"] = s.WaterColor.PackedValue,
+                    ["background"] = s.BackgroundColor.SaveJson(),
+                    ["water"] = s.WaterColor.SaveJson(),
                 }).ToArray())
             };
         }
@@ -576,11 +575,11 @@ namespace Cornifer
                         if (subregion is null)
                             continue;
 
-                        if (subObj.TryGet("background", out uint background))
-                            subregion.BackgroundColor.PackedValue = background;
+                        if (subObj.TryGet("background", out JsonValue? background))
+                            subregion.BackgroundColor = ColorDatabase.LoadColorRefJson(subregion.BackgroundColor, background, Color.White);
 
-                        if (subObj.TryGet("water", out uint water))
-                            subregion.WaterColor.PackedValue = water;
+                        if (subObj.TryGet("water", out JsonValue? water))
+                            subregion.WaterColor = ColorDatabase.LoadColorRefJson(subregion.WaterColor, water, Color.Blue);
                     }
             }
 
@@ -600,7 +599,7 @@ namespace Cornifer
             worlds.Add(Path.Combine(basePath, "world"));
 
             if (Main.DirExists(basePath, "mods", out string mods))
-                foreach (string mod in Directory.EnumerateDirectories(mods)) 
+                foreach (string mod in Directory.EnumerateDirectories(mods))
                     worlds.Add(Path.Combine(mod, "world"));
 
             foreach (string world in worlds)
@@ -641,12 +640,15 @@ namespace Cornifer
         {
             public string Name;
 
-            public Color BackgroundColor = Color.White;
-            public Color WaterColor = Color.Blue;
+            public ColorRef BackgroundColor;
+            public ColorRef WaterColor;
 
-            public Subregion(string name)
+            public Subregion(string region, string name)
             {
                 Name = name;
+
+                BackgroundColor = ColorDatabase.GetRegionColor(region, name, false);
+                WaterColor = ColorDatabase.GetRegionColor(region, name, true);
             }
         }
     }

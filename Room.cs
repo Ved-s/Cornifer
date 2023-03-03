@@ -521,20 +521,20 @@ namespace Cornifer
 
             if (GateData is not null && IsGate)
             {
-                Color leftColor = Color.White;
-                Color rightColor = Color.White;
-                Color regionColor = Color.White;
+                ColorRef? leftColor = null;
+                ColorRef? rightColor = null;
+                ColorRef? regionColor = null;
 
                 if (GateData.LeftRegionId is not null && GateData.RightRegionId is not null 
                  && (GateData.LeftRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase)
                   || GateData.RightRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase)))
                     FixGateData();
 
-                if (GateData.LeftRegionId is not null && RegionColors.TryGetMainColor(GateData.LeftRegionId, null, out Color color))
-                    leftColor = color;
+                if (GateData.LeftRegionId is not null)
+                    leftColor = ColorDatabase.GetRegionColor(GateData.LeftRegionId, null);
 
-                if (GateData.RightRegionId is not null && RegionColors.TryGetMainColor(GateData.RightRegionId, null, out color))
-                    rightColor = color;
+                if (GateData.RightRegionId is not null)
+                    rightColor = ColorDatabase.GetRegionColor(GateData.RightRegionId, null);
 
                 string? targetRegion = null;
 
@@ -544,8 +544,12 @@ namespace Cornifer
                 else if (GateData.RightRegionId is not null && !GateData.RightRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase))
                     targetRegion = GateData.RightRegionId;
 
-                if (targetRegion is not null && RegionColors.TryGetMainColor(targetRegion, null, out color))
-                    regionColor = color;
+                if (targetRegion is not null)
+                    regionColor = ColorDatabase.GetRegionColor(targetRegion, null);
+
+                leftColor ??= ColorRef.White;
+                rightColor ??= ColorRef.White;
+                regionColor ??= ColorRef.White;
 
                 Children.Add(new GateSymbols(GateData.LeftKarma, GateData.RightKarma)
                 {
@@ -554,7 +558,7 @@ namespace Cornifer
                 });
 
                 if (GateData.TargetRegionName is not null)
-                    Children.Add(new MapText("TargetRegionText", Main.DefaultBigMapFont, $"To [c:{regionColor.R:x2}{regionColor.G:x2}{regionColor.B:x2}]{GateData.TargetRegionName}[/c]"));
+                    Children.Add(new MapText("TargetRegionText", Main.DefaultBigMapFont, $"To [c:{regionColor.GetKeyOrColorString()}]{GateData.TargetRegionName}[/c]"));
             }
 
             Loaded = true;
@@ -620,11 +624,11 @@ namespace Cornifer
                         if (tile.Attributes.HasFlag(Tile.TileAttributes.VerticalBeam) || tile.Attributes.HasFlag(Tile.TileAttributes.HorizontalBeam))
                             gray = 0.35f;
 
-                        Color color = Color.Lerp(Color.Black, subregion.BackgroundColor, gray);
+                        Color color = Color.Lerp(Color.Black, subregion.BackgroundColor.Color, gray);
 
                         if (!solid && (invertedWater ? j <= waterLevel : j >= TileSize.Y - waterLevel))
                         {
-                            color = Color.Lerp(subregion.WaterColor, color, InterfaceState.WaterTransparency.Value);
+                            color = Color.Lerp(subregion.WaterColor.Color, color, InterfaceState.WaterTransparency.Value);
                         }
 
                         if (Deathpit.Value && j >= TileSize.Y - 5 && Tiles[i, TileSize.Y - 1].Terrain == Tile.TerrainType.Air)

@@ -21,7 +21,7 @@ namespace Cornifer.MapObjects
             Name = name;
             Texture = sprite.Texture;
             Frame = sprite.Frame;
-            Color.OriginalValue = color ?? sprite.Color;
+            Color.OriginalValue = new(null, color ?? sprite.Color);
             Shade.OriginalValue = sprite.Shade;
             Sprite = sprite;
         }
@@ -32,7 +32,7 @@ namespace Cornifer.MapObjects
         public Texture2D? IconShadeTexture;
         public Texture2D? Texture;
         public Rectangle Frame;
-        public ObjectProperty<Color> Color = new("color", Microsoft.Xna.Framework.Color.White);
+        public ObjectProperty<ColorRef> Color = new("color", ColorRef.White);
         public ObjectProperty<bool> Shade = new("shade", true);
         public ObjectProperty<int> BorderSize = new("shadeSize", 5);
         public AtlasSprite? Sprite;
@@ -57,7 +57,7 @@ namespace Cornifer.MapObjects
                 renderer.DrawTexture(IconShadeTexture, WorldPosition - Vector2.One);
             }
 
-            renderer.DrawTexture(Texture, WorldPosition, Frame, color: Color.Value);
+            renderer.DrawTexture(Texture, WorldPosition, Frame, color: Color.Value.Color);
         }
 
         protected override void BuildInnerConfig(UIList list)
@@ -153,7 +153,7 @@ namespace Cornifer.MapObjects
             {
                 Texture = sprite.Texture;
                 Frame = sprite.Frame;
-                Color.OriginalValue = sprite.Color;
+                Color.OriginalValue = new(null, sprite.Color);
                 Shade.OriginalValue = sprite.Shade;
                 Sprite = sprite;
             }

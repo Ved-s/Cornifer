@@ -50,7 +50,7 @@ namespace Cornifer.UI.Modals
             };
         }
 
-        public static void Show(string text, IEnumerable<(string, int)> buttons)
+        public static Task<int> Show(string text, IEnumerable<(string, int)> buttons)
         {
             Instance ??= new();
 
@@ -87,6 +87,8 @@ namespace Cornifer.UI.Modals
 
             Instance.Recalculate();
             Show();
+
+            return Task;
         }
 
         protected override void Hidden()

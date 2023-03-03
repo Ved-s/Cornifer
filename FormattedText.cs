@@ -11,7 +11,7 @@ namespace Cornifer
     {
         static readonly Vector2[] Offsets = new Vector2[] { new(-1, -1), new(-1, 0), new(-1, 1), new(0, -1), new(0, 1), new(1, -1), new(1, 0), new(1, 1) };
         static Dictionary<SpriteFont, FontCache> Cache = new();
-        static StringPool StringPool = new();
+        internal static StringPool StringPool = new();
         static StringPool NoContentTags = new();
 
         static FormattedText()
@@ -319,7 +319,12 @@ namespace Cornifer
 
                 if (tagName.Equals("c", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    Color? tagColor = ParseColor(tagData);
+                    Color? tagColor = ColorDatabase.ParseColor(tagData);
+
+                    if (!tagColor.HasValue)
+                    {
+                        tagColor = ColorDatabase.GetColor(StringPool.GetOrAdd(tagData))?.Color;
+                    }
 
                     if (tagColor.HasValue)
                     {
@@ -334,7 +339,7 @@ namespace Cornifer
                     ReadOnlySpan<char> color = colorDelimeter < 0 ? tagData : tagData.Slice(0, colorDelimeter);
                     ReadOnlySpan<char> rad = colorDelimeter < 0 ? ReadOnlySpan<char>.Empty : tagData.Slice(colorDelimeter + 1);
 
-                    Color? tagColor = color.Length == 0 ? Color.Black : ParseColor(color);
+                    Color? tagColor = color.Length == 0 ? Color.Black : ColorDatabase.ParseColor(color);
                     int? shade = rad.Length == 0 ? 1 : (int.TryParse(rad, out int radv) ? radv : null);
 
                     if (tagColor.HasValue && shade.HasValue)
@@ -394,7 +399,7 @@ namespace Cornifer
                     string nameStr = StringPool.GetOrAdd(name);
                     if (GameAtlases.Sprites.TryGetValue(nameStr, out AtlasSprite? sprite))
                     {
-                        Color? iconColor = color.Length == 0 ? sprite.Color : ParseColor(color);
+                        Color? iconColor = color.Length == 0 ? sprite.Color : ColorDatabase.ParseColor(color);
 
                         if (iconColor.HasValue)
                         {
@@ -436,7 +441,7 @@ namespace Cornifer
                 }
                 else if (tagName.Equals("ds", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    Color? tagColor = ParseColor(tagData);
+                    Color? tagColor = ColorDatabase.ParseColor(tagData);
 
                     if (tagColor.HasValue)
                     {
@@ -584,70 +589,6 @@ namespace Cornifer
             {
                 context.SpriteBatch.Draw(context.Font.Texture, tl, tr, bl, br, glyph.BoundsInTexture, context.Color);
             }
-        }
-
-        public static Color? ParseColor(ReadOnlySpan<char> text)
-        {
-            for (int i = 0; i < text.Length; i++)
-            {
-                char c = text[i];
-                if (!char.IsDigit(c) && (c < 'A' || c > 'F') && (c < 'a' || c > 'f'))
-                    return null;
-            }
-
-            byte r, g, b, a = 255;
-
-            if (text.Length == 1)
-            {
-                r = ParseHexChar(text[0]);
-                r += (byte)(r << 4);
-
-                g = r;
-                b = r;
-            }
-            else if (text.Length == 3)
-            {
-                r = ParseHexChar(text[0]);
-                g = ParseHexChar(text[1]);
-                b = ParseHexChar(text[2]);
-
-                r += (byte)(r << 4);
-                g += (byte)(g << 4);
-                b += (byte)(b << 4);
-            }
-            else if (text.Length == 6)
-            {
-                r = (byte)((ParseHexChar(text[0]) << 4) + ParseHexChar(text[1]));
-                g = (byte)((ParseHexChar(text[2]) << 4) + ParseHexChar(text[3]));
-                b = (byte)((ParseHexChar(text[4]) << 4) + ParseHexChar(text[5]));
-            }
-            else if (text.Length == 8)
-            {
-                r = (byte)((ParseHexChar(text[0]) << 4) + ParseHexChar(text[1]));
-                g = (byte)((ParseHexChar(text[2]) << 4) + ParseHexChar(text[3]));
-                b = (byte)((ParseHexChar(text[4]) << 4) + ParseHexChar(text[5]));
-                a = (byte)((ParseHexChar(text[6]) << 4) + ParseHexChar(text[7]));
-            }
-            else
-            {
-                return null;
-            }
-
-            return new(r, g, b, a);
-        }
-
-        static byte ParseHexChar(char c)
-        {
-            if (char.IsDigit(c))
-                return (byte)(c - '0');
-
-            if (c >= 'A' && c <= 'F')
-                return (byte)(c - 'A' + 10);
-
-            if (c >= 'a' && c <= 'f')
-                return (byte)(c - 'a' + 10);
-
-            return 0;
         }
 
         public class FontCache

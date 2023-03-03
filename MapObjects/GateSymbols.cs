@@ -25,11 +25,11 @@ namespace Cornifer.MapObjects
         AtlasSprite? LeftArrowSprite;
         AtlasSprite? RightArrowSprite;
 
-        public ObjectProperty<Color> SplitterColor = new("splitter", Color.White);
-        public ObjectProperty<Color> LeftSymbolColor = new("leftSymbol", Color.White);
-        public ObjectProperty<Color> RightSymbolColor = new("rightSymbol", Color.White);
-        public ObjectProperty<Color> LeftArrowColor = new("leftArrow", Color.White);
-        public ObjectProperty<Color> RightArrowColor = new("rightArrow", Color.White);
+        public ObjectProperty<ColorRef> SplitterColor = new("splitter", ColorRef.White);
+        public ObjectProperty<ColorRef> LeftSymbolColor = new("leftSymbol", ColorRef.White);
+        public ObjectProperty<ColorRef> RightSymbolColor = new("rightSymbol", ColorRef.White);
+        public ObjectProperty<ColorRef> LeftArrowColor = new("leftArrow", ColorRef.White);
+        public ObjectProperty<ColorRef> RightArrowColor = new("rightArrow", ColorRef.White);
 
         public GateSymbols()
         {
@@ -69,14 +69,14 @@ namespace Cornifer.MapObjects
             Vector2 center = WorldPosition + Size / 2;
 
             Vector2 splitterSize = new(5, 64);
-            renderer.DrawTexture(Main.Pixel, center - splitterSize / 2, null, splitterSize, SplitterColor.Value);
+            renderer.DrawTexture(Main.Pixel, center - splitterSize / 2, null, splitterSize, SplitterColor.Value.Color);
 
             if (LeftSymbolSprite is not null)
             {
                 Vector2 spriteSize = LeftSymbolSprite.Frame.Size.ToVector2();
 
                 Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 - 14.5f - spriteSize.X, Size.Y - 20 - spriteSize.Y / 2);
-                renderer.DrawTexture(LeftSymbolSprite.Texture, spritePos, LeftSymbolSprite.Frame, null, LeftSymbolColor.Value);
+                renderer.DrawTexture(LeftSymbolSprite.Texture, spritePos, LeftSymbolSprite.Frame, null, LeftSymbolColor.Value.Color);
             }
 
             if (RighSymbolSprite is not null)
@@ -84,13 +84,13 @@ namespace Cornifer.MapObjects
                 Vector2 spriteSize = RighSymbolSprite.Frame.Size.ToVector2();
 
                 Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 + 14.5f, Size.Y - 20 - spriteSize.Y / 2);
-                renderer.DrawTexture(RighSymbolSprite.Texture, spritePos, RighSymbolSprite.Frame, null, RightSymbolColor.Value);
+                renderer.DrawTexture(RighSymbolSprite.Texture, spritePos, RighSymbolSprite.Frame, null, RightSymbolColor.Value.Color);
             }
 
             if (LeftArrowSprite is not null)
             {
                 Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 + 22.5f, 0);
-                renderer.DrawTexture(LeftArrowSprite.Texture, spritePos, LeftArrowSprite.Frame, null, LeftArrowColor.Value);
+                renderer.DrawTexture(LeftArrowSprite.Texture, spritePos, LeftArrowSprite.Frame, null, LeftArrowColor.Value.Color);
             }
 
             if (RightArrowSprite is not null)
@@ -98,7 +98,7 @@ namespace Cornifer.MapObjects
                 Vector2 spriteSize = RightArrowSprite.Frame.Size.ToVector2();
 
                 Vector2 spritePos = WorldPosition + new Vector2(Size.X / 2 - 22.5f - spriteSize.X, 0);
-                renderer.DrawTexture(RightArrowSprite.Texture, spritePos, RightArrowSprite.Frame, null, RightArrowColor.Value);
+                renderer.DrawTexture(RightArrowSprite.Texture, spritePos, RightArrowSprite.Frame, null, RightArrowColor.Value.Color);
             }
         }
 
@@ -138,13 +138,13 @@ namespace Cornifer.MapObjects
             {
                 Text = "Swap arrow colors",
                 Height = 20,
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => (RightArrowColor, LeftArrowColor) = (LeftArrowColor, RightArrowColor)));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => (RightArrowColor.Value, LeftArrowColor.Value) = (LeftArrowColor.Value, RightArrowColor.Value)));
 
             list.Elements.Add(new UIButton
             {
                 Text = "Swap symbol colors",
                 Height = 20,
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => (RightSymbolColor, LeftSymbolColor) = (LeftSymbolColor, RightSymbolColor)));
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => (RightSymbolColor.Value, LeftSymbolColor.Value) = (LeftSymbolColor.Value, RightSymbolColor.Value)));
         }
 
         protected override JsonNode? SaveInnerJson()

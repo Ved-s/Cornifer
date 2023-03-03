@@ -1,0 +1,76 @@
+reg_SU: 38C79E
+reg_HI: 75CED5
+reg_DS: C73ADF
+reg_GW: 8DBD42
+reg_LF: 608C9E
+
+reg_CC: C53D0F
+reg_CC_the-gutter: 99661E
+
+reg_SI: FFD0AA
+reg_SI_communications-array: FF8FD2
+
+reg_SH: 515151
+reg_SH_memory-crypts: 6464D3
+
+reg_SL: EDE5CC
+reg_SL_the-precipice: E7C164
+reg_SL_looks-to-the-moon: 86C2FF
+
+reg_SB: 7E4337
+reg_SB_filtration-system: DE061B
+reg_SB_depths: FFED00
+
+reg_UW: 886B57
+reg_UW_the-leg: 9A1C32
+reg_UW_the-wall: FFB447
+
+reg_SS: 939393
+reg_SS_five-pebbles-general-systems-bus: 19E53F
+reg_SS_five-pebbles-recursive-transform-array: 00FEFF
+reg_SS_five-pebbles-memory-conflux: EB9214
+reg_SS_five-pebbles-unfortunate-development: FF00FD
+
+reg_VS: 75405C
+reg_VS_sump-tunnel: 666256
+
+reg_UG: 8FB572
+reg_OE: D8AE8A
+reg_OE_sunken-pier: 4A655E
+reg_OE_journeys-end: EA9678
+reg_OE_facility-roots-western-intake: 592712
+
+reg_LC: CAB8A5
+reg_LC_the-floor: 7E7170
+reg_LC_12th-council-pillar-the-house-of-braids: 7F3339
+reg_LC_atop-the-tallest-tower: 7C9EB2
+
+reg_DM: 554C99
+reg_DM_looks-to-the-moon-memory-conflux: B8BF99
+reg_DM_luna: CCC1A1
+reg_DM_looks-to-the-moon-neural-terminus: 007CFF
+reg_DM_looks-to-the-moon-abstract-convergence-manifold: E5EA46
+reg_DM_looks-to-the-moon-vents: 135965
+reg_DM_struts: 446E8A
+
+reg_LM: D3F0B4
+reg_LM_the-precipice: E7C164
+
+reg_RM: A1B5D3
+reg_RM_the-rot-depths: 9C00FF
+reg_RM_five-pebbles-primary-cortex: 19E53F
+reg_RM_the-rot-cystic-conduit: EB9214
+reg_RM_five-pebbles-recursive-transform-array: 00FEFF
+reg_RM_five-pebbles-linear-systems-rail: 87FFCD
+
+reg_CL: 486660
+reg_CL_frosted-cathedral: 5A5A5A
+reg_CL_the-husk: 8C91A5
+reg_CL_five-pebbles: 927C5C
+
+reg_HR: 590E00
+reg_MS: 7CC2F5
+reg_MS_submerged-superstructure-vents: 53A263
+reg_MS_submerged-superstructure-the-heart: 03FFF3
+reg_MS_bitter-aerie: 8B92FF
+reg_MS_auxiliary-transmission-array: CDA1EB

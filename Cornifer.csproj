@@ -28,17 +28,17 @@
 	<PackageReference Include="SixLabors.ImageSharp.Drawing" Version="1.0.0-beta15" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="Atlases\uisprites.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <None Update="Assets\Atlases\uisprites.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
-    <None Update="Atlases\uisprites.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <None Update="Assets\Atlases\uisprites.txt">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
-    <None Update="Atlases\uispritesmsc.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <None Update="Assets\Atlases\uispritesmsc.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
-    <None Update="Atlases\uispritesmsc.txt">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <None Update="Assets\Atlases\uispritesmsc.txt">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="Content\RodondoExt20M.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -50,10 +50,16 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
+
+  <ItemGroup>
+  	<CorniferAssets Include="Assets/**/*.*"/>
+  </ItemGroup>
+	
   <Target Name="RestoreDotnetTools" BeforeTargets="Restore">
     <Message Text="Restoring dotnet tools" Importance="High" />
     <Exec Command="dotnet tool restore" />
   </Target>
+	
   <Target Name="GitInfo" AfterTargets="AfterBuild">
 	<Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true">
       <Output TaskParameter="ConsoleOutput" PropertyName="GitCommit" />
@@ -63,11 +69,17 @@
     </Exec>
     <WriteLinesToFile File="$(OutDir)/gitinfo" Lines="$(GitCommit)%0a$(GitBranch)" Overwrite="true" />
   </Target>
+	
   <Target Name="DeleteRuntimes" AfterTargets="AfterBuild">
 	<ItemGroup>
 	  <UnusedRuntimes Include="$(OutDir)/runtimes/**" />
 	  <UnusedRuntimes Remove="$(OutDir)runtimes/win*/**" />
 	</ItemGroup>
     <Delete Files="@(UnusedRuntimes)" />
+  </Target>
+
+  <Target Name="CopyAssets" AfterTargets="AfterBuild">
+	<Copy SourceFiles="@(CorniferAssets)" DestinationFiles="@(CorniferAssets->'$(OutDir)/Assets/%(RecursiveDir)%(Filename)%(Extension)')"/>
+	<!--<Message Importance="high" Text="@(CorniferAssets->'$(OutDir)/Assets/%(RecursiveDir)%(Filename)%(Extension)')" />-->
   </Target>
 </Project>

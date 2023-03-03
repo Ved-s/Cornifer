@@ -9,6 +9,8 @@ namespace Cornifer
 {
     public static class GameAtlases
     {
+        const string AtlasesPath = "Assets/Atlases";
+
         public static Dictionary<string, AtlasSprite> Sprites = new();
 
         static Dictionary<string, (string Atlas, Color Color)> ObjectSprites = new()
@@ -144,10 +146,10 @@ namespace Cornifer
                 Sprites[name] = new(name, Content.MiscSprites, objectSprite.Frame, objectSprite.Color, false);
             }
 
-            if (!Directory.Exists("Atlases"))
+            if (!Directory.Exists(AtlasesPath))
                 return;
 
-            foreach (string atlasFile in Directory.EnumerateFiles("Atlases", "*.txt"))
+            foreach (string atlasFile in Directory.EnumerateFiles(AtlasesPath, "*.txt"))
             {
                 string textureFile = Path.ChangeExtension(atlasFile, ".png");
                 if (!File.Exists(atlasFile))

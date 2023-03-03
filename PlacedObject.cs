@@ -111,7 +111,7 @@ namespace Cornifer
                     obj.RemoveByAvailability = false;
                 else
                     obj.SlugcatAvailability = ParseSlugcats(subsplit[6]);
-                obj.Color.OriginalValue.A = 150;
+                obj.Color.OriginalValue.Color.A = 150;
                 obj.Shade.OriginalValue = false;
 
                 switch (objName)
@@ -171,11 +171,11 @@ namespace Cornifer
                 {
                     obj.DebugDisplay = $"Pearl id: {type}";
 
-                    obj.Color.OriginalValue = GetPearlColor(type);
+                    obj.Color.OriginalValue.Color = GetPearlColor(type);
 
                     if (type != "Misc" && type != "BroadcastMisc")
                     {
-                        obj.Children.Add(new MapText("PearlText", Main.DefaultSmallMapFont, $"[c:{obj.Color.Value.R:x2}{obj.Color.Value.G:x2}{obj.Color.Value.B:x2}]Colored[/c] pearl"));
+                        obj.Children.Add(new MapText("PearlText", Main.DefaultSmallMapFont, $"[c:{obj.Color.Value.GetKeyOrColorString()}]Colored[/c] pearl"));
                         if (GameAtlases.Sprites.TryGetValue("ScholarA", out AtlasSprite? sprite))
                             obj.Children.Add(new SimpleIcon("PearlIcon", sprite)
                             {
@@ -183,7 +183,7 @@ namespace Cornifer
                             });
                     }
                 }
-                obj.Color.OriginalValue.A = 165;
+                obj.Color.OriginalValue.Color.A = 165;
             }
 
             if (obj.RemoveByAvailability && Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Count > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat))
@@ -213,7 +213,7 @@ namespace Cornifer
                 RoomPos = pos,
                 Frame = atlas.Frame,
                 Texture = atlas.Texture,
-                Color = { OriginalValue = atlas.Color },
+                Color = { OriginalValue = new(null, atlas.Color) },
                 Shade = { OriginalValue = atlas.Shade }
             };
         }

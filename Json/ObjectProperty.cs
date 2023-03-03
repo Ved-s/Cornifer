@@ -30,7 +30,7 @@ namespace Cornifer.Json
 
         public void SaveToJson(JsonNode node)
         {
-            if (!UserValueSet || Equals(UserValue, OriginalValue))
+            if (!UserValueSet || (JsonValueConverter<T>.SaveSkipCheckOverride?.Invoke(UserValue, OriginalValue) ?? Equals(UserValue, OriginalValue)))
                 return;
 
             node[JsonName] = JsonValueConverter<T>.SaveValue(Value);
@@ -42,7 +42,13 @@ namespace Cornifer.Json
             if (value is null)
                 return;
 
-            UserValue = JsonValueConverter<T>.LoadValue(value);
+            if (JsonValueConverter<T>.LoadValueWithExisting is not null)
+                UserValue = JsonValueConverter<T>.LoadValueWithExisting(value, Value);
+            else if (JsonValueConverter<T>.LoadValue is not null)
+                UserValue = JsonValueConverter<T>.LoadValue(value);
+            else
+                return;
+
             UserValueSet = true;
         }
     }

@@ -644,7 +644,7 @@ namespace Cornifer
             public bool IsInRoomShortcut = false;
 
             public bool Active => !IsInRoomShortcut || Source.DrawInRoomShortcuts.Value;
-            public Color Color => IsInRoomShortcut ? Color.Lerp(Color.White, Source.Region.Subregions[Source.Subregion.Value].BackgroundColor, .5f) : Color.White;
+            public Color Color => IsInRoomShortcut ? Color.Lerp(Color.White, Source.Region.Subregions[Source.Subregion.Value].BackgroundColor.Color, .5f) : Color.White;
             public string JsonKey => IsInRoomShortcut ? $"#{Source.Name}~{SourcePoint.X}~{SourcePoint.Y}" : $"{Source.Name}~{Destination.Name}";
 
             public ObjectProperty<bool> AllowWhiteToRedPixel = new("whiteToRed", true);

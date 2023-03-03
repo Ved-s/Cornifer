@@ -140,6 +140,7 @@ namespace Cornifer
 
             WorldCamera = new(SpriteBatch);
             GameAtlases.Load();
+            ColorDatabase.Load();
         }
 
         protected override void Update(GameTime gameTime)
@@ -654,10 +655,15 @@ namespace Cornifer
                 ["connections"] = Region?.Connections?.SaveJson(),
                 ["objects"] = new JsonArray(WorldObjectLists.Enumerate().Select(o => o.SaveJson()).OfType<JsonNode>().ToArray()),
                 ["interface"] = InterfaceState.SaveJson(),
+                ["colors"] = ColorDatabase.SaveJson(),
             };
         }
         public static void LoadJson(JsonNode node)
         {
+            if (node.TryGet("colors", out JsonObject? colors))
+            {
+                ColorDatabase.LoadJson(colors);
+            }
             if (node.TryGet("slugcat", out string? slugcat))
             {
                 SelectedSlugcat = slugcat;

@@ -11,7 +11,7 @@ namespace Cornifer.UI
 {
     public class ColorSelector : UIPanel
     {
-        public delegate void ColorChangedDelegate(bool? result, Color color);
+        public delegate void ColorChangedDelegate(bool? result, ColorRef colorRef);
 
         static readonly Texture2D Gradient, Hue;
         static readonly Regex RGBRegex = new("^\\s*([0-9]{1,3}),\\s*([0-9]{1,3}),\\s*([0-9]{1,3})\\s*$", RegexOptions.Compiled);
@@ -35,6 +35,7 @@ namespace Cornifer.UI
 
         ColorChangedDelegate? Callback;
         Color OriginalColor;
+        ColorRef ColorReference = null!;
 
         public Color CurrentColor = Color.White;
 
@@ -137,7 +138,9 @@ namespace Cornifer.UI
             }.OnEvent(UIElement.ClickEvent, (_, _) => 
             {
                 Visible = false;
-                Callback?.Invoke(true, CurrentColor with { A = OriginalColor.A });
+                CurrentColor.A = OriginalColor.A;
+                ColorReference.Color = CurrentColor;
+                Callback?.Invoke(true, ColorReference);
             }));
 
             Elements.Add(new UIButton
@@ -151,19 +154,21 @@ namespace Cornifer.UI
             }.OnEvent(UIElement.ClickEvent, (_, _) =>
             {
                 Visible = false;
-                Callback?.Invoke(false, OriginalColor);
+                ColorReference.Color = OriginalColor;
+                Callback?.Invoke(false, ColorReference);
             }));
 
             ColorChanged();
         }
 
-        public void Show(string title, Color color, ColorChangedDelegate callback)
+        public void Show(string title, ColorRef colorRef, ColorChangedDelegate callback)
         {
             Visible = true;
             TitleLabel.Text = title;
-            CurrentColor = color;
-            OriginalColor = color;
+            CurrentColor = colorRef.Color;
+            OriginalColor = colorRef.Color;
             Callback = callback;
+            ColorReference = colorRef;
             ColorChanged();
         }
 
@@ -332,7 +337,12 @@ namespace Cornifer.UI
                 HEXInput.Text = $"{CurrentColor.R:x2}{CurrentColor.G:x2}{CurrentColor.B:x2}";
             }
 
-            Callback?.Invoke(null, CurrentColor with { A = OriginalColor.A });
+            CurrentColor.A = OriginalColor.A;
+            if (ColorReference is not null)
+            {
+                ColorReference.Color = CurrentColor;
+                Callback?.Invoke(null, ColorReference);
+            }
         }
 
         static Color HSVToRGB(float hue, float saturation, float value)
