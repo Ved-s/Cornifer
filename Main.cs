@@ -811,7 +811,7 @@ namespace Cornifer
             {
                 System.Windows.Forms.MessageBox.Show(
                     $"Exception has been thrown while saving state.\n" +
-                    $"Clicking Ok skip saving process and leave old state (state.json) intact.\n" +
+                    $"Clicking Ok skip saving process and leave old state ({Path.GetFileName(CurrentStatePath)}) intact.\n" +
                     $"\n" +
                     $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
             }
@@ -852,7 +852,7 @@ namespace Cornifer
             {
                 System.Windows.Forms.MessageBox.Show(
                     $"Exception has been thrown while saving state.\n" +
-                    $"Clicking Ok skip saving process and leave old state (state.json) intact.\n" +
+                    $"Clicking Ok skip saving process and leave old state ({Path.GetFileName(CurrentStatePath)}) intact.\n" +
                     $"\n" +
                     $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
             }
