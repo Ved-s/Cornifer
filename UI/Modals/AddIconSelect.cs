@@ -13,16 +13,11 @@ namespace Cornifer.UI.Modals
     {
         public AddIconSelect()
         {
-            Top = new(0, .5f, -.5f);
-            Left = new(0, .5f, -.5f);
-
             Width = new(0, .83f);
             Height = new(0, .8f);
 
             Margin = 5;
             Padding = 5;
-
-            Visible = ModalVisible;
 
             UIFlow list;
 

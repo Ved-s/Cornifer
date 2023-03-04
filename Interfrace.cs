@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 
 namespace Cornifer
@@ -40,6 +41,8 @@ namespace Cornifer
 
         static UIElement? ConfigElement;
         static MapObject? configurableObject;
+
+        static List<Func<UIModal>>? ModalCreators;
 
         public static MapObject? ConfigurableObject
         {
@@ -90,13 +93,6 @@ namespace Cornifer
 
                 Elements =
                 {
-                    RegionSelect.CreateUIElement(),
-                    SlugcatSelect.CreateUIElement(),
-                    AddIconSelect.CreateUIElement(),
-                    TextFormatting.CreateUIElement(),
-                    KeybindSelector.CreateUIElement(),
-                    MessageBox.CreateUIElement(),
-
                     new UIResizeablePanel()
                     {
                         Left = new(0, 1, -1),
@@ -160,6 +156,7 @@ namespace Cornifer
                     }.Assign(out ColorSelector)
                 }
             };
+            CreateModals();
             Root.Recalculate();
 
             if (Main.Region is not null)
@@ -893,6 +890,30 @@ namespace Cornifer
                 Capture.CaptureMapLayered(renderDir);
                 GC.Collect();
             }
+        }
+
+        static void CreateModals()
+        {
+            if (ModalCreators is null)
+            {
+                Type modalType = typeof(Modal<,>);
+                ModalCreators = new();
+                foreach (Type type in Assembly.GetExecutingAssembly().GetExportedTypes())
+                {
+                    if (type.BaseType is null || !type.BaseType.IsGenericType || type.BaseType.GetGenericTypeDefinition() != modalType)
+                        continue;
+
+                    MethodInfo? creatorMethod = type.BaseType.GetMethod("CreateUIElement", BindingFlags.Public | BindingFlags.Static, Array.Empty<Type>());
+                    if (creatorMethod is null || creatorMethod.ReturnType != typeof(UIModal))
+                        continue;
+
+                    Func<UIModal> creator = creatorMethod.CreateDelegate<Func<UIModal>>();
+                    ModalCreators.Add(creator);
+                }
+            }
+            if (Root is not null)
+                foreach (Func<UIModal> creator in ModalCreators)
+                    Root.Elements.Add(creator());
         }
 
         public static void RegionChanged(Region region)

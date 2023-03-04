@@ -15,16 +15,11 @@ namespace Cornifer.UI.Modals
 
         public KeybindSelector()
         {
-            Top = new(0, .5f, -.5f);
-            Left = new(0, .5f, -.5f);
-
             Width = 450;
             Height = 300;
 
             Margin = 5;
             Padding = 5;
-
-            Visible = ModalVisible;
 
             Elements = new(this)
             {

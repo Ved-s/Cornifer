@@ -62,7 +62,7 @@ namespace Cornifer.UI.Elements
             if (AutoSize)
             {
                 rect.Y--;
-                rect.Height++;
+                rect.Height += 2;
             }
 
             spriteBatch.PushAndChangeState(rasterizerState: Scissors);

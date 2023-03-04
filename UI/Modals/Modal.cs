@@ -50,6 +50,8 @@ namespace Cornifer.UI.Modals
         public static UIModal CreateUIElement()
         {
             Instance = new();
+            if (Instance.Visible)
+                ModalInstance?.Shown();
             return Instance;
         }
 
@@ -57,6 +59,7 @@ namespace Cornifer.UI.Modals
         {
             if (ModalVisible)
                 ModalVisible = false;
+
             Instance ??= new();
             ModalVisible = true;
         }
@@ -67,6 +70,11 @@ namespace Cornifer.UI.Modals
         public Modal()
         {
             Instance = this as TModal;
+
+            Top = new(0, .5f, -.5f);
+            Left = new(0, .5f, -.5f);
+
+            Visible = ModalVisible;
         }
 
         protected static void ReturnResult(TResult result)

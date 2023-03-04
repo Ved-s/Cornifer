@@ -8,16 +8,11 @@ namespace Cornifer.UI.Modals
 
         public RegionSelect()
         {
-            Top = new(0, .5f, -.5f);
-            Left = new(0, .5f, -.5f);
-
             Width = 300;
             Height = new(0, .9f);
 
             Margin = 5;
             Padding = new(5, 40);
-
-            Visible = ModalVisible;
 
             Elements = new(this)
             {

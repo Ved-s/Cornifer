@@ -1,4 +1,5 @@
 ﻿using Cornifer.UI.Elements;
+using Cornifer.UI.Modals;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -32,11 +33,16 @@ namespace Cornifer.UI
         UILabel TitleLabel;
         UIInput RGBInput;
         UIInput HEXInput;
+        UILabel ColorRefLabel;
 
         ColorChangedDelegate? Callback;
+
+        /// Original color of <see cref="OriginalReference">
+        Color OriginalReferenceColor;
+        ColorRef OriginalReference = null!;
+
         Color OriginalColor;
         ColorRef ColorReference = null!;
-
         public Color CurrentColor = Color.White;
 
         static ColorSelector()
@@ -71,92 +77,129 @@ namespace Cornifer.UI
         public ColorSelector()
         {
             Width = 158;
-            Height = 227;
+            Height = 281;
 
             Padding = 4;
 
-            Elements.Add(TitleLabel = new UILabel
+            Elements = new(this)
             {
-                Top = 0,
-                Height = 20,
-                TextAlign = new(.5f),
-                Text = "Title"
-            });
+                new UILabel
+                {
+                    Top = 0,
+                    Height = 20,
+                    TextAlign = new(.5f),
+                    Text = "Title"
+                }.Assign(out TitleLabel),
 
-            Elements.Add(new UILabel 
-            {
-                Top = 156,
-                Height = 20,
-                Width = 30,
-                Text = "RGB:"
-            });
+                new UILabel
+                {
+                    Top = 156,
+                    Height = 20,
+                    Width = 30,
+                    Text = "RGB:"
+                },
 
-            Elements.Add(RGBInput = new UIInput
-            {
-                Top = 153,
-                Left = new(0, 1, -1),
-                Height = 20,
-                Width = new(-30, 1),
-                Multiline = false,
-                Text = "0, 0, 0",
-            }.BeforeEvent(UIInput.CharacterTypedEvent, (inp, chr) => 
-            {
-                return char.IsDigit(chr.Character) || chr.Character == ',' || chr.Character == ' ';
-            })
-            .OnEvent(UIInput.TextChangedEvent, (inp, _) => RGBInputTextChanged(inp)));
+                new UIInput
+                {
+                    Top = 153,
+                    Left = new(0, 1, -1),
+                    Height = 20,
+                    Width = new(-30, 1),
+                    Multiline = false,
+                    Text = "0, 0, 0",
+                }.Assign(out RGBInput)
+                .BeforeEvent(UIInput.CharacterTypedEvent, (inp, chr) =>
+                {
+                    return char.IsDigit(chr.Character) || chr.Character == ',' || chr.Character == ' ';
+                })
+                .OnEvent(UIInput.TextChangedEvent, (inp, _) => RGBInputTextChanged(inp)),
 
-            Elements.Add(new UILabel
-            {
-                Top = 179,
-                Height = 20,
-                Width = 30,
-                Text = "HEX:"
-            });
+                new UILabel
+                {
+                    Top = 179,
+                    Height = 20,
+                    Width = 30,
+                    Text = "HEX:"
+                },
 
-            Elements.Add(HEXInput = new UIInput
-            {
-                Top = 176,
-                Left = new(0, 1, -1),
-                Height = 20,
-                Width = new(-30, 1),
-                Multiline = false,
-                Text = "000000",
-            }.BeforeEvent(UIInput.CharacterTypedEvent, (inp, chr) =>
-            {
-                return char.IsDigit(chr.Character) || chr.Character >= 'A' && chr.Character <= 'F' || chr.Character >= 'a' && chr.Character <= 'f';
-            })
-            .OnEvent(UIInput.TextChangedEvent, (inp, _) => HEXInputTextChanged(inp)));
+                new UIInput
+                {
+                    Top = 176,
+                    Left = new(0, 1, -1),
+                    Height = 20,
+                    Width = new(-30, 1),
+                    Multiline = false,
+                    Text = "000000",
+                }.Assign(out HEXInput)
+                .BeforeEvent(UIInput.CharacterTypedEvent, (inp, chr) =>
+                {
+                    return char.IsDigit(chr.Character) || chr.Character >= 'A' && chr.Character <= 'F' || chr.Character >= 'a' && chr.Character <= 'f';
+                })
+                .OnEvent(UIInput.TextChangedEvent, (inp, _) => HEXInputTextChanged(inp)),
 
-            Elements.Add(new UIButton
-            {
-                Top = 199,
-                Left = new(-32, .5f, -.5f),
-                Height = 20,
-                Width = 60,
-                Text = "Apply",
-                TextAlign = new(.5f),
-            }.OnEvent(UIElement.ClickEvent, (_, _) => 
-            {
-                Visible = false;
-                CurrentColor.A = OriginalColor.A;
-                ColorReference.Color = CurrentColor;
-                Callback?.Invoke(true, ColorReference);
-            }));
+                new UILabel
+                {
+                    Top = 200,
+                    Height = 0,
+                    Text = "Bound to:"
+                },
 
-            Elements.Add(new UIButton
-            {
-                Top = 199,
-                Left = new(31, .5f, -.5f),
-                Height = 20,
-                Width = 60,
-                Text = "Cancel",
-                TextAlign = new(.5f),
-            }.OnEvent(UIElement.ClickEvent, (_, _) =>
-            {
-                Visible = false;
-                ColorReference.Color = OriginalColor;
-                Callback?.Invoke(false, ColorReference);
-            }));
+                new UILabel
+                {
+                    Top = 215,
+                    Height = 0,
+                    Text = "None",
+                    WordWrap = false,
+                }.Assign(out ColorRefLabel),
+
+                new UIButton
+                {
+                    Top = 230,
+                    Height = 20,
+                    Text = "Bind to preset",
+                    TextAlign = new(.5f)
+                }.OnEvent(ClickEvent, async (_, _) => 
+                {
+                    ColorRefSelector.Show();
+                    ColorRef? cref = await ColorRefSelector.Task;
+                    if (cref is not null)
+                        SetNewReference(cref);
+                }),
+
+                new UIButton
+                {
+                    Top = new(0, 1, -1),
+                    Left = new(-32, .5f, -.5f),
+                    Height = 20,
+                    Width = 60,
+                    Text = "Apply",
+                    TextAlign = new(.5f),
+                }.OnEvent(ClickEvent, (_, _) =>
+                {
+                    Visible = false;
+
+                    OriginalReference.Color = OriginalReferenceColor;
+                    CurrentColor.A = OriginalColor.A;
+                    ColorReference.Color = CurrentColor;
+                    Callback?.Invoke(true, ColorReference);
+                }),
+
+                new UIButton
+                {
+                    Top = new(0, 1, -1),
+                    Left = new(31, .5f, -.5f),
+                    Height = 20,
+                    Width = 60,
+                    Text = "Cancel",
+                    TextAlign = new(.5f),
+                }.OnEvent(ClickEvent, (_, _) =>
+                {
+                    Visible = false;
+                    OriginalReference.Color = OriginalReferenceColor;
+                    ColorReference.Color = OriginalColor;
+                    Callback?.Invoke(false, OriginalReference);
+                })
+            };
 
             ColorChanged();
         }
@@ -165,10 +208,23 @@ namespace Cornifer.UI
         {
             Visible = true;
             TitleLabel.Text = title;
+            ColorRefLabel.Text = colorRef.Key ?? "None";
             CurrentColor = colorRef.Color;
             OriginalColor = colorRef.Color;
+            OriginalReferenceColor = colorRef.Color;
             Callback = callback;
+            OriginalReference = colorRef;
             ColorReference = colorRef;
+            ColorChanged();
+        }
+
+        public void SetNewReference(ColorRef cref)
+        {
+            ColorRefLabel.Text = cref.Key ?? "None";
+            OriginalReference.Color = OriginalReferenceColor;
+            OriginalColor = cref.Color;
+            CurrentColor = cref.Color;
+            ColorReference = cref;
             ColorChanged();
         }
 

@@ -17,7 +17,7 @@ namespace Cornifer
     {
         const string DatabasePath = "Assets/colors.txt";
 
-        static Dictionary<string, ColorRef> Colors = new();
+        internal static Dictionary<string, ColorRef> Colors = new();
 
         static StringPool Strings = new();
 

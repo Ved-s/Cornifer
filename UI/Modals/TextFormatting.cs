@@ -81,16 +81,11 @@ namespace Cornifer.UI.Modals
 
         public TextFormatting() 
         {
-            Top = new(0, .5f, -.5f);
-            Left = new(0, .5f, -.5f);
-
             Width = new(0, .9f);
             Height = new(0, .9f);
 
             Margin = 5;
             Padding = 5;
-
-            Visible = ModalVisible;
 
             UIList list;
 

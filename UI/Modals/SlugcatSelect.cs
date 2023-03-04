@@ -6,16 +6,11 @@ namespace Cornifer.UI.Modals
     {
         public SlugcatSelect()
         {
-            Top = new(0, .5f, -.5f);
-            Left = new(0, .5f, -.5f);
-
             Width = 200;
             Height = 100;
 
             Margin = 5;
             Padding = new(5, 40);
-
-            Visible = ModalVisible;
 
             Elements = new(this)
             {
