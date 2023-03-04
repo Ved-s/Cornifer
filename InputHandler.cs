@@ -27,9 +27,11 @@ namespace Cornifer
         const string KeybindsFile = "keybinds.txt";
 
         public static Keybind ReinitUI = new("", Keys.F12);
-        public static Keybind ClearErrors = new("Clear errors", Keys.Escape);
-        public static Keybind MoveMultiplier = new("Move multiplier", ModifierKeys.Shift);
+        public static Keybind TimingsDebug = new("", Keys.F10);
         public static Keybind UndoDebug = new("", Keys.F8);
+        public static Keybind ClearErrors = new("Clear errors", Keys.Escape);
+
+        public static Keybind MoveMultiplier = new("Move multiplier", ModifierKeys.Shift);
         public static Keybind MoveUp = new("Move up", Keys.Up);
         public static Keybind MoveDown = new("Move down", Keys.Down);
         public static Keybind MoveLeft = new("Move left", Keys.Left);

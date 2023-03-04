@@ -10,6 +10,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -50,16 +51,24 @@ namespace Cornifer
         public static string? RainWorldRoot;
 
         public static RenderLayers ActiveRenderLayers = RenderLayers.All;
+        public static EnabledDebugMetric DebugMetric = EnabledDebugMetric.None;
 
         public static string? SelectedSlugcat;
 
         public static List<string> LoadErrors = new();
-        public static bool DrawUndoDebug;
 
         public static SpriteFont DefaultSmallMapFont => Cornifer.Content.RodondoExt20M;
         public static SpriteFont DefaultBigMapFont => Cornifer.Content.RodondoExt30M;
 
         public static UndoRedo Undo = new();
+
+        public static Stopwatch UpdateStopwatch = new();
+        public static Stopwatch DrawStopwatch = new();
+        public static TimeSpan OldDrawTime;
+
+        public static int FpsCount;
+        public static int FpsCounter;
+        public static Stopwatch FpsStopwatch = new();
 
         internal static Vector2 SelectionStart;
         internal static Vector2 OldDragPos;
@@ -125,6 +134,7 @@ namespace Cornifer
 
             InputHandler.Init();
             Interface.Init();
+            FpsStopwatch.Start();
         }
 
         protected override void LoadContent()
@@ -145,6 +155,7 @@ namespace Cornifer
 
         protected override void Update(GameTime gameTime)
         {
+            UpdateStopwatch.Restart();
             base.Update(gameTime);
 
             InputHandler.Update();
@@ -172,7 +183,10 @@ namespace Cornifer
             if (active && !Interface.Active)
             {
                 if (InputHandler.UndoDebug.JustPressed)
-                    DrawUndoDebug = !DrawUndoDebug;
+                    DebugMetric = DebugMetric == EnabledDebugMetric.Undos ? EnabledDebugMetric.None : EnabledDebugMetric.Undos;
+
+                if (InputHandler.TimingsDebug.JustPressed)
+                    DebugMetric = DebugMetric == EnabledDebugMetric.Timings ? EnabledDebugMetric.None : EnabledDebugMetric.Timings;
 
                 if (InputHandler.MoveUp.JustPressed)
                     MoveSelectedObjects(new Vector2(0, -1) * keyMoveMultiplier);
@@ -215,10 +229,13 @@ namespace Cornifer
 
             WorldCamera.Update();
             Interface.Update();
+            UpdateStopwatch.Stop();
         }
 
         protected override void Draw(GameTime gameTime)
         {
+            OldDrawTime = DrawStopwatch.Elapsed;
+            DrawStopwatch.Restart();
             Viewport vp = GraphicsDevice.Viewport;
             GraphicsDevice.ScissorRectangle = new(0, 0, vp.Width, vp.Height);
             GraphicsDevice.Clear(Color.CornflowerBlue);
@@ -258,55 +275,9 @@ namespace Cornifer
                 SpriteBatch.End();
             }
 
-            if (LoadErrors.Count > 0 && !DrawUndoDebug)
-            {
-                int y = 10;
-                int x = 10;
-
-                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-
-                SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"{LoadErrors.Count} error(s) have occured during region loading.\nPress Esc to clear.", new(x, y), Color.OrangeRed);
-                y += Cornifer.Content.Consolas10.LineSpacing * 2 + 10;
-
-                foreach (string error in LoadErrors)
-                {
-                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, error, new(x, y), Color.White);
-                    y += Cornifer.Content.Consolas10.LineSpacing;
-                }
-
-                SpriteBatch.End();
-            }
-
-            if (DrawUndoDebug)
-            {
-                int y = 10;
-                int x = 10;
-
-                SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-
-                SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Undo stack debug", new(x, y), Color.Yellow);
-                y += Cornifer.Content.Consolas10.LineSpacing * 2 + 10;
-
-                for (int i = 0; i < Undo.RedoBuffer.Count; i++)
-                {
-                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, Undo.RedoBuffer[i].ToString()!, new(x, y), Color.White);
-                    y += Cornifer.Content.Consolas10.LineSpacing;
-                }
-
-                SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, "--- Current position ---", new(x, y), Color.Lime);
-                y += Cornifer.Content.Consolas10.LineSpacing;
-
-                for (int i = -1; i >= -Undo.UndoBuffer.Count; i--)
-                {
-                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, Undo.UndoBuffer[i].ToString()!, new(x, y), Color.White);
-                    y += Cornifer.Content.Consolas10.LineSpacing;
-                }
-
-                SpriteBatch.End();
-            }
+            DrawDebugMetrics();
 
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-            //SpriteBatch.DrawString(Cornifer.Content.RodondoExt20, "test", new(5, 5), Color.White, 0f, Vector2.Zero, 10, SpriteEffects.None, 0);
             SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, GithubInfo.Desc, new(5, vp.Height - Cornifer.Content.Consolas10.LineSpacing * 2 - 5), Color.White);
             SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, GithubInfo.Status, new(5, vp.Height - Cornifer.Content.Consolas10.LineSpacing - 5), Color.White);
             SpriteBatch.End();
@@ -316,6 +287,77 @@ namespace Cornifer
             SpriteBatch.End();
 
             base.Draw(gameTime);
+
+            DrawStopwatch.Stop();
+
+            FpsCounter++;
+            if (FpsStopwatch.ElapsedMilliseconds >= 1000)
+            {
+                FpsCount = FpsCounter;
+                FpsCounter = 0;
+                FpsStopwatch.Restart();
+            }
+        }
+
+        private static void DrawDebugMetrics()
+        {
+            int y = 10;
+            int x = 10;
+
+            SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+
+            switch (DebugMetric)
+            {
+                case EnabledDebugMetric.None when LoadErrors.Count > 0:
+
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"{LoadErrors.Count} error(s) have occured during region loading.\nPress Esc to clear.", new(x, y), Color.OrangeRed);
+                    y += Cornifer.Content.Consolas10.LineSpacing * 2 + 10;
+
+                    foreach (string error in LoadErrors)
+                    {
+                        SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, error, new(x, y), Color.White);
+                        y += Cornifer.Content.Consolas10.LineSpacing;
+                    }
+
+                    break;
+
+                case EnabledDebugMetric.Undos:
+
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Undo stack debug", new(x, y), Color.Yellow);
+                    y += Cornifer.Content.Consolas10.LineSpacing * 2 + 10;
+
+                    for (int i = 0; i < Undo.RedoBuffer.Count; i++)
+                    {
+                        SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, Undo.RedoBuffer[i].ToString()!, new(x, y), Color.White);
+                        y += Cornifer.Content.Consolas10.LineSpacing;
+                    }
+
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, "--- Current position ---", new(x, y), Color.Lime);
+                    y += Cornifer.Content.Consolas10.LineSpacing;
+
+                    for (int i = -1; i >= -Undo.UndoBuffer.Count; i--)
+                    {
+                        SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, Undo.UndoBuffer[i].ToString()!, new(x, y), Color.White);
+                        y += Cornifer.Content.Consolas10.LineSpacing;
+                    }
+
+                    break;
+
+                case EnabledDebugMetric.Timings:
+
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"FPS: {FpsCount}", new(x, y), Color.Yellow);
+                    y += Cornifer.Content.Consolas10.LineSpacing;
+
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Update: {UpdateStopwatch.Elapsed.TotalMilliseconds:0.00}ms", new(x, y), Color.Yellow);
+                    y += Cornifer.Content.Consolas10.LineSpacing;
+
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Draw: {OldDrawTime.TotalMilliseconds:0.00}ms", new(x, y), Color.Yellow);
+                    y += Cornifer.Content.Consolas10.LineSpacing;
+
+                    break;
+            }
+
+            SpriteBatch.End();
         }
 
         protected override void EndRun()
@@ -911,5 +953,12 @@ namespace Cornifer
         Texts = 8,
 
         None = 255,
+    }
+
+    public enum EnabledDebugMetric
+    {
+        None, 
+        Undos,
+        Timings
     }
 }
