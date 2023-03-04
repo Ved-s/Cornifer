@@ -440,7 +440,7 @@ namespace Cornifer.MapObjects
         {
             foreach (MapObject obj in objects.SmartReverse())
             {
-                if (!obj.Active)
+                if (!obj.Active || !Main.ActiveRenderLayers.HasFlag(obj.RenderLayer))
                     continue;
 
                 if (searchChildren)
@@ -459,7 +459,7 @@ namespace Cornifer.MapObjects
         {
             foreach (MapObject obj in objects.SmartReverse())
             {
-                if (!obj.Active)
+                if (!obj.Active || !Main.ActiveRenderLayers.HasFlag(obj.RenderLayer))
                     continue;
 
                 if (searchChildren)
