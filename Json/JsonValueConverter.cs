@@ -34,7 +34,7 @@ namespace Cornifer.Json
 
             JsonValueConverter<ColorRef>.SaveValue = v => v.SaveJson();
             JsonValueConverter<ColorRef>.LoadValueWithExisting = (n, v) => n is JsonValue value ? ColorDatabase.LoadColorRefJson(v, value, Color.White) : ColorRef.White;
-            JsonValueConverter<ColorRef>.SaveSkipCheckOverride = (u, o) => u is null || u?.Key == o.Key && u.Color == u.DefaultColor;
+            JsonValueConverter<ColorRef>.SaveSkipCheckOverride = (u, o) => u is null || u?.Key == o.Key && u?.Key is not null;
         }
     }
 }
