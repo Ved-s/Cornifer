@@ -195,15 +195,6 @@ namespace Cornifer
                     Sprites[name] = new(name, sprite.Texture, sprite.Frame, spriteData.Color, true);
                 }
 
-            if (Sprites.TryGetValue("Object_Slugcat", out AtlasSprite? slugcat))
-            {
-                for (int i = 0; i < Main.SlugCatNames.Length; i++)
-                {
-                    string name = "Slugcat_" + Main.SlugCatNames[i];
-                    Sprites[name] = new(name, slugcat.Texture, slugcat.Frame, Main.SlugCatColors[i], false);
-                }
-            }
-
             for (int i = 0; i < Main.SlugCatNames.Length; i++)
             {
                 string name = "SlugcatIcon_" + Main.SlugCatNames[i];
@@ -212,6 +203,10 @@ namespace Cornifer
 
                 name = "SlugcatDiamond_" + Main.SlugCatNames[i];
                 frame = new(i * 9, 8, 9, 9);
+                Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
+
+                name = "Slugcat_" + Main.SlugCatNames[i];
+                frame = new(i * 20, 17, 20, 19);
                 Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
             }
         }
