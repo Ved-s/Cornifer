@@ -8,22 +8,18 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.InteropServices.ObjectiveC;
-using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Windows.Forms.Design;
 
 namespace Cornifer
 {
     public class Room : MapObject
     {
         static Point[] Directions = new Point[] { new Point(0, -1), new Point(1, 0), new Point(0, 1), new Point(-1, 0) };
-        public static HashSet<string> NonPickupObjectsWhitelist = new() 
+        public static HashSet<string> NonPickupObjectsWhitelist = new()
         {
-            "GhostSpot", "BlueToken", "GoldToken", 
+            "GhostSpot", "BlueToken", "GoldToken",
             "RedToken", "WhiteToken", "DevToken", "GreenToken",
             "DataPearl", "UniqueDataPearl", "ScavengerOutpost",
             "HRGuard", "TempleGuard", "MoonCloak"
@@ -131,7 +127,7 @@ namespace Cornifer
         public override int? ShadeCornerRadius => 6;
         public override bool ParentSelected => BoundRoom is not null && (BoundRoom.Selected || BoundRoom.ParentSelected) || base.ParentSelected;
 
-        public override Vector2 ParentPosition 
+        public override Vector2 ParentPosition
         {
             get => boundRoom is null ? Position : boundRoom.WorldPosition + Position;
             set
@@ -143,7 +139,7 @@ namespace Cornifer
         }
         public override Vector2 Size => TileSize.ToVector2();
 
-        public Room? BoundRoom 
+        public Room? BoundRoom
         {
             get => boundRoom;
             set
@@ -164,7 +160,7 @@ namespace Cornifer
         Vector2 Position;
         private Room? boundRoom;
 
-        public Room() 
+        public Room()
         {
             Subregion.SaveValue = v => Region.Subregions[v].Name;
             Subregion.LoadValue = s => Array.FindIndex(Region.Subregions, r => r.Name == s);
@@ -460,7 +456,7 @@ namespace Cornifer
                 }
 
             if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
-                    Children.Add(new SimpleIcon("ShelterMarker", shelterMarker));
+                Children.Add(new SimpleIcon("ShelterMarker", shelterMarker));
 
             if (IsScavengerOutpost)
             {
@@ -488,7 +484,7 @@ namespace Cornifer
             {
                 Vector2 align = TreasuryPos.HasValue ? TreasuryPos.Value / TileSize.ToVector2() : new Vector2(.5f);
 
-                Children.Add(new MapText("TreasuryText", Main.DefaultSmallMapFont, "Scavenger treasury") 
+                Children.Add(new MapText("TreasuryText", Main.DefaultSmallMapFont, "Scavenger treasury")
                 {
                     ParentPosAlign = align,
                 });
@@ -517,7 +513,7 @@ namespace Cornifer
                 Children.Add(new MapText("BrokenShelterText", Main.DefaultSmallMapFont, text));
             }
 
-            Deathpit.OriginalValue = !IsShelter && !IsGate && WaterLevel.Value < 0 && Enumerable.Range(0, TileSize.X).Any(x => Tiles[x, TileSize.Y-1].Terrain == Tile.TerrainType.Air);
+            Deathpit.OriginalValue = !IsShelter && !IsGate && WaterLevel.Value < 0 && Enumerable.Range(0, TileSize.X).Any(x => Tiles[x, TileSize.Y - 1].Terrain == Tile.TerrainType.Air);
 
             if (GateData is not null && IsGate)
             {
@@ -525,7 +521,7 @@ namespace Cornifer
                 ColorRef? rightColor = null;
                 ColorRef? regionColor = null;
 
-                if (GateData.LeftRegionId is not null && GateData.RightRegionId is not null 
+                if (GateData.LeftRegionId is not null && GateData.RightRegionId is not null
                  && (GateData.LeftRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase)
                   || GateData.RightRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase)))
                     FixGateData();
@@ -641,7 +637,7 @@ namespace Cornifer
                     foreach (Shortcut shortcut in Shortcuts)
                         if ((!InterfaceState.MarkExitsOnly.Value || shortcut.Type == Tile.ShortcutType.RoomExit) && shortcut.Type != Tile.ShortcutType.None)
                             colors[shortcut.Entrance.X + shortcut.Entrance.Y * TileSize.X] = new(255, 0, 0);
-                    
+
 
                 TileMap ??= new(Main.Instance.GraphicsDevice, TileSize.X, TileSize.Y);
                 TileMap.SetData(colors, 0, TileSize.X * TileSize.Y);
@@ -686,9 +682,9 @@ namespace Cornifer
             {
                 int neighbors = 0;
 
-                if (x <= 0              || Tiles[x - 1, y].Terrain == Tile.TerrainType.Solid) neighbors += 1;
-                if (x >= TileSize.X-1   || Tiles[x + 1, y].Terrain == Tile.TerrainType.Solid) neighbors += 1;
-                if (y <= 0              || Tiles[x, y - 1].Terrain == Tile.TerrainType.Solid) neighbors += 1;
+                if (x <= 0 || Tiles[x - 1, y].Terrain == Tile.TerrainType.Solid) neighbors += 1;
+                if (x >= TileSize.X - 1 || Tiles[x + 1, y].Terrain == Tile.TerrainType.Solid) neighbors += 1;
+                if (y <= 0 || Tiles[x, y - 1].Terrain == Tile.TerrainType.Solid) neighbors += 1;
                 if (y >= TileSize.Y - 1 || Tiles[x, y + 1].Terrain == Tile.TerrainType.Solid) neighbors += 1;
 
                 return neighbors;
@@ -797,15 +793,15 @@ namespace Cornifer
                 if (Tiles[point.X, point.Y].Terrain != Tile.TerrainType.Solid)
                 {
                     int neighbors = GetTileNeighbors(point.X, point.Y);
-                    
+
                     if (neighbors == 4)
                         CutOutSolidTiles[point.X, point.Y] = true;
                     if (neighbors == 3)
                     {
-                        if (Check2TileCutout(point.X - 1, point.Y) 
-                         || Check2TileCutout(point.X + 1, point.Y) 
+                        if (Check2TileCutout(point.X - 1, point.Y)
+                         || Check2TileCutout(point.X + 1, point.Y)
                          || Check2TileCutout(point.X, point.Y - 1)
-                         || Check2TileCutout(point.X, point.Y + 1)) 
+                         || Check2TileCutout(point.X, point.Y + 1))
                             CutOutSolidTiles[point.X, point.Y] = true;
                     }
 
@@ -848,7 +844,7 @@ namespace Cornifer
                 return;
 
             string? otherRegion = GateData.LeftRegionId == Region.Id ? GateData.RightRegionId : GateData.LeftRegionId;
-            if (otherRegion is null) 
+            if (otherRegion is null)
                 return;
 
             if (leftConnection.Value)

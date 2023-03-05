@@ -4,12 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace Cornifer
 {
@@ -84,7 +79,7 @@ namespace Cornifer
 
             if (water)
                 keyLength += waterPostfix.Length;
-            
+
             Span<char> key = stackalloc char[keyLength];
 
             SpanBuilder<char> builder = new(key);
@@ -115,7 +110,7 @@ namespace Cornifer
             regionBuilder.Append(region);
             if (water)
                 regionBuilder.Append(waterPostfix);
-            
+
             ColorRef? regionColor = GetColor(regionBuilder.SliceSpan());
             Color defaultColor = water ? Color.Blue : Color.White;
             if (regionColor is not null)
@@ -139,7 +134,7 @@ namespace Cornifer
                 {
                     c = '-';
                 }
-                else 
+                else
                 {
                     continue;
                 }
@@ -293,7 +288,7 @@ namespace Cornifer
             Color = DefaultColor;
         }
 
-        public string GetKeyOrColorString() 
+        public string GetKeyOrColorString()
         {
             if (Key is not null)
                 return Key;
@@ -332,7 +327,7 @@ namespace Cornifer
             Position = 0;
         }
 
-        public void Append(ReadOnlySpan<T> value) 
+        public void Append(ReadOnlySpan<T> value)
         {
             value.CopyTo(Span.Slice(Position, value.Length));
             Position += value.Length;

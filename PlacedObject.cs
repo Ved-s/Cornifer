@@ -1,14 +1,10 @@
 ﻿using Cornifer.MapObjects;
-using Cornifer.Renderers;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Cornifer
 {
@@ -33,7 +29,7 @@ namespace Cornifer
         public override Vector2 ParentPosAlign => Parent is not Room ? new(.5f) : new Vector2(RoomPos.X / Parent.Size.X, 1 - (RoomPos.Y / Parent.Size.Y));
         public override bool Active
         {
-            get => InterfaceState.DrawPlacedObjects.Value 
+            get => InterfaceState.DrawPlacedObjects.Value
                 && (Parent is not Room || !HideObjectTypes.Contains(Type))
                 && (Parent is not Room || InterfaceState.DrawPlacedPickups.Value || Room.NonPickupObjectsWhitelist.Contains(Type))
                 && base.Active;
@@ -310,7 +306,7 @@ namespace Cornifer
 
                 Color v = color2.Value * sat * 0.5f;
 
-                color = new Color(1f - (1f - color.R/255f) * (1f - v.R/255f), 1f - (1f - color.G/255f) * (1f - v.G/255f), 1f - (1f - color.B/255f) * (1f - v.B/255f));
+                color = new Color(1f - (1f - color.R / 255f) * (1f - v.R / 255f), 1f - (1f - color.G / 255f) * (1f - v.G / 255f), 1f - (1f - color.B / 255f) * (1f - v.B / 255f));
             }
             else
             {

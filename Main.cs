@@ -1,13 +1,10 @@
 ﻿using Cornifer.Json;
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
-using Cornifer.UI.Modals;
-using Cornifer.UI.Structures;
 using Cornifer.UndoActions;
 using Microsoft.Win32;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -18,6 +15,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Cornifer
 {
@@ -70,6 +68,8 @@ namespace Cornifer
         public static int FpsCounter;
         public static Stopwatch FpsStopwatch = new();
 
+        public static Queue<Action> MainThreadQueue = new();
+
         internal static Vector2 SelectionStart;
         internal static Vector2 OldDragPos;
         internal static bool Selecting;
@@ -84,6 +84,9 @@ namespace Cornifer
             GraphicsManager = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+
+            WorldObjectLists.Add(WorldObjects);
+            WorldObjectLists.Add(FirstPrioritySelectionObjects);
         }
 
         protected override void Initialize()
@@ -115,14 +118,14 @@ namespace Cornifer
                 }
                 catch (Exception ex)
                 {
-                    var result = System.Windows.Forms.MessageBox.Show(
+                    var result = Platform.MessageBox(
                         $"Exception has been thrown while opening previous state.\n" +
                         $"Clicking Ok will delete current state (state.json) and continue normally.\n" +
                         $"Clicking Cancel will exit the application.\n" +
                         $"\n" +
-                        $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error", System.Windows.Forms.MessageBoxButtons.OKCancel);
+                        $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error", Platform.MessageBoxButtons.OkCancel).Result;
 
-                    if (result != System.Windows.Forms.DialogResult.OK)
+                    if (result != Platform.MessageBoxResult.Ok)
                     {
                         Environment.Exit(1);
                     }
@@ -135,6 +138,8 @@ namespace Cornifer
             InputHandler.Init();
             Interface.Init();
             FpsStopwatch.Start();
+
+            Thread.CurrentThread.Name = "Main thread";
         }
 
         protected override void LoadContent()
@@ -157,6 +162,9 @@ namespace Cornifer
         {
             UpdateStopwatch.Restart();
             base.Update(gameTime);
+
+            while (MainThreadQueue.TryDequeue(out Action? action))
+                action();
 
             InputHandler.Update();
 
@@ -369,11 +377,11 @@ namespace Cornifer
             }
             catch (Exception ex)
             {
-                System.Windows.Forms.MessageBox.Show(
+                Platform.MessageBox(
                     $"Exception has been thrown while saving app state.\n" +
                     $"Clicking Ok skip saving process and leave old state (state.json) intact.\n" +
                     $"\n" +
-                    $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
+                    $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error").Wait();
                 return;
             }
             FileStream fs = File.Create("state.json");
@@ -423,21 +431,19 @@ namespace Cornifer
                     OldDragPos = mouseWorld;
                     return;
                 }
-                if (Region is not null)
-                {
-                    // Clicked on not selected object
-                    MapObject? obj = MapObject.FindSelectableAtPos(WorldObjectLists, mouseWorld, true);
-                    if (obj is not null)
-                    {
-                        if (InputHandler.AddToSelection.Released)
-                            SelectedObjects.Clear();
 
-                        SelectedObjects.Add(obj);
-                        Undo.PreventNextUndoMerge();
-                        Dragging = true;
-                        OldDragPos = mouseWorld;
-                        return;
-                    }
+                // Clicked on not selected object
+                MapObject? obj = MapObject.FindSelectableAtPos(WorldObjectLists, mouseWorld, true);
+                if (obj is not null)
+                {
+                    if (InputHandler.AddToSelection.Released)
+                        SelectedObjects.Clear();
+
+                    SelectedObjects.Add(obj);
+                    Undo.PreventNextUndoMerge();
+                    Dragging = true;
+                    OldDragPos = mouseWorld;
+                    return;
                 }
             }
             else if (active && InputHandler.Drag.AnyKeyPressed)
@@ -489,7 +495,7 @@ namespace Cornifer
 
                     if (InputHandler.SubFromSelection.Pressed)
                         SelectedObjects.ExceptWith(MapObject.FindIntersectingSelectables(SelectedObjects, tl, br, true));
-                    else if (Region is not null)
+                    else
                         SelectedObjects.UnionWith(MapObject.FindIntersectingSelectables(WorldObjectLists, tl, br, true));
                 }
             }
@@ -531,33 +537,31 @@ namespace Cornifer
             bool inRoomConnections = layers.HasFlag(RenderLayers.InRoomShortcuts);
             bool anyConnections = betweenRoomConnections || inRoomConnections;
 
-            if (Region is not null)
+            if (border is null && InterfaceState.DrawBorders.Value || border is true)
             {
-                if (border is null && InterfaceState.DrawBorders.Value || border is true)
-                {
-                    if (anyConnections)
-                        Region.Connections?.DrawShadows(renderer, betweenRoomConnections, inRoomConnections);
+                if (anyConnections)
+                    Region?.Connections?.DrawShadows(renderer, betweenRoomConnections, inRoomConnections);
 
-                    foreach (MapObject obj in WorldObjectLists)
-                        obj.DrawShade(renderer, layers);
-                }
+                foreach (MapObject obj in WorldObjectLists)
+                    obj.DrawShade(renderer, layers);
+            }
 
-                if (border is null or false)
-                {
+            if (border is null or false)
+            {
+                if (Region is not null)
                     foreach (MapObject obj in Region.Rooms)
                         obj.Draw(renderer, layers);
 
-                    if (anyConnections)
-                    {
-                        Region.Connections?.DrawConnections(renderer, true, betweenRoomConnections, inRoomConnections);
-                        Region.Connections?.DrawConnections(renderer, false, betweenRoomConnections, inRoomConnections);
-                    }
-                    foreach (MapObject obj in WorldObjects)
-                        obj.Draw(renderer, layers);
-
-                    if (anyConnections)
-                        Region.Connections?.DrawGuideLines(renderer, betweenRoomConnections, inRoomConnections);
+                if (anyConnections)
+                {
+                    Region?.Connections?.DrawConnections(renderer, true, betweenRoomConnections, inRoomConnections);
+                    Region?.Connections?.DrawConnections(renderer, false, betweenRoomConnections, inRoomConnections);
                 }
+                foreach (MapObject obj in WorldObjects)
+                    obj.Draw(renderer, layers);
+
+                if (anyConnections)
+                    Region?.Connections?.DrawGuideLines(renderer, betweenRoomConnections, inRoomConnections);
             }
 
             SpriteBatch.End();
@@ -664,6 +668,18 @@ namespace Cornifer
             Region = new(id, worldFile, mapFile, propertiesFile, Path.Combine(regionPath, $"../{id}-rooms"));
             RegionLoaded(Region);
         }
+
+        public static void ClearRegion()
+        {
+            SelectedObjects.Clear();
+            Selecting = false;
+            Dragging = false;
+
+            WorldObjectLists.Clear();
+            WorldObjectLists.Add(WorldObjects);
+            WorldObjectLists.Add(FirstPrioritySelectionObjects);
+            Region = null;
+        }
         public static void RegionLoaded(Region region)
         {
             SelectedObjects.Clear();
@@ -712,6 +728,7 @@ namespace Cornifer
             }
             if (node.TryGet("region", out JsonNode? region))
             {
+                ClearRegion();
                 Region = new();
                 Region.LoadJson(region);
                 RegionLoaded(Region);
@@ -737,27 +754,13 @@ namespace Cornifer
             Region?.BindRooms();
         }
 
-        public static void OpenState()
+        public static async Task OpenState()
         {
-            string? fileName = null;
-            Thread thread = new(() =>
-            {
-                System.Windows.Forms.OpenFileDialog ofd = new();
-
-                ofd.Filter = "Cornifer map files|*.json;*.cornimap";
-
-                if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                    fileName = ofd.FileName;
-            });
-
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-
+            string? fileName = await Platform.OpenFileDialog("Select a state to open", "Cornifer map files|*.json;*.cornimap");
             if (fileName is null)
                 return;
 
-            try
+            if (TryCatchReleaseException(() =>
             {
                 using FileStream fs = File.OpenRead(fileName);
 
@@ -767,95 +770,80 @@ namespace Cornifer
                     LoadJson(node);
                     CurrentStatePath = fileName;
                 }
-            }
-            catch (Exception ex)
+            }, "Exception has been thrown while opening selected state."))
             {
-                System.Windows.Forms.MessageBox.Show($"Exception has been thrown while opening selected state.\n\n{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
+                return;
             }
         }
-        public static void SaveState()
+        public static async Task SaveState()
         {
             if (CurrentStatePath is null)
             {
-                bool exit = false;
-                Thread thread = new(() =>
-                {
-                    System.Windows.Forms.SaveFileDialog sfd = new();
+                string? newPath = await Platform.SaveFileDialog("Save map state", "Cornifer map files|*.cornimap");
 
-                    sfd.Filter = "Cornifer map files|*.cornimap";
-
-                    if (sfd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                        CurrentStatePath = sfd.FileName;
-                    else
-                        exit = true;
-                });
-
-                thread.SetApartmentState(ApartmentState.STA);
-                thread.Start();
-                thread.Join();
-
-                if (exit)
+                if (newPath is null)
                     return;
+
+                CurrentStatePath = newPath;
             }
 
             using MemoryStream ms = new();
-            try
-            {
-                JsonSerializer.Serialize(ms, SaveJson(), new JsonSerializerOptions { WriteIndented = true });
 
-                FileStream fs = File.Create(CurrentStatePath!);
-                ms.Position = 0;
-                ms.CopyTo(fs);
-            }
-            catch (Exception ex)
+            if (TryCatchReleaseException(() =>
             {
-                System.Windows.Forms.MessageBox.Show(
-                    $"Exception has been thrown while saving state.\n" +
-                    $"Clicking Ok skip saving process and leave old state ({Path.GetFileName(CurrentStatePath)}) intact.\n" +
-                    $"\n" +
-                    $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
+                JsonSerializer.Serialize(ms, SaveJson());
+            }, "Exception has been thrown while saving state."))
+            {
+                return;
             }
 
+            FileStream fs = File.Create(CurrentStatePath!);
+            ms.Position = 0;
+            ms.CopyTo(fs);
         }
-        public static void SaveStateAs()
+        public static async Task SaveStateAs()
         {
-            bool exit = false;
-            Thread thread = new(() =>
-            {
-                System.Windows.Forms.SaveFileDialog sfd = new();
+            string? newPath = await Platform.SaveFileDialog("Save map state as", "Cornifer map files|*.cornimap");
 
-                sfd.Filter = "Cornifer map files|*.cornimap";
-
-                if (sfd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                    CurrentStatePath = sfd.FileName;
-                else
-                    exit = true;
-            });
-
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-
-            if (exit)
+            if (newPath is null)
                 return;
 
+            CurrentStatePath = newPath;
+
             using MemoryStream ms = new();
+
+            if (TryCatchReleaseException(() =>
+            {
+                JsonSerializer.Serialize(ms, SaveJson());
+            }, "Exception has been thrown while saving state."))
+            {
+                return;
+            }
+
+            FileStream fs = File.Create(CurrentStatePath!);
+            ms.Position = 0;
+            ms.CopyTo(fs);
+        }
+
+        public static bool TryCatchReleaseException(Action action, string exceptionMessage)
+        {
+#if !DEBUG
             try
             {
-                JsonSerializer.Serialize(ms, SaveJson(), new JsonSerializerOptions { WriteIndented = true });
-
-                FileStream fs = File.Create(CurrentStatePath!);
-                ms.Position = 0;
-                ms.CopyTo(fs);
+#endif
+            action();
+            return false;
+#if !DEBUG
             }
             catch (Exception ex)
             {
-                System.Windows.Forms.MessageBox.Show(
-                    $"Exception has been thrown while saving state.\n" +
-                    $"Clicking Ok skip saving process and leave old state ({Path.GetFileName(CurrentStatePath)}) intact.\n" +
+                Platform.MessageBox(
+                    $"{exceptionMessage}\n" +
                     $"\n" +
-                    $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error");
+                    $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error").ConfigureAwait(false);
+                return true;
             }
+#endif
         }
 
         public static bool TryFindParentDir(string path, string dirName, [NotNullWhen(true)] out string? result)
@@ -957,7 +945,7 @@ namespace Cornifer
 
     public enum EnabledDebugMetric
     {
-        None, 
+        None,
         Undos,
         Timings
     }

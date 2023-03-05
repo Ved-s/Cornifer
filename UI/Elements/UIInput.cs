@@ -6,9 +6,9 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Cornifer.UI.Elements
 {
@@ -331,20 +331,28 @@ namespace Cornifer.UI.Elements
 
                         if (Root.GetKeyState(Keys.C) == KeybindState.JustPressed)
                         {
-                            SetClipboard(GetSelection());
+                            Platform.SetClipboard(GetSelection());
                         }
 
                         if (Root.GetKeyState(Keys.X) == KeybindState.JustPressed)
                         {
-                            SetClipboard(GetSelection());
+                            Platform.SetClipboard(GetSelection());
                             ClearSelection();
                         }
                     }
                 }
 
                 if (Root.CtrlKey != KeybindState.Released && Root.GetKeyState(Keys.V) == KeybindState.JustPressed)
-                    foreach (char c in GetClipboard())
-                        TextInput(null, new(c));
+                {
+                    Task.Run(async () =>
+                    {
+                        string clipboard = await Platform.GetClipboard();
+                        Main.MainThreadQueue.Enqueue(() => {
+                            foreach (char c in clipboard)
+                                TextInput(null, new(c));
+                        });
+                    });
+                }
             }
 
             if (LineWidths.Length < Lines.Count)
@@ -618,29 +626,6 @@ namespace Cornifer.UI.Elements
             KeyRepeatCounter = 0;
             KeyRepeatCounterMax = 2;
             return true;
-        }
-
-        static string GetClipboard()
-        {
-            string value = "";
-            Thread thread = new(() => 
-            {
-                value = System.Windows.Forms.Clipboard.GetText();
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
-            thread.Join();
-            return value;
-        }
-
-        static void SetClipboard(string value)
-        {
-            Thread thread = new(() =>
-            {
-                System.Windows.Forms.Clipboard.SetText(value);
-            });
-            thread.SetApartmentState(ApartmentState.STA);
-            thread.Start();
         }
     }
 }

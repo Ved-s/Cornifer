@@ -811,52 +811,21 @@ namespace Cornifer
             };
         }
 
-        static void SelectOverlayClicked(UIButton btn, Empty _)
+        static async void SelectOverlayClicked(UIButton btn, Empty _)
         {
-            string? filename = null;
-            Thread thd = new(() =>
-            {
-                System.Windows.Forms.OpenFileDialog ofd = new();
-                ofd.Title = "Select overlay image file";
-                ofd.Filter = "All supported images|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tga;*.psd;*.hdr";
-                if (ofd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                    filename = ofd.FileName;
-            });
-            thd.SetApartmentState(ApartmentState.STA);
-            thd.Start();
-            thd.Join();
-
+            string? filename = await Platform.OpenFileDialog("Select overlay image file", "All supported images|*.png;*.jpg;*.jpeg;*.gif;*.bmp;*.tga;*.psd;*.hdr");
             if (filename is null)
                 return;
 
-            try
-            {
-                Main.OverlayImage = Texture2D.FromFile(Main.Instance.GraphicsDevice, filename);
-            }
-            catch (Exception ex)
-            {
-                System.Windows.Forms.MessageBox.Show(ex.ToString(), "Could not load overlay image");
-            }
+            Main.TryCatchReleaseException(() => Main.OverlayImage = Texture2D.FromFile(Main.Instance.GraphicsDevice, filename), "Could not load overlay image");
         }
-        static void CaptureClicked(UIButton btn, Empty _)
+        static async void CaptureClicked(UIButton btn, Empty _)
         {
-            if (Main.Region is null)
+            string? renderFile = await Platform.SaveFileDialog("Select render save file", "PNG Image|*.png");
+            if (renderFile is null)
                 return;
 
-            string? renderFile = null;
-            Thread thd = new(() =>
-            {
-                System.Windows.Forms.SaveFileDialog sfd = new();
-                sfd.Title = "Select render save file";
-                sfd.Filter = "PNG Image|*.png";
-                if (sfd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                    renderFile = sfd.FileName;
-            });
-            thd.SetApartmentState(ApartmentState.STA);
-            thd.Start();
-            thd.Join();
-
-            if (renderFile is not null)
+            Main.MainThreadQueue.Enqueue(() =>
             {
                 var capResult = Capture.CaptureMap();
                 IImageEncoder encoder = new PngEncoder();
@@ -864,32 +833,22 @@ namespace Cornifer
                 capResult.Save(fs, encoder);
                 capResult.Dispose();
                 GC.Collect();
-            }
+            });
         }
-        static void CaptureLayeredClicked(UIButton btn, Empty _)
+        static async void CaptureLayeredClicked(UIButton btn, Empty _)
         {
             if (Main.Region is null)
                 return;
 
-            string? renderDir = null;
-            Thread thd = new(() =>
-            {
-                System.Windows.Forms.FolderBrowserDialog fbd = new();
-                fbd.Description = "Select render save folder";
-                fbd.ShowNewFolderButton = true;
-                fbd.UseDescriptionForTitle = true;
-                if (fbd.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                    renderDir = fbd.SelectedPath;
-            });
-            thd.SetApartmentState(ApartmentState.STA);
-            thd.Start();
-            thd.Join();
-
-            if (renderDir is not null)
+            string? renderDir = await Platform.FolderBrowserDialog("Select render save folder");
+            if (renderDir is null)
+                return;
+            
+            Main.MainThreadQueue.Enqueue(() =>
             {
                 Capture.CaptureMapLayered(renderDir);
                 GC.Collect();
-            }
+            });
         }
 
         static void CreateModals()
