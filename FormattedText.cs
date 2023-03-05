@@ -397,7 +397,7 @@ namespace Cornifer
                     ReadOnlySpan<char> color = colorDelimeter < 0 ? ReadOnlySpan<char>.Empty : tagData.Slice(colorDelimeter + 1);
 
                     string nameStr = StringPool.GetOrAdd(name);
-                    if (GameAtlases.Sprites.TryGetValue(nameStr, out AtlasSprite? sprite))
+                    if (SpriteAtlases.Sprites.TryGetValue(nameStr, out AtlasSprite? sprite))
                     {
                         Color? iconColor = color.Length == 0 ? sprite.Color : ColorDatabase.ParseColor(color);
 

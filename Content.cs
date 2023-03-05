@@ -1,7 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using SixLabors.Fonts;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -9,9 +8,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.ConstrainedExecution;
-using System.Security.Permissions;
-using System.Windows.Markup;
 
 namespace Cornifer
 {
@@ -162,7 +158,7 @@ namespace Cornifer
                                 glyphs[char.ToLower(chr)] = (new(readerPos.X, readerPos.Y, charWidth, lineSpacing), new(), new(0, charWidth, 0));
                                 glyphs[char.ToUpper(chr)] = (new(readerPos.X, readerPos.Y, charWidth, lineSpacing), new(), new(0, charWidth, 0));
                             }
-                            else 
+                            else
                                 glyphs[chr] = (new(readerPos.X, readerPos.Y, charWidth, lineSpacing), new(), new(0, charWidth, 0));
 
 

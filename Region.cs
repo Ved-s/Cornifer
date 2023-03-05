@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Cornifer.Structures;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -635,21 +636,6 @@ namespace Cornifer
 
             return names;
         }
-
-        public class Subregion
-        {
-            public string Name;
-
-            public ColorRef BackgroundColor;
-            public ColorRef WaterColor;
-
-            public Subregion(string region, string name)
-            {
-                Name = name;
-
-                BackgroundColor = ColorDatabase.GetRegionColor(region, name, false);
-                WaterColor = ColorDatabase.GetRegionColor(region, name, true);
-            }
-        }
     }
+    
 }

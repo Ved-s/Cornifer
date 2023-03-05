@@ -1,4 +1,5 @@
-﻿using Cornifer.Json;
+﻿using Cornifer.Input;
+using Cornifer.Json;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -261,28 +262,28 @@ namespace Cornifer
             return element;
         }
 
-        public static bool IsKeyDown(this MouseState state, InputHandler.MouseKeys key)
+        public static bool IsKeyDown(this MouseState state, MouseKeys key)
         {
             return key switch
             {
-                InputHandler.MouseKeys.LeftButton => state.LeftButton == ButtonState.Pressed,
-                InputHandler.MouseKeys.RightButton => state.RightButton == ButtonState.Pressed,
-                InputHandler.MouseKeys.MiddleButton => state.MiddleButton == ButtonState.Pressed,
-                InputHandler.MouseKeys.XButton1 => state.XButton1 == ButtonState.Pressed,
-                InputHandler.MouseKeys.XButton2 => state.XButton2 == ButtonState.Pressed,
+                MouseKeys.LeftButton => state.LeftButton == ButtonState.Pressed,
+                MouseKeys.RightButton => state.RightButton == ButtonState.Pressed,
+                MouseKeys.MiddleButton => state.MiddleButton == ButtonState.Pressed,
+                MouseKeys.XButton1 => state.XButton1 == ButtonState.Pressed,
+                MouseKeys.XButton2 => state.XButton2 == ButtonState.Pressed,
                 _ => false
             };
         }
 
-        public static bool IsKeyUp(this MouseState state, InputHandler.MouseKeys key)
+        public static bool IsKeyUp(this MouseState state, MouseKeys key)
         {
             return key switch
             {
-                InputHandler.MouseKeys.LeftButton => state.LeftButton == ButtonState.Released,
-                InputHandler.MouseKeys.RightButton => state.RightButton == ButtonState.Released,
-                InputHandler.MouseKeys.MiddleButton => state.MiddleButton == ButtonState.Released,
-                InputHandler.MouseKeys.XButton1 => state.XButton1 == ButtonState.Released,
-                InputHandler.MouseKeys.XButton2 => state.XButton2 == ButtonState.Released,
+                MouseKeys.LeftButton => state.LeftButton == ButtonState.Released,
+                MouseKeys.RightButton => state.RightButton == ButtonState.Released,
+                MouseKeys.MiddleButton => state.MiddleButton == ButtonState.Released,
+                MouseKeys.XButton1 => state.XButton1 == ButtonState.Released,
+                MouseKeys.XButton2 => state.XButton2 == ButtonState.Released,
                 _ => false
             };
         }

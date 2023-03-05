@@ -1,5 +1,6 @@
 ﻿using Cornifer.Json;
 using Cornifer.Renderers;
+using Cornifer.Structures;
 using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
@@ -149,7 +150,7 @@ namespace Cornifer.MapObjects
                 if (node.TryGet("frame", out JsonNode? frame))
                     Frame = JsonTypes.LoadRectangle(frame);
             }
-            else if (GameAtlases.Sprites.TryGetValue(spriteName, out AtlasSprite? sprite))
+            else if (SpriteAtlases.Sprites.TryGetValue(spriteName, out AtlasSprite? sprite))
             {
                 Texture = sprite.Texture;
                 Frame = sprite.Frame;

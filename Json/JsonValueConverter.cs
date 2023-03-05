@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Cornifer.Structures;
+using Microsoft.Xna.Framework;
 using System;
 using System.Text.Json;
 using System.Text.Json.Nodes;

@@ -52,7 +52,7 @@
   </ItemGroup>
 
   <ItemGroup>
-  	<CorniferAssets Include="Assets/**/*.*"/>
+  	<CorniferAssets Include="Assets/**/*.*" />
   </ItemGroup>
 	
   <Target Name="RestoreDotnetTools" BeforeTargets="Restore">
@@ -79,7 +79,7 @@
   </Target>
 
   <Target Name="CopyAssets" AfterTargets="AfterBuild">
-	<Copy SourceFiles="@(CorniferAssets)" DestinationFiles="@(CorniferAssets->'$(OutDir)/Assets/%(RecursiveDir)%(Filename)%(Extension)')"/>
+	<Copy SourceFiles="@(CorniferAssets)" DestinationFiles="@(CorniferAssets->'$(OutDir)/Assets/%(RecursiveDir)%(Filename)%(Extension)')" />
 	<!--<Message Importance="high" Text="@(CorniferAssets->'$(OutDir)/Assets/%(RecursiveDir)%(Filename)%(Extension)')" />-->
   </Target>
 </Project>

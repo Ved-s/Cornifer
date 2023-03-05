@@ -1,4 +1,6 @@
-﻿using Cornifer.MapObjects;
+﻿using Cornifer.Input;
+using Cornifer.MapObjects;
+using Cornifer.Structures;
 using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Cornifer.UI.Modals;
@@ -763,7 +765,7 @@ namespace Cornifer
                     }.Assign(out KeybindsTabList)
                     .Execute(list =>
                     {
-                        foreach (InputHandler.Keybind keybind in InputHandler.Keybinds.Values)
+                        foreach (Keybind keybind in InputHandler.Keybinds.Values)
                         {
                             if (keybind.Name.Length == 0)
                                 continue;
@@ -783,7 +785,7 @@ namespace Cornifer
                                 Height = 0,
                             };
 
-                            foreach (List<InputHandler.KeybindInput> inputs in keybind.Inputs)
+                            foreach (List<KeybindInput> inputs in keybind.Inputs)
                                 AddKeyComboPanel(list, keybind, inputs);
 
                             list.Elements.Add(combos);
@@ -795,7 +797,7 @@ namespace Cornifer
                             }.OnEvent(UIElement.ClickEvent, async (_, _) => 
                             {
                                 KeybindSelector.Show(keybind);
-                                List<InputHandler.KeybindInput>? inputs = await KeybindSelector.Task;
+                                List<KeybindInput>? inputs = await KeybindSelector.Task;
                                 if (inputs is null)
                                     return;
 
@@ -889,7 +891,7 @@ namespace Cornifer
                     BorderColor = new(.3f, .3f, .3f)
                 }.OnEvent(UIElement.ClickEvent, (_, _) => Main.Region?.ResetSubregionColors()));
 
-                foreach (Region.Subregion subregion in region.Subregions)
+                foreach (Subregion subregion in region.Subregions)
                 {
                     UIPanel panel = new()
                     {
@@ -936,7 +938,7 @@ namespace Cornifer
             }
         }
 
-        static void AddKeyComboPanel(UIList list, InputHandler.Keybind keybind, List<InputHandler.KeybindInput> inputs)
+        static void AddKeyComboPanel(UIList list, Keybind keybind, List<KeybindInput> inputs)
         {
             UIPanel panel = new()
             {

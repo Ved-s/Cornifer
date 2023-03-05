@@ -7,7 +7,7 @@ using System.Text.Json.Nodes;
 
 namespace Cornifer
 {
-    public static class GameAtlases
+    public static class SpriteAtlases
     {
         const string AtlasesPath = "Assets/Atlases";
 

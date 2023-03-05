@@ -1,5 +1,6 @@
 ﻿using Cornifer.MapObjects;
 using Cornifer.Renderers;
+using Cornifer.Structures;
 using Microsoft.Xna.Framework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;

@@ -1,6 +1,7 @@
 ﻿using Cornifer.Json;
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
+using Cornifer.Structures;
 using Cornifer.UI.Elements;
 using Cornifer.UI.Helpers;
 using Microsoft.Xna.Framework;
@@ -455,7 +456,7 @@ namespace Cornifer
                     }
                 }
 
-            if (IsShelter && GameAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
+            if (IsShelter && SpriteAtlases.Sprites.TryGetValue("ShelterMarker", out var shelterMarker))
                 Children.Add(new SimpleIcon("ShelterMarker", shelterMarker));
 
             if (IsScavengerOutpost)
@@ -466,7 +467,7 @@ namespace Cornifer
                 {
                     ParentPosAlign = align,
                 });
-                if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
+                if (SpriteAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
                     Children.Add(new SimpleIcon("TollIcon", tollIcon)
                     {
                         ParentPosAlign = align,
@@ -476,7 +477,7 @@ namespace Cornifer
             if (IsScavengerTrader)
             {
                 Children.Add(new MapText("TraderText", Main.DefaultSmallMapFont, "Scavenger merchant"));
-                if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
+                if (SpriteAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
                     Children.Add(new SimpleIcon("TraderIcon", tollIcon));
             }
 
@@ -488,7 +489,7 @@ namespace Cornifer
                 {
                     ParentPosAlign = align,
                 });
-                if (GameAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
+                if (SpriteAtlases.Sprites.TryGetValue("ChieftainA", out var tollIcon))
                     Children.Add(new SimpleIcon("TreasuryIcon", tollIcon)
                     {
                         ParentPosAlign = align,
@@ -588,7 +589,7 @@ namespace Cornifer
                     }
                 }
 
-                Region.Subregion subregion = Region.Subregions[Subregion.Value];
+                Subregion subregion = Region.Subregions[Subregion.Value];
 
                 for (int j = 0; j < TileSize.Y; j++)
                     for (int i = 0; i < TileSize.X; i++)
@@ -911,7 +912,7 @@ namespace Cornifer
 
                 for (int i = 0; i < Region.Subregions.Length; i++)
                 {
-                    Region.Subregion subregion = Region.Subregions[i];
+                    Subregion subregion = Region.Subregions[i];
                     UIButton button = new()
                     {
                         Text = subregion.Name.Length == 0 ? "Main region" : subregion.Name,
@@ -1117,18 +1118,5 @@ namespace Cornifer
                 RegionTransportation,
             }
         }
-    }
-
-    public class GateRoomData
-    {
-        public bool Swapped;
-
-        public string? TargetRegionName;
-
-        public string? LeftRegionId;
-        public string? RightRegionId;
-
-        public string? LeftKarma;
-        public string? RightKarma;
     }
 }

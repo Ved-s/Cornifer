@@ -1,4 +1,5 @@
-﻿using Cornifer.UI.Elements;
+﻿using Cornifer.Input;
+using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework.Input;
 using System.Buffers.Text;
 using System.Collections.Generic;
@@ -6,9 +7,9 @@ using System.Linq;
 
 namespace Cornifer.UI.Modals
 {
-    public class KeybindSelector : Modal<KeybindSelector, List<InputHandler.KeybindInput>?>
+    public class KeybindSelector : Modal<KeybindSelector, List<KeybindInput>?>
     {
-        List<InputHandler.KeybindInput> Inputs = new();
+        List<KeybindInput> Inputs = new();
         UILabel CurrentKeybindInputs = null!;
         UILabel CurrentKeybindName = null!;
         bool UpdateSkipped = false;
@@ -80,7 +81,7 @@ namespace Cornifer.UI.Modals
             };
         }
 
-        public static void Show(InputHandler.Keybind keybind)
+        public static void Show(Keybind keybind)
         {
             Instance ??= new();
             Instance.CurrentKeybindName.Text = keybind.Name;
@@ -113,32 +114,32 @@ namespace Cornifer.UI.Modals
                     if (!InputHandler.KeyboardState.IsKeyDown(key) || !InputHandler.OldKeyboardState.IsKeyUp(key))
                         continue;
 
-                    InputHandler.ModifierKeys? modifier = InputHandler.GetKeyModifiers(key);
-                    bool hadKey = Inputs.RemoveAll(ki => ki is InputHandler.KeyboardInput keyboardInput && keyboardInput.Key == key) > 0;
-                    bool hadMod = modifier.HasValue && Inputs.RemoveAll(ki => ki is InputHandler.ModifierInput modifierInput && modifierInput.Key == modifier) > 0;
+                    ModifierKeys? modifier = InputHandler.GetKeyModifiers(key);
+                    bool hadKey = Inputs.RemoveAll(ki => ki is KeyboardInput keyboardInput && keyboardInput.Key == key) > 0;
+                    bool hadMod = modifier.HasValue && Inputs.RemoveAll(ki => ki is ModifierInput modifierInput && modifierInput.Key == modifier) > 0;
 
                     // None => Key => Possible modifier => None
 
                     if (!hadKey && !hadMod)
                     {
-                        Inputs.Add(new InputHandler.KeyboardInput(key));
+                        Inputs.Add(new KeyboardInput(key));
                     }
                     else if (hadKey && modifier.HasValue)
                     {
-                        Inputs.Add(new InputHandler.ModifierInput(modifier.Value));
+                        Inputs.Add(new ModifierInput(modifier.Value));
                     }
 
                     keysChanged = true;
                 }
 
-                foreach (InputHandler.MouseKeys key in InputHandler.AllMouseKeys)
+                foreach (MouseKeys key in InputHandler.AllMouseKeys)
                 {
                     if (!InputHandler.MouseState.IsKeyDown(key) || !InputHandler.OldMouseState.IsKeyUp(key))
                         continue;
 
-                    bool hadKey = Inputs.RemoveAll(ki => ki is InputHandler.MouseInput mouseInput && mouseInput.Key == key) > 0;
+                    bool hadKey = Inputs.RemoveAll(ki => ki is MouseInput mouseInput && mouseInput.Key == key) > 0;
                     if (!hadKey)
-                        Inputs.Add(new InputHandler.MouseInput(key));
+                        Inputs.Add(new MouseInput(key));
 
                     keysChanged = true;
                 }

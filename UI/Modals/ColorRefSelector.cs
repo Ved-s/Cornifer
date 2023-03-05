@@ -1,4 +1,5 @@
-﻿using Cornifer.UI.Elements;
+﻿using Cornifer.Structures;
+using Cornifer.UI.Elements;
 using Cornifer.UI.Helpers;
 using Microsoft.Xna.Framework;
 using System;

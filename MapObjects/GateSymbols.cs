@@ -1,5 +1,6 @@
 ﻿using Cornifer.Json;
 using Cornifer.Renderers;
+using Cornifer.Structures;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using System;
@@ -33,8 +34,8 @@ namespace Cornifer.MapObjects
 
         public GateSymbols()
         {
-            LeftArrowSprite = GameAtlases.GetSpriteOrNull("Misc_ArrowLeft");
-            RightArrowSprite = GameAtlases.GetSpriteOrNull("Misc_ArrowRight");
+            LeftArrowSprite = SpriteAtlases.GetSpriteOrNull("Misc_ArrowLeft");
+            RightArrowSprite = SpriteAtlases.GetSpriteOrNull("Misc_ArrowRight");
         }
 
         public GateSymbols(string? left, string? right) : this()
@@ -59,7 +60,7 @@ namespace Cornifer.MapObjects
             if (name is null)
                 return null;
 
-            if (GameAtlases.Sprites.TryGetValue(name, out AtlasSprite? sprite))
+            if (SpriteAtlases.Sprites.TryGetValue(name, out AtlasSprite? sprite))
                 return sprite;
             return null;
         }

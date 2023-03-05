@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Cornifer
+namespace Cornifer.Structures
 {
     public class CircularBuffer<T> : IEnumerable<T>
     {
@@ -13,19 +13,19 @@ namespace Cornifer
         public int Count { get; private set; }
         public int Capacity => Array.Length;
 
-        public CircularBuffer(int capacity) 
+        public CircularBuffer(int capacity)
         {
             Array = new T[capacity];
         }
 
         public T this[int index]
         {
-            get 
+            get
             {
                 if (index >= 0) return Array[FixIndex(Position - Count + index)];
                 return Array[FixIndex(index + Position)];
             }
-            set 
+            set
             {
                 if (index >= 0) Array[FixIndex(Position - Count + index)] = value;
                 else Array[FixIndex(index + Position)] = value;
@@ -78,9 +78,9 @@ namespace Cornifer
         }
 
         int FixIndex(int index)
-        { 
+        {
             if (index < 0)
-                return ((Capacity - (Math.Abs(index) % Capacity))) % Capacity;
+                return (Capacity - Math.Abs(index) % Capacity) % Capacity;
             return index % Capacity;
         }
 

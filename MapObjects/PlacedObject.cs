@@ -1,12 +1,11 @@
-﻿using Cornifer.MapObjects;
-using Cornifer.UI.Elements;
+﻿using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace Cornifer
+namespace Cornifer.MapObjects
 {
     public class PlacedObject : SimpleIcon
     {
@@ -26,7 +25,7 @@ namespace Cornifer
         public override bool DisableBorderConfig => true;
 
         public override Vector2 Size => Frame.Size.ToVector2();
-        public override Vector2 ParentPosAlign => Parent is not Room ? new(.5f) : new Vector2(RoomPos.X / Parent.Size.X, 1 - (RoomPos.Y / Parent.Size.Y));
+        public override Vector2 ParentPosAlign => Parent is not Room ? new(.5f) : new Vector2(RoomPos.X / Parent.Size.X, 1 - RoomPos.Y / Parent.Size.Y);
         public override bool Active
         {
             get => InterfaceState.DrawPlacedObjects.Value
@@ -172,7 +171,7 @@ namespace Cornifer
                     if (type != "Misc" && type != "BroadcastMisc")
                     {
                         obj.Children.Add(new MapText("PearlText", Main.DefaultSmallMapFont, $"[c:{obj.Color.Value.GetKeyOrColorString()}]Colored[/c] pearl"));
-                        if (GameAtlases.Sprites.TryGetValue("ScholarA", out AtlasSprite? sprite))
+                        if (SpriteAtlases.Sprites.TryGetValue("ScholarA", out AtlasSprite? sprite))
                             obj.Children.Add(new SimpleIcon("PearlIcon", sprite)
                             {
                                 Shade = { OriginalValue = true }
@@ -198,7 +197,7 @@ namespace Cornifer
                     RemoveByAvailability = false,
                 };
 
-            if (!GameAtlases.Sprites.TryGetValue("Object_" + name, out var atlas))
+            if (!SpriteAtlases.Sprites.TryGetValue("Object_" + name, out var atlas))
             {
                 return null;
             }
@@ -216,7 +215,7 @@ namespace Cornifer
 
         public static bool CheckValidType(string type)
         {
-            return GameAtlases.Sprites.ContainsKey($"Object_{type}");
+            return SpriteAtlases.Sprites.ContainsKey($"Object_{type}");
         }
 
         public void AddAvailabilityIcons()
@@ -226,7 +225,7 @@ namespace Cornifer
 
             float iconAngle = 0.5f;
             float totalAngle = Math.Max(0, SlugcatAvailability.Count - 1) * iconAngle;
-            float currentAngle = (MathF.PI / 2) + totalAngle / 2;
+            float currentAngle = MathF.PI / 2 + totalAngle / 2;
             foreach (string slugcat in SlugcatAvailability)
             {
                 Vector2 offset = new Vector2(MathF.Cos(currentAngle), -MathF.Sin(currentAngle)) * 15;

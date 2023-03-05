@@ -2,6 +2,7 @@
 using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading.Tasks;
+using Cornifer.Structures;
 using Cornifer.UndoActions;
 
 namespace Cornifer

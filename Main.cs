@@ -1,6 +1,8 @@
-﻿using Cornifer.Json;
+﻿using Cornifer.Input;
+using Cornifer.Json;
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
+using Cornifer.Structures;
 using Cornifer.UndoActions;
 using Microsoft.Win32;
 using Microsoft.Xna.Framework;
@@ -154,7 +156,7 @@ namespace Cornifer
             Pixel.SetData(new[] { Color.White });
 
             WorldCamera = new(SpriteBatch);
-            GameAtlases.Load();
+            SpriteAtlases.Load();
             ColorDatabase.Load();
         }
 
@@ -409,9 +411,9 @@ namespace Cornifer
 
             bool prevented = !active || Dragging || Selecting || Interface.Hovered || (Region?.Connections?.Hovered ?? false);
 
-            InputHandler.KeybindState dragState = InputHandler.Drag.State;
+            KeybindState dragState = InputHandler.Drag.State;
 
-            if (dragState == InputHandler.KeybindState.JustPressed)
+            if (dragState == KeybindState.JustPressed)
             {
                 if (prevented)
                     return;
@@ -460,7 +462,7 @@ namespace Cornifer
             }
             else
             {
-                if (dragState == InputHandler.KeybindState.JustReleased)
+                if (dragState == KeybindState.JustReleased)
                 {
                     foreach (MapObject obj in SelectedObjects)
                         if (!obj.ParentSelected)
@@ -927,26 +929,5 @@ namespace Cornifer
                     }
                 }
         }
-    }
-
-    [Flags]
-    public enum RenderLayers
-    {
-        All = 0x1f,
-
-        Rooms = 1,
-        Connections = 2,
-        InRoomShortcuts = 16,
-        Icons = 4,
-        Texts = 8,
-
-        None = 255,
-    }
-
-    public enum EnabledDebugMetric
-    {
-        None,
-        Undos,
-        Timings
     }
 }

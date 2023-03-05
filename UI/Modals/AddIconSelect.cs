@@ -63,7 +63,7 @@ namespace Cornifer.UI.Modals
                 }.OnEvent(UIElement.ClickEvent, (_, _) => ReturnResult(new()))
             };
 
-            foreach (var (name, sprite) in GameAtlases.Sprites.OrderBy(kvp => kvp.Key))
+            foreach (var (name, sprite) in SpriteAtlases.Sprites.OrderBy(kvp => kvp.Key))
             {
                 UIHoverPanel panel = new()
                 {

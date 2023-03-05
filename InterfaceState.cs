@@ -1,4 +1,6 @@
 ﻿using Cornifer.Json;
+using Cornifer.MapObjects;
+using Cornifer.Structures;
 using Cornifer.UI.Elements;
 using System;
 using System.Collections.Generic;
