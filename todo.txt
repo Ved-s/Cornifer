@@ -1,4 +1,7 @@
 Proper asset loading
++ equivalences.txt
++ regions.txt
+
 Option to not load mod data
 Warnings system (2 wide gaps in connections)
 Color selection for shortcut types
@@ -8,10 +11,3 @@ Switch slugcats after region load
 visibility presets (default: all layers + no pickups, pickups only, karmaflowers only, vista points only)
 Text presets
 Subregion text
-
-Hardcoded game values:
-Pearl colors
-Slugcat names/colors/availability
-All po types
-Region equivalences
-Region availability for slugcats

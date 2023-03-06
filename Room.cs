@@ -110,7 +110,7 @@ namespace Cornifer
 
         public Effect[] Effects = Array.Empty<Effect>();
         public Connection?[] Connections = Array.Empty<Connection>();
-        public List<string> BrokenForSlugcats = new();
+        public HashSet<string> BrokenForSlugcats = new();
 
         public Texture2D? TileMap;
         public bool TileMapDirty = false;
@@ -418,7 +418,7 @@ namespace Cornifer
                                     continue;
 
                                 if (obj.SlugcatAvailability.Count == 0)
-                                    obj.SlugcatAvailability.UnionWith(Main.AvailableSlugCatNames);
+                                    obj.SlugcatAvailability.UnionWith(StaticData.Slugcats.Where(s => s.Playable).Select(s => s.Id));
 
                                 obj.SlugcatAvailability.IntersectWith(filter.SlugcatAvailability);
 
@@ -510,7 +510,7 @@ namespace Cornifer
 
             if (BrokenForSlugcats.Count > 0)
             {
-                string text = "Broken for " + string.Join(' ', BrokenForSlugcats.OrderBy(s => Array.IndexOf(Main.SlugCatNames, s)).Select(s => $"[ic:Slugcat_{s}]"));
+                string text = "Broken for " + string.Join(' ', StaticData.Slugcats.Where(s => BrokenForSlugcats.Contains(s.Id)).Select(s => $"[ic:Slugcat_{s.Id}]"));
                 Children.Add(new MapText("BrokenShelterText", Main.DefaultSmallMapFont, text));
             }
 

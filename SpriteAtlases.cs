@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using Cornifer.Structures;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 using System.IO;
@@ -195,18 +196,18 @@ namespace Cornifer
                     Sprites[name] = new(name, sprite.Texture, sprite.Frame, spriteData.Color, true);
                 }
 
-            for (int i = 0; i < Main.SlugCatNames.Length; i++)
+            foreach (SlugcatData slugcat in StaticData.Slugcats)
             {
-                string name = "SlugcatIcon_" + Main.SlugCatNames[i];
-                Rectangle frame = new(i * 8, 0, 8, 8);
+                string name = "SlugcatIcon_" + slugcat.Id;
+                Rectangle frame = new(slugcat.IconId * 8, 0, 8, 8);
                 Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
 
-                name = "SlugcatDiamond_" + Main.SlugCatNames[i];
-                frame = new(i * 9, 8, 9, 9);
+                name = "SlugcatDiamond_" + slugcat.Id;
+                frame = new(slugcat.IconId * 9, 8, 9, 9);
                 Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
 
-                name = "Slugcat_" + Main.SlugCatNames[i];
-                frame = new(i * 20, 17, 20, 19);
+                name = "Slugcat_" + slugcat.Id;
+                frame = new(slugcat.IconId * 20, 17, 20, 19);
                 Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
             }
         }

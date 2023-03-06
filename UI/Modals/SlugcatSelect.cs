@@ -1,4 +1,5 @@
-﻿using Cornifer.UI.Elements;
+﻿using Cornifer.Structures;
+using Cornifer.UI.Elements;
 
 namespace Cornifer.UI.Modals
 {
@@ -34,11 +35,11 @@ namespace Cornifer.UI.Modals
 
             float y = 50;
 
-            foreach (string slugcat in Main.SlugCatNames)
+            foreach (SlugcatData slugcat in StaticData.Slugcats)
             {
                 UIButton button = new()
                 {
-                    Text = slugcat,
+                    Text = slugcat.Name,
                     Height = 20,
                     TextAlign = new(.5f),
                     Top = y
@@ -47,7 +48,7 @@ namespace Cornifer.UI.Modals
                 {
                     ReturnResult(new()
                     {
-                        Slugcat = slugcat
+                        Slugcat = slugcat.Id
                     });
                 });
                 Elements.Add(button);

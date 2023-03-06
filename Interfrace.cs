@@ -594,7 +594,7 @@ namespace Cornifer
                                     {
                                         VisibilityPlacedObjects.Clear();
 
-                                        foreach (string objectName in PlacedObject.AllObjectTypes.OrderBy(s => s))
+                                        foreach (string objectName in StaticData.PlacedObjectTypes.OrderBy(s => s))
                                         {
                                             if (!PlacedObject.CheckValidType(objectName))
                                                 continue;
@@ -847,7 +847,7 @@ namespace Cornifer
                             {
                                 SimpleIcon icon = new(
                                     $"Debug_DiamondPlacement_{Random.Shared.Next():x}", 
-                                    SpriteAtlases.Sprites[$"SlugcatDiamond_{Main.AvailableSlugCatNames[i]}"]);
+                                    SpriteAtlases.Sprites[$"SlugcatDiamond_{StaticData.Slugcats[i].Id}"]);
                                 icon.BorderSize.OriginalValue = 1;
                                 icon.WorldPosition = pos + placement.Positions[i];
 
