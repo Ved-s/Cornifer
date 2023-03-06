@@ -7,3 +7,11 @@ Exclusive keybinds
 Switch slugcats after region load
 visibility presets (default: all layers + no pickups, pickups only, karmaflowers only, vista points only)
 Text presets
+Subregion text
+
+Hardcoded game values:
+Pearl colors
+Slugcat names/colors/availability
+All po types
+Region equivalences
+Region availability for slugcats

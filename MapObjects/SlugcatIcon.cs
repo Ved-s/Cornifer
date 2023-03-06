@@ -25,9 +25,13 @@ namespace Cornifer.MapObjects
 
         public override void DrawIcon(Renderer renderer)
         {
-            Rectangle frame = InterfaceState.DrawSlugcatDiamond.Value && !ForceSlugcatIcon ? new(Id * 9, 8, 9, 9) : new(Id * 8, 0, 8, 8);
-
+            Rectangle frame = GetFrame(Id, InterfaceState.DrawSlugcatDiamond.Value && !ForceSlugcatIcon);
             renderer.DrawTexture(Content.SlugcatIcons, WorldPosition, frame);
+        }
+
+        public static Rectangle GetFrame(int id, bool diamond)
+        {
+            return diamond ? new(id * 9, 8, 9, 9) : new(id * 8, 0, 8, 8);
         }
     }
 }

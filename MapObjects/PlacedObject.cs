@@ -13,6 +13,7 @@ namespace Cornifer.MapObjects
 
         public override string? Name => $"{Type}@{RoomPos.X:0},{RoomPos.Y:0}";
 
+        public List<SlugcatIcon>? AvailabilityIcons;
         public HashSet<string> SlugcatAvailability = new();
         public Vector2 RoomPos;
         public Vector2 HandlePos;
@@ -220,23 +221,72 @@ namespace Cornifer.MapObjects
 
         public void AddAvailabilityIcons()
         {
-            if (Type == "DevToken")
+            if (Type == "DevToken" || SlugcatAvailability.Count == 0)
                 return;
 
             float iconAngle = 0.5f;
             float totalAngle = Math.Max(0, SlugcatAvailability.Count - 1) * iconAngle;
             float currentAngle = MathF.PI / 2 + totalAngle / 2;
-            foreach (string slugcat in SlugcatAvailability)
+
+            int i = 0;
+
+            List<SlugcatIcon> icons = new();
+            foreach (string slugcat in SlugcatAvailability.OrderBy(s => Array.IndexOf(Main.AvailableSlugCatNames, s)))
             {
                 Vector2 offset = new Vector2(MathF.Cos(currentAngle), -MathF.Sin(currentAngle)) * 15;
                 currentAngle -= iconAngle;
-                Children.Add(new SlugcatIcon($"Availability_{slugcat}")
+
+                offset.Floor();
+                SlugcatIcon icon = new($"Availability_{slugcat}")
                 {
                     Id = Array.IndexOf(Main.SlugCatNames, slugcat),
                     ParentPosition = offset
-                });
+                };
+                Children.Add(icon);
+                icons.Add(icon);
+                i++;
+            }
+            AvailabilityIcons = icons;
+
+            DiamondPlacement? placement = DiamondPlacement.Placements.FirstOrDefault(p => p.Positions.Length == SlugcatAvailability.Count);
+            if (placement is not null)
+                PositionAvailabilityIcons(placement, new(Size.X / 2, -10 - placement.Size.Y / 2));
+        }
+
+        public void PositionAvailabilityIcons(DiamondPlacement placement, Vector2? center)
+        {
+            if (AvailabilityIcons is null || placement.Positions.Length < 1)
+                return;
+
+            if (center is null)
+            {
+                Vector2 tl = AvailabilityIcons[0].ParentPosition;
+                Vector2 br = AvailabilityIcons[0].ParentPosition + DiamondPlacement.DiamondSize;
+
+                for (int i = 0; i < AvailabilityIcons.Count; i++)
+                {
+                    tl.X = Math.Min(tl.X, AvailabilityIcons[i].ParentPosition.X);
+                    tl.Y = Math.Min(tl.Y, AvailabilityIcons[i].ParentPosition.Y);
+
+                    br.X = Math.Max(br.X, AvailabilityIcons[i].ParentPosition.X + AvailabilityIcons[i].Size.X);
+                    br.Y = Math.Max(br.Y, AvailabilityIcons[i].ParentPosition.Y + AvailabilityIcons[i].Size.Y);
+                }
+
+                center = tl + (br - tl) / 2;
+            }
+
+            for (int i = 0; i < placement.Positions.Length; i++)
+            {
+                if (i >= AvailabilityIcons.Count)
+                    break;
+
+                Vector2 pos = placement.Positions[i] + center.Value;
+                pos.Ceiling();
+                AvailabilityIcons[i].ParentPosition = pos;
             }
         }
+
+
 
         protected override void BuildInnerConfig(UIList list)
         {
@@ -250,6 +300,51 @@ namespace Cornifer.MapObjects
                     Text = DebugDisplay,
                     TextAlign = new(.5f)
                 });
+            }
+
+            if (AvailabilityIcons?.Count is not null and > 1)
+            {
+                UIFlow flow = new()
+                {
+                    ElementSpacing = 4,
+                };
+
+                bool any = false;
+                foreach (DiamondPlacement placement in DiamondPlacement.Placements)
+                {
+                    if (placement.Positions.Length != AvailabilityIcons.Count)
+                        continue;
+
+                    UIHoverPanel panel = new()
+                    {
+                        Width = DiamondPlacement.MaxSize.X + 8,
+                        Height = DiamondPlacement.MaxSize.Y + 8,
+
+                        Padding = 4,
+                        Elements =
+                        {
+                            new UIDiamondPlacementDisplay
+                            {
+                                Placement = placement,
+                                Icons = AvailabilityIcons
+                            }
+                        }
+                    };
+                    panel.OnEvent(UIElement.ClickEvent, (_, _) => PositionAvailabilityIcons(placement, null));
+                    flow.Elements.Add(panel);
+                    any = true;
+                }
+                if (any)
+                {
+                    list.Elements.Add(new UILabel
+                    {
+                        Height = 0,
+                        TextAlign = new(.5f),
+
+                        Text = "Diamond presets"
+                    });
+                    list.Elements.Add(flow);
+                }
             }
         }
 

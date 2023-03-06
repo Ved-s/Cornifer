@@ -130,7 +130,12 @@ namespace Cornifer
             });
         }
 
-        class WindowsInteractionTaskSheduler : TaskScheduler
+        public static void Stop()
+        {
+            Sheduler.Dispose();
+        }
+
+        class WindowsInteractionTaskSheduler : TaskScheduler, IDisposable
         {
             Queue<Task> TaskQueue = new();
             Thread Thread;
@@ -186,6 +191,12 @@ namespace Cornifer
             protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
             {
                 return false;
+            }
+
+            public void Dispose()
+            {
+                Thread?.Interrupt();
+                Signal.Set();
             }
         }
         class WindowHandle : IWin32Window

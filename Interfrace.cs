@@ -7,8 +7,6 @@ using Cornifer.UI.Modals;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
-using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Png;
 using System;
@@ -16,7 +14,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 
 namespace Cornifer
 {
@@ -146,7 +143,17 @@ namespace Cornifer
                                         Element = InitKeybindsTab(),
                                     }
                                 }
-                            }
+                            }.Execute(tabs =>
+                            {
+                                if (Main.DebugMode)
+                                {
+                                    tabs.Tabs.Add(new()
+                                    {
+                                        Name = "Debug",
+                                        Element = InitDebugTab()
+                                    });
+                                }
+                            })
                         }
                     }.Assign(out SidePanel),
 
@@ -184,7 +191,7 @@ namespace Cornifer
                         Text = "Select region",
 
                         TextAlign = new(.5f)
-                    }.OnEvent(UIElement.ClickEvent, async (_, _) => 
+                    }.OnEvent(UIElement.ClickEvent, async (_, _) =>
                     {
                         SlugcatSelect.Show();
                         SlugcatSelect.Result? slugcat = await SlugcatSelect.Task;
@@ -323,7 +330,7 @@ namespace Cornifer
                                 TextAlign = new(.5f)
 
                             }.BindConfig(InterfaceState.OverlayBelow),
-                            
+
                             new UIPanel
                             {
                                 Height = 40,
@@ -794,7 +801,7 @@ namespace Cornifer
                                 Text = "Add keybind",
                                 TextAlign = new(.5f),
                                 Height = 20
-                            }.OnEvent(UIElement.ClickEvent, async (_, _) => 
+                            }.OnEvent(UIElement.ClickEvent, async (_, _) =>
                             {
                                 KeybindSelector.Show(keybind);
                                 List<KeybindInput>? inputs = await KeybindSelector.Task;
@@ -807,6 +814,47 @@ namespace Cornifer
                                 KeybindsTabList.Recalculate();
                             }));
                             list.Elements.Add(new UIElement { Height = 10 });
+                        }
+                    })
+                }
+            };
+        }
+        static UIElement InitDebugTab()
+        {
+            return new UIPanel
+            {
+                BackColor = new(30, 30, 30),
+                BorderColor = new(100, 100, 100),
+
+                Padding = new(5),
+
+                Elements =
+                {
+                    new UIButton
+                    {
+                        Text = "Test diamond placement",
+                        Height = 20,
+                        TextAlign = new(.5f),
+                    }.OnEvent(UIElement.ClickEvent, (_, _) => 
+                    {
+                        Vector2 pos = Main.WorldCamera.InverseTransformVector(Main.WorldCamera.Size / 2);
+
+                        foreach (DiamondPlacement placement in DiamondPlacement.Placements)
+                        {
+                            pos.X += placement.Size.X / 2;
+
+                            for (int i = 0; i < placement.Positions.Length; i++)
+                            {
+                                SimpleIcon icon = new(
+                                    $"Debug_DiamondPlacement_{Random.Shared.Next():x}", 
+                                    SpriteAtlases.Sprites[$"SlugcatDiamond_{Main.AvailableSlugCatNames[i]}"]);
+                                icon.BorderSize.OriginalValue = 1;
+                                icon.WorldPosition = pos + placement.Positions[i];
+
+                                Main.WorldObjects.Add(icon);
+                            }
+
+                            pos.X += placement.Size.X / 2 + 5;
                         }
                     })
                 }
@@ -845,7 +893,7 @@ namespace Cornifer
             string? renderDir = await Platform.FolderBrowserDialog("Select render save folder");
             if (renderDir is null)
                 return;
-            
+
             Main.MainThreadQueue.Enqueue(() =>
             {
                 Capture.CaptureMapLayered(renderDir);
