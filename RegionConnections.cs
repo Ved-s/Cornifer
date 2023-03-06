@@ -820,7 +820,7 @@ namespace Cornifer
                     NoShadow.OriginalValue = true;
             }
 
-            public override RenderLayers RenderLayer => RenderLayers.None;
+            public override RenderLayers RenderLayer => Connection.IsInRoomShortcut ? RenderLayers.InRoomShortcuts : RenderLayers.Connections;
             public override Vector2 VisualOffset => -(VisualSize - Vector2.One) / 2;
             public override Vector2 VisualSize => new(13);
 
