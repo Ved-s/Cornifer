@@ -193,13 +193,11 @@ namespace Cornifer
                         TextAlign = new(.5f)
                     }.OnEvent(UIElement.ClickEvent, async (_, _) =>
                     {
-                        SlugcatSelect.Show();
-                        SlugcatSelect.Result? slugcat = await SlugcatSelect.Task;
+                        SlugcatSelect.Result? slugcat = await SlugcatSelect.ShowAsync();
                         if (!slugcat.HasValue)
                             return;
 
-                        RegionSelect.Show();
-                        RegionSelect.Result? region = await RegionSelect.Task;
+                        RegionSelect.Result? region = await RegionSelect.ShowAsync(slugcat.Value.Slugcat);
                         if (!region.HasValue)
                             return;
 

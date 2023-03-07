@@ -30,7 +30,7 @@ namespace Cornifer.UI.Modals
                     Height = 20,
                     Text = "Close",
                     TextAlign = new(.5f)
-                }.OnEvent(UIElement.ClickEvent, (_, _) => ReturnResult(null))
+                }.OnEvent(ClickEvent, (_, _) => ReturnResult(null))
             };
 
             float y = 50;
@@ -44,7 +44,7 @@ namespace Cornifer.UI.Modals
                     TextAlign = new(.5f),
                     Top = y
                 };
-                button.OnEvent(UIElement.ClickEvent, (_, _) =>
+                button.OnEvent(ClickEvent, (_, _) =>
                 {
                     ReturnResult(new()
                     {
@@ -63,7 +63,7 @@ namespace Cornifer.UI.Modals
                 TextAlign = new(.5f),
                 Top = y
             };
-            all.OnEvent(UIElement.ClickEvent, (_, _) =>
+            all.OnEvent(ClickEvent, (_, _) =>
             {
                 ReturnResult(new()
                 {

@@ -64,6 +64,12 @@ namespace Cornifer.UI.Modals
             ModalVisible = true;
         }
 
+        public static async Task<TResult> ShowAsync()
+        {
+            Show();
+            return await Task;
+        }
+
         protected virtual void Shown() { }
         protected virtual void Hidden() { }
 

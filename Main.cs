@@ -900,7 +900,7 @@ namespace Cornifer
             }
             return false;
         }
-        public static IEnumerable<(string id, string name, string path)> FindRegions()
+        public static IEnumerable<(string id, string name, string path)> FindRegions(string? slugcat = null)
         {
             if (RainWorldRoot is null)
                 yield break;
@@ -926,12 +926,29 @@ namespace Cornifer
                         string displayname = Path.Combine(region, "displayname.txt");
                         if (File.Exists(displayname))
                         {
-                            string name = File.ReadAllText(displayname);
+                            string regionId = Path.GetFileName(region).ToUpper();
+
+                            string? name = null;
+
+                            if (slugcat is not null)
+                            {
+                                foreach (string testWorld in worlds)
+                                {
+                                    string slugcatDisplayName = Path.Combine(testWorld, $"{regionId}/displayname-{slugcat}.txt");
+                                    if (File.Exists(slugcatDisplayName))
+                                    {
+                                        name = File.ReadAllText(slugcatDisplayName);
+                                        break;
+                                    }
+                                }
+                            }
+
+                            name ??= File.ReadAllText(displayname);
 
                             if (foundRegions.Contains(name))
                                 continue;
 
-                            yield return (Path.GetFileName(region).ToUpper(), name, region);
+                            yield return (regionId, name, region);
 
                             foundRegions.Add(name);
                         }
