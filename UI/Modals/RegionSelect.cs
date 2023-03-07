@@ -35,31 +35,20 @@ namespace Cornifer.UI.Modals
                     ElementSpacing = 5,
 
                 }.Assign(out RegionList),
-                //new UIButton
-                //{
-                //    Top = new(-50, 1),
-                //
-                //    Height = 20,
-                //    Text = "Manual select",
-                //    TextAlign = new(.5f)
-                //
-                //}.OnEvent(UIElement.ClickEvent, (_, _) =>
-                //{
-                //    Thread dirSelect = new(() =>
-                //    {
-                //        System.Windows.Forms.FolderBrowserDialog fd = new();
-                //        fd.UseDescriptionForTitle = true;
-                //        fd.Description = "Select Rain World region folder. For example RainWorld_Data/StreamingAssets/world/su";
-                //        if (fd.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                //            return;
-                //
-                //        ModalVisible = false;
-                //        Main.LoadRegion(fd.SelectedPath);
-                //    });
-                //    dirSelect.SetApartmentState(ApartmentState.STA);
-                //    dirSelect.Start();
-                //    dirSelect.Join();
-                //}),
+                new UIButton
+                {
+                    Top = new(-50, 1),
+                
+                    Height = 20,
+                    Text = "Manual select",
+                    TextAlign = new(.5f)
+                
+                }.OnEvent(ClickEvent, async (_, _) =>
+                {
+                    string? regionPath = await Platform.FolderBrowserDialog("Select Rain World region folder. For example RainWorld_Data/StreamingAssets/world/su");
+                    if (regionPath is not null)
+                        ReturnResult(new() { Path = regionPath });
+                }),
                 new UIButton
                 {
                     Top = new(-20, 1),
