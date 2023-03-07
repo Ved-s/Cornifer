@@ -30,9 +30,6 @@ namespace Cornifer
         static bool DebugModeEnforcement;
 #endif
 
-        static Regex SteamLibraryPath = new(@"""path""[ \t]*""([^""]+)""", RegexOptions.Compiled);
-        static Regex SteamManifestInstallDir = new(@"""installdir""[ \t]*""([^""]+)""", RegexOptions.Compiled);
-
         public static GraphicsDeviceManager GraphicsManager = null!;
         public static SpriteBatch SpriteBatch = null!;
 
@@ -49,8 +46,6 @@ namespace Cornifer
         public static List<MapObject> WorldObjects = new();
         public static CompoundEnumerable<MapObject> WorldObjectLists = new();
         public static HashSet<MapObject> SelectedObjects = new();
-
-        public static string? RainWorldRoot;
 
         public static RenderLayers ActiveRenderLayers = RenderLayers.All;
         public static EnabledDebugMetric DebugMetric = EnabledDebugMetric.None;
@@ -102,7 +97,7 @@ namespace Cornifer
 #endif
 
             GithubInfo.Load();
-            SearchRainWorld();
+            RWAssets.Load();
             JsonValueConverter.Load();
 
             GraphicsDevice.PresentationParameters.RenderTargetUsage = RenderTargetUsage.PreserveContents;
@@ -148,6 +143,8 @@ namespace Cornifer
             FpsStopwatch.Start();
 
             Thread.CurrentThread.Name = "Main thread";
+
+            RWAssets.ShowDialogs();
         }
 
         protected override void LoadContent()
@@ -578,105 +575,25 @@ namespace Cornifer
             SpriteBatch.End();
         }
 
-        public static bool SearchRainWorld()
+        public static void LoadRegion(string id)
         {
-            object? steampathobj =
-                    Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam", "InstallPath", null) ??
-                    Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Valve\\Steam", "InstallPath", null);
-            if (steampathobj is not string steampath)
-                return false;
+            string? worldFile = RWAssets.ResolveSlugcatFile($"world/{id}/world_{id}.txt");
+            string? mapFile = RWAssets.ResolveSlugcatFile($"world/{id}/map_{id}.txt");
+            string? propertiesFile = RWAssets.ResolveSlugcatFile($"world/{id}/properties.txt");
 
-            if (!FileExists(steampath, "steamapps/libraryfolders.vdf", out string libraryfolders))
+            if (worldFile is null)
             {
-                if (DirExists(steampath, "steamapps/common/Rain World", out string rainworld))
-                {
-                    RainWorldRoot = rainworld;
-                    return true;
-                }
-                return false;
+                LoadErrors.Add("Could not find world file");
+                return;
             }
 
-            foreach (Match libmatch in SteamLibraryPath.Matches(File.ReadAllText(libraryfolders)))
+            if (mapFile is null)
             {
-                string libpath = Regex.Unescape(libmatch.Groups[1].Value);
-
-                if (!FileExists(libpath, "steamapps/appmanifest_312520.acf", out string manifest))
-                    continue;
-
-                Match manmatch = SteamManifestInstallDir.Match(File.ReadAllText(manifest));
-                if (!manmatch.Success)
-                    continue;
-
-                string appdir = Regex.Unescape(manmatch.Groups[1].Value);
-
-                if (DirExists(libpath, $"steamapps/common/{appdir}", out string rainworld))
-                {
-                    RainWorldRoot = rainworld;
-                    return true;
-                }
+                LoadErrors.Add("Could not find world map file");
+                return;
             }
 
-            return false;
-        }
-
-        public static void LoadRegion(string regionPath)
-        {
-            string id = Path.GetFileName(regionPath);
-
-            string worldFile = Path.Combine(regionPath, $"world_{id}.txt");
-            string mapFile = Path.Combine(regionPath, $"map_{id}.txt");
-            string? propertiesFile = Path.Combine(regionPath, $"properties.txt");
-
-            bool altWorld = TryCheckSlugcatAltFile(worldFile, out worldFile);
-            bool altMap = TryCheckSlugcatAltFile(mapFile, out mapFile);
-            bool altProperties = TryCheckSlugcatAltFile(propertiesFile, out propertiesFile);
-
-            if (!altWorld || !altMap || !altProperties)
-                if (TryFindParentDir(regionPath, "mods", out string? mods))
-                {
-                    foreach (string mod in Directory.EnumerateDirectories(mods))
-                    {
-                        string modRegion = Path.Combine(mod, $"world/{id}");
-                        if (Directory.Exists(modRegion))
-                        {
-                            if (!altWorld && TryCheckSlugcatAltFile(Path.Combine(modRegion, $"world_{id}.txt"), out string modAltWorld))
-                            {
-                                worldFile = modAltWorld;
-                                altWorld = true;
-                            }
-
-                            if (!altMap && TryCheckSlugcatAltFile(Path.Combine(modRegion, $"map_{id}.txt"), out string modAltMap))
-                            {
-                                mapFile = modAltMap;
-                                altMap = true;
-                            }
-
-                            if (!altProperties && TryCheckSlugcatAltFile(Path.Combine(modRegion, $"properties.txt"), out string modAltProperties))
-                            {
-                                propertiesFile = modAltProperties;
-                                altProperties = true;
-                            }
-                        }
-                    }
-                }
-
-            if (!altWorld || !altMap || !altProperties)
-                if (TryFindParentDir(regionPath, "mergedmods", out string? mergedmods))
-                {
-                    if (!altWorld && FileExists(mergedmods, $"world/{id}/world_{id}.txt", out string mergedworld))
-                        worldFile = mergedworld;
-
-                    if (!altMap && FileExists(mergedmods, $"world/{id}/map_{id}.txt", out string mergedmap))
-                        mapFile = mergedmap;
-
-                    if (!altProperties && FileExists(mergedmods, $"world/{id}/properties.txt", out string mergedproperties))
-                        propertiesFile = mergedproperties;
-                }
-
-            if (!File.Exists(propertiesFile))
-                propertiesFile = null;
-
-            Region = new(id, worldFile, mapFile, propertiesFile, Path.Combine(regionPath, $"../{id}-rooms"));
+            Region = new(id, worldFile, mapFile, propertiesFile);
             RegionLoaded(Region);
         }
 
@@ -857,103 +774,48 @@ namespace Cornifer
 #endif
         }
 
-        public static bool TryFindParentDir(string path, string dirName, [NotNullWhen(true)] out string? result)
-        {
-            string? dir = path;
-            result = null;
-            while (dir is not null)
-            {
-                result = Path.Combine(dir, dirName);
-                if (Directory.Exists(result))
-                    return true;
-                dir = Path.GetDirectoryName(dir);
-            }
-            return false;
-        }
-        public static bool FileExists(string dir, string file, out string filepath)
-        {
-            filepath = Path.Combine(dir, file);
-            return File.Exists(filepath);
-        }
-        public static bool DirExists(string dir, string name, out string dirpath)
-        {
-            dirpath = Path.Combine(dir, name);
-            return Directory.Exists(dirpath);
-        }
-        public static string CheckSlugcatAltFile(string filepath)
-        {
-            TryCheckSlugcatAltFile(filepath, out string result);
-            return result;
-        }
-        public static bool TryCheckSlugcatAltFile(string filepath, out string result)
-        {
-            result = filepath;
-            if (SelectedSlugcat is null)
-                return false;
-
-            // path/to/file.ext -> path/to/file-name.ext
-            string slugcatfile = Path.Combine(Path.GetDirectoryName(filepath) ?? "", $"{Path.GetFileNameWithoutExtension(filepath)}-{SelectedSlugcat}{Path.GetExtension(filepath)}");
-            if (File.Exists(slugcatfile))
-            {
-                result = slugcatfile;
-                return true;
-            }
-            return false;
-        }
-        public static IEnumerable<(string id, string name, string path)> FindRegions(string? slugcat = null)
-        {
-            if (RainWorldRoot is null)
-                yield break;
-
-            HashSet<string> foundRegions = new();
-
-            List<string> worlds = new()
-            {
-                Path.Combine(RainWorldRoot, "RainWorld_Data/StreamingAssets/world")
-            };
-
-            string mods = Path.Combine(RainWorldRoot, "RainWorld_Data/StreamingAssets/mods");
-
-            if (Directory.Exists(mods))
-                foreach (string mod in Directory.EnumerateDirectories(mods))
-                    worlds.Add(Path.Combine(mod, "world"));
-
-            foreach (string world in worlds)
-                if (Directory.Exists(world))
-                {
-                    foreach (string region in Directory.EnumerateDirectories(world))
-                    {
-                        string displayname = Path.Combine(region, "displayname.txt");
-                        if (File.Exists(displayname))
-                        {
-                            string regionId = Path.GetFileName(region).ToUpper();
-
-                            string? name = null;
-
-                            if (slugcat is not null)
-                            {
-                                foreach (string testWorld in worlds)
-                                {
-                                    string slugcatDisplayName = Path.Combine(testWorld, $"{regionId}/displayname-{slugcat}.txt");
-                                    if (File.Exists(slugcatDisplayName))
-                                    {
-                                        name = File.ReadAllText(slugcatDisplayName);
-                                        break;
-                                    }
-                                }
-                            }
-
-                            name ??= File.ReadAllText(displayname);
-
-                            if (foundRegions.Contains(name))
-                                continue;
-
-                            yield return (regionId, name, region);
-
-                            foundRegions.Add(name);
-                        }
-                    }
-                }
-        }
+        //public static bool TryFindParentDir(string path, string dirName, [NotNullWhen(true)] out string? result)
+        //{
+        //    string? dir = path;
+        //    result = null;
+        //    while (dir is not null)
+        //    {
+        //        result = Path.Combine(dir, dirName);
+        //        if (Directory.Exists(result))
+        //            return true;
+        //        dir = Path.GetDirectoryName(dir);
+        //    }
+        //    return false;
+        //}
+        //public static bool FileExists(string dir, string file, out string filepath)
+        //{
+        //    filepath = Path.Combine(dir, file);
+        //    return File.Exists(filepath);
+        //}
+        //public static bool DirExists(string dir, string name, out string dirpath)
+        //{
+        //    dirpath = Path.Combine(dir, name);
+        //    return Directory.Exists(dirpath);
+        //}
+        //public static string CheckSlugcatAltFile(string filepath)
+        //{
+        //    TryCheckSlugcatAltFile(filepath, out string result);
+        //    return result;
+        //}
+        //public static bool TryCheckSlugcatAltFile(string filepath, out string result)
+        //{
+        //    result = filepath;
+        //    if (SelectedSlugcat is null)
+        //        return false;
+        //
+        //    // path/to/file.ext -> path/to/file-name.ext
+        //    string slugcatfile = Path.Combine(Path.GetDirectoryName(filepath) ?? "", $"{Path.GetFileNameWithoutExtension(filepath)}-{SelectedSlugcat}{Path.GetExtension(filepath)}");
+        //    if (File.Exists(slugcatfile))
+        //    {
+        //        result = slugcatfile;
+        //        return true;
+        //    }
+        //    return false;
+        //}
     }
 }

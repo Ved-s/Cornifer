@@ -29,7 +29,7 @@ namespace Cornifer
 
         public Region() { }
 
-        public Region(string id, string worldFilePath, string mapFilePath, string? propertiesFilePath, string roomsDir)
+        public Region(string id, string worldFilePath, string mapFilePath, string? propertiesFilePath)
         {
             Id = id.ToUpper();
             WorldString = File.ReadAllText(worldFilePath);
@@ -37,59 +37,14 @@ namespace Cornifer
             MapString = File.ReadAllText(mapFilePath);
 
             Load();
-
-            List<string> roomDirs = new();
-
-            string worldRooms = Path.Combine(Path.GetDirectoryName(worldFilePath)!, $"../{Id}-rooms");
-            if (Directory.Exists(worldRooms))
-                roomDirs.Add(worldRooms);
-
-            if (Main.TryFindParentDir(worldFilePath, "mods", out string? mods))
-            {
-                foreach (string mod in Directory.EnumerateDirectories(mods))
-                {
-                    string modRooms = Path.Combine(mod, $"world/{Id}-rooms");
-                    if (Directory.Exists(modRooms))
-                        roomDirs.Add(modRooms);
-                }
-            }
-
-            roomDirs.Add(roomsDir);
-
-            if (Main.TryFindParentDir(worldFilePath, "mergedmods", out string? mergedmods))
-            {
-                string rwworld = Path.Combine(mergedmods, "../world");
-                if (Directory.Exists(rwworld))
-                    roomDirs.Add(Path.Combine(rwworld, Id));
-            }
-
-            LoadGates(worldFilePath);
+            LoadGates();
 
             foreach (Room r in Rooms)
             {
-                string? settings = null;
-                string? data = null;
+                string roomPath = r.IsGate ? $"world/gates/{r.Name}" : $"world/{id}-rooms/{r.Name}";
 
-                string roomPath = r.IsGate ? $"../gates/{r.Name}" : r.Name!;
-
-                foreach (string roomDir in roomDirs)
-                {
-                    string dataPath = Path.Combine(roomDir, $"{roomPath}.txt");
-
-                    if (data is null && File.Exists(dataPath))
-                        data = dataPath;
-
-                    if (Main.TryCheckSlugcatAltFile(dataPath, out string altDataPath))
-                        data = altDataPath;
-
-                    string settingsPath = Path.Combine(roomDir, $"{roomPath}_settings.txt");
-
-                    if (settings is null && File.Exists(settingsPath))
-                        settings = settingsPath;
-
-                    if (Main.TryCheckSlugcatAltFile(settingsPath, out string altSettingsPath))
-                        settings = altSettingsPath;
-                }
+                string? settings = RWAssets.ResolveSlugcatFile(roomPath + "_settings.txt");
+                string? data = RWAssets.ResolveSlugcatFile(roomPath + ".txt");
 
                 if (data is null)
                 {
@@ -103,33 +58,19 @@ namespace Cornifer
             BindRooms();
         }
 
-        private void LoadGates(string worldFilePath)
+        private void LoadGates()
         {
             HashSet<string> gatesProcessed = new();
             List<string> lockLines = new();
 
-            string dir = Path.GetDirectoryName(worldFilePath)!;
-
-            List<string> gateFileDirs = new()
-            {
-                Path.Combine(dir, "../gates/locks.txt")
-            };
-
-            if (Main.TryFindParentDir(dir, "mergedmods", out string? mergedmods))
-                gateFileDirs.Add(Path.Combine(mergedmods, "world/gates/locks.txt"));
-
-            foreach (string file in gateFileDirs)
-            {
-                if (!File.Exists(file))
-                    continue;
-
-                AddGateLocks(File.ReadAllText(file), gatesProcessed, lockLines);
-            }
+            string? locks = RWAssets.ResolveFile("world/gates/locks.txt");
+            if (locks is not null)
+                AddGateLocks(File.ReadAllText(locks), gatesProcessed, lockLines);
 
             if (lockLines.Count > 0)
                 GateLockString = string.Join("\n", lockLines);
 
-            Dictionary<string, string> regionNames = GetSlugcatSpecificRegionNames(worldFilePath);
+            Dictionary<string, string> regionNames = new(RWAssets.FindRegions(Main.SelectedSlugcat).Select(r => new KeyValuePair<string, string>(r.Id, r.Displayname)));
             if (regionNames.Count > 0)
             {
                 foreach (Room room in Rooms)
@@ -240,7 +181,7 @@ namespace Cornifer
                         Room room = new(this, split[0]);
 
                         if (split.Length >= 2)
-                            connections[room.Name] = split[1].Split(',', StringSplitOptions.TrimEntries);
+                            connections[room.Name!] = split[1].Split(',', StringSplitOptions.TrimEntries);
 
                         if (split.Length >= 3)
                             switch (split[2])
@@ -348,7 +289,6 @@ namespace Cornifer
                     roomConnections[exit] = replacement;
 
             List<string> subregions = new() { "" };
-            HashSet<Room> unmappedRooms = new(Rooms);
 
             foreach (string line in MapString.Split('\n', StringSplitOptions.TrimEntries))
             {
@@ -395,13 +335,7 @@ namespace Cornifer
                     room.Subregion.OriginalValue = index;
                 }
 
-                unmappedRooms.Remove(room);
-            }
-
-            if (unmappedRooms.Count > 0)
-            {
-                Main.LoadErrors.Add($"{unmappedRooms.Count} rooms aren't positioned! Skipping them.");
-                Rooms.RemoveAll(r => unmappedRooms.Contains(r));
+                room.Positioned = true;
             }
 
             Subregions = subregions.Select(s => new Subregion(Id, s)).ToArray();
@@ -439,6 +373,24 @@ namespace Cornifer
                     }
                 }
             }
+
+            bool any = true;
+            while (any)
+            {
+                any = false;
+                foreach (Room room in Rooms)
+                {
+                    if (!room.Positioned && room.Connections.Any(c => c is not null && c.Target.Positioned))
+                    {
+                        room.Positioned = true;
+                        any = true;
+                    }
+                }
+            }
+
+            int nonPositioned = Rooms.RemoveAll(r => !r.Positioned);
+            if (nonPositioned > 0)
+                Main.LoadErrors.Add($"{nonPositioned} rooms aren't positioned! Removed them.");
 
             if (PropertiesString is not null)
                 foreach (string line in PropertiesString.Split('\n', StringSplitOptions.TrimEntries))
@@ -586,55 +538,6 @@ namespace Cornifer
 
             LoadConnections();
             MarkRoomTilemapsDirty();
-        }
-
-        static Dictionary<string, string> GetSlugcatSpecificRegionNames(string path)
-        {
-            Dictionary<string, string> names = new();
-            if (!Main.TryFindParentDir(path, "mergedmods", out string? mergedmods))
-                return names;
-
-            string basePath = Path.GetDirectoryName(mergedmods)!;
-
-            List<string> worlds = new();
-            worlds.Add(Path.Combine(basePath, "world"));
-
-            if (Main.DirExists(basePath, "mods", out string mods))
-                foreach (string mod in Directory.EnumerateDirectories(mods))
-                    worlds.Add(Path.Combine(mod, "world"));
-
-            foreach (string world in worlds)
-            {
-                if (!Directory.Exists(world))
-                    continue;
-
-                foreach (string possibleRegion in Directory.EnumerateDirectories(world))
-                {
-                    string? displayname = null;
-                    bool specific = false;
-                    if (Main.SelectedSlugcat is not null && Main.FileExists(possibleRegion, $"displayname-{Main.SelectedSlugcat}.txt", out string specificDisplayname))
-                    {
-                        displayname = specificDisplayname;
-                        specific = true;
-                    }
-
-                    if (displayname is null && Main.FileExists(possibleRegion, $"displayname.txt", out string mainDisplayname))
-                    {
-                        displayname = mainDisplayname;
-                        specific = false;
-                    }
-
-                    if (displayname is null)
-                        continue;
-
-                    string regionId = Path.GetFileName(possibleRegion).ToUpper();
-
-                    if (specific || !names.ContainsKey(regionId))
-                        names[regionId] = File.ReadAllText(displayname);
-                }
-            }
-
-            return names;
         }
     }
     

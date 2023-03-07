@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Cornifer.UI.Modals
 {
-    internal class MessageBox : Modal<MessageBox, int>
+    public class MessageBox : Modal<MessageBox, int>
     {
         UIPanel Buttons;
         UILabel Text;
@@ -45,8 +45,10 @@ namespace Cornifer.UI.Modals
             };
         }
 
-        public static Task<int> Show(string text, IEnumerable<(string, int)> buttons)
+        public static async Task<int> Show(string text, IEnumerable<(string, int)> buttons)
         {
+            await Interface.WaitModal();
+
             Instance ??= new();
 
             Instance.Text.Text = text;
@@ -81,9 +83,9 @@ namespace Cornifer.UI.Modals
             }
 
             Instance.Recalculate();
-            Show();
+            await Show();
 
-            return Task;
+            return await Task;
         }
 
         protected override void Hidden()

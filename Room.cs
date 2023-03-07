@@ -9,6 +9,7 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text.Json.Nodes;
@@ -116,6 +117,7 @@ namespace Cornifer
         public bool TileMapDirty = false;
 
         public bool Loaded = false;
+        public bool Positioned = false;
 
         public string? DataString;
         public string? SettingsString;
@@ -246,7 +248,7 @@ namespace Cornifer
         {
             SettingsString = settings;
 
-            string[] lines = data.Split('\n', StringSplitOptions.TrimEntries);
+            string[] lines = data.Split('\n');
 
             if (lines.TryGet(1, out string sizeWater))
             {
@@ -269,11 +271,27 @@ namespace Cornifer
                 }
             }
 
-            if (lines.TryGet(11, out string tiles))
-            {
-                Tiles = new Tile[TileSize.X, TileSize.Y];
+            string? tilesLine = null;
 
-                string[] tilesArray = tiles.Split('|');
+            if (lines.TryGet(11, out string tiles))
+                tilesLine = tiles;
+
+            if (tilesLine is null)
+            {
+                for (int i = lines.Length - 1; i >= 0; i--)
+                {
+                    if (lines[i].Length > 0 && lines[i].All(c => char.IsDigit(c) || c == '|' || c == ','))
+                    {
+                        tilesLine = lines[i];
+                        break;
+                    }
+                }
+            }
+
+            Tiles = new Tile[TileSize.X, TileSize.Y];
+            if (tilesLine is not null)
+            {
+                string[] tilesArray = tilesLine.Split('|');
 
                 int x = 0, y = 0;
                 for (int i = 0; i < tilesArray.Length; i++)

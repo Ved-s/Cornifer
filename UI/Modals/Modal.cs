@@ -1,4 +1,5 @@
 ﻿using Cornifer.UI.Elements;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace Cornifer.UI.Modals
@@ -31,12 +32,20 @@ namespace Cornifer.UI.Modals
                 modalVisible = value;
 
                 if (value)
+                {
+                    Interface.CurrentModal = Instance;
                     ModalInstance?.Shown();
-                else
-                    ModalInstance?.Hidden();
-                
+                }
+
                 if (Instance is not null)
                     Instance.Visible = value;
+
+                if (!value)
+                {
+                    Interface.CurrentModal = null;
+                    ModalInstance?.Hidden();
+                    Interface.ModalClosed();
+                }
 
                 if (!value && taskCompletionSource is not null)
                 {
@@ -55,18 +64,20 @@ namespace Cornifer.UI.Modals
             return Instance;
         }
 
-        public static void Show()
+        public static async Task Show()
         {
             if (ModalVisible)
                 ModalVisible = false;
+
+            await Interface.WaitModal();
 
             Instance ??= new();
             ModalVisible = true;
         }
 
-        public static async Task<TResult> ShowAsync()
+        public static async Task<TResult> ShowDialog()
         {
-            Show();
+            await Show();
             return await Task;
         }
 

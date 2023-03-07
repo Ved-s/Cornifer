@@ -1,8 +1,6 @@
 Proper asset loading
 + equivalences.txt
-+ regions.txt
 
-Option to not load mod data
 Warnings system (2 wide gaps in connections)
 Color selection for shortcut types
 Better room selection - check if clicked pixel is transparent

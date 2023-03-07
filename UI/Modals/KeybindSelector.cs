@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework.Input;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Cornifer.UI.Modals
 {
@@ -81,11 +82,11 @@ namespace Cornifer.UI.Modals
             };
         }
 
-        public static void Show(Keybind keybind)
+        public static async Task Show(Keybind keybind)
         {
             Instance ??= new();
             Instance.CurrentKeybindName.Text = keybind.Name;
-            Show();
+            await Show();
         }
 
         protected override void Shown()

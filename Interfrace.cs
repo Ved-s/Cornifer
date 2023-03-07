@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 
 namespace Cornifer
 {
@@ -42,6 +43,8 @@ namespace Cornifer
         static MapObject? configurableObject;
 
         static List<Func<UIModal>>? ModalCreators;
+        static Queue<TaskCompletionSource> ModalWaitTasks = new();
+        internal static UIModal? CurrentModal;
 
         public static MapObject? ConfigurableObject
         {
@@ -193,17 +196,18 @@ namespace Cornifer
                         TextAlign = new(.5f)
                     }.OnEvent(UIElement.ClickEvent, async (_, _) =>
                     {
-                        SlugcatSelect.Result? slugcat = await SlugcatSelect.ShowAsync();
+                        SlugcatSelect.Result? slugcat = await SlugcatSelect.ShowDialog();
                         if (!slugcat.HasValue)
                             return;
 
-                        RegionSelect.Result? region = await RegionSelect.ShowAsync(slugcat.Value.Slugcat);
+                        RegionSelect.Result? region = await RegionSelect.ShowDialog(slugcat.Value.Slugcat);
                         if (!region.HasValue)
                             return;
 
                         Main.SelectedSlugcat = slugcat.Value.Slugcat;
                         InterfaceState.DrawSlugcatIcons.Value = slugcat.Value.Slugcat is null;
-                        Main.LoadRegion(region.Value.Path);
+                        RWAssets.EnableMods = !region.Value.ExcludeMods;
+                        Main.LoadRegion(region.Value.Region.Id);
                     }),
 
                     new UIList()
@@ -272,7 +276,7 @@ namespace Cornifer
 
                                 TextAlign = new(.5f)
 
-                            }.OnEvent(UIElement.ClickEvent, (btn, _) => AddIconSelect.Show()),
+                            }.OnEvent(UIElement.ClickEvent, async (btn, _) => await AddIconSelect.Show()),
 
                             new UIButton
                             {
@@ -386,7 +390,7 @@ namespace Cornifer
                                         Height = new(-20, 1),
                                         Text = "Open",
                                         TextAlign = new(.5f)
-                                    }.OnEvent(UIElement.ClickEvent, (_, _) => Main.OpenState()),
+                                    }.OnEvent(UIElement.ClickEvent, async (_, _) => await Main.OpenState()),
                                     new UIButton
                                     {
                                         Top = 20,
@@ -395,7 +399,7 @@ namespace Cornifer
                                         Height = new(-20, 1),
                                         Text = "Save",
                                         TextAlign = new(.5f)
-                                    }.OnEvent(UIElement.ClickEvent, (_, _) => Main.SaveState()),
+                                    }.OnEvent(UIElement.ClickEvent, async (_, _) => await Main.SaveState()),
                                     new UIButton
                                     {
                                         Top = 20,
@@ -404,7 +408,7 @@ namespace Cornifer
                                         Height = new(-20, 1),
                                         Text = "Save as",
                                         TextAlign = new(.5f)
-                                    }.OnEvent(UIElement.ClickEvent, (_, _) => Main.SaveStateAs())
+                                    }.OnEvent(UIElement.ClickEvent, async (_, _) => await Main.SaveStateAs())
                                 }
                             }
                         }
@@ -921,6 +925,27 @@ namespace Cornifer
             if (Root is not null)
                 foreach (Func<UIModal> creator in ModalCreators)
                     Root.Elements.Add(creator());
+        }
+        internal static void ModalClosed()
+        {
+            CurrentModal = null;
+            while (ModalWaitTasks.TryDequeue(out TaskCompletionSource? waitingTask))
+            {
+                waitingTask.SetResult();
+                if (CurrentModal is not null)
+                    return;
+            }
+        }
+
+        public static async Task WaitModal()
+        {
+            if (CurrentModal is null)
+                return;
+
+            TaskCompletionSource waitingTask = new();
+            ModalWaitTasks.Enqueue(waitingTask);
+
+            await waitingTask.Task;
         }
 
         public static void RegionChanged(Region region)

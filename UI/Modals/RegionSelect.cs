@@ -1,6 +1,9 @@
-﻿using Cornifer.UI.Elements;
+﻿using Cornifer.Structures;
+using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Cornifer.UI.Modals
@@ -9,6 +12,7 @@ namespace Cornifer.UI.Modals
     {
         UIList RegionList;
         static string? Slugcat;
+        static bool DisableModRegionsValue;
 
         public RegionSelect()
         {
@@ -40,14 +44,19 @@ namespace Cornifer.UI.Modals
                     Top = new(-50, 1),
                 
                     Height = 20,
-                    Text = "Manual select",
+                    Text = "Disable mod regions",
+                    Selectable = true,
+                    Selected = DisableModRegionsValue,
+
+                    SelectedBackColor = Color.White,
+                    SelectedTextColor = Color.Black,
+
                     TextAlign = new(.5f)
                 
-                }.OnEvent(ClickEvent, async (_, _) =>
+                }.OnEvent(ClickEvent, (btn, _) =>
                 {
-                    string? regionPath = await Platform.FolderBrowserDialog("Select Rain World region folder. For example RainWorld_Data/StreamingAssets/world/su");
-                    if (regionPath is not null)
-                        ReturnResult(new() { Path = regionPath });
+                    DisableModRegionsValue = btn.Selected;
+                    RebuildRegionList();
                 }),
                 new UIButton
                 {
@@ -57,54 +66,99 @@ namespace Cornifer.UI.Modals
                     Height = 20,
                     Text = "Close",
                     TextAlign = new(.5f)
-                }.OnEvent(UIElement.ClickEvent, (_, _) => ReturnResult(null))
+                }.OnEvent(ClickEvent, (_, _) => ReturnResult(null))
             };
         }
 
-        public static void Show(string? slugcat)
+        public static async Task Show(string? slugcat)
         {
             Slugcat = slugcat;
-            Show();
+            await Show();
         }
 
-        public static async Task<Result?> ShowAsync(string? slugcat)
+        public static async Task<Result?> ShowDialog(string? slugcat)
         {
             Slugcat = slugcat;
-            Show();
+            await Show();
             return await Task;
         }
 
         protected override void Shown()
         {
-            RegionList.Elements.Clear();
-            foreach (var (id, name, path) in Main.FindRegions(Slugcat))
-            {
-                bool accessible = Slugcat is null
-                    || (StaticData.SlugcatRegionAvailability.GetValueOrDefault(Slugcat)?.Contains(id)
-                    ?? StaticData.SlugcatRegionAvailability.GetValueOrDefault("")?.Contains(id)
-                    ?? true);
+            RebuildRegionList();
+        }
 
-                RegionList.Elements.Add(new UIButton
+        private void RebuildRegionList()
+        {
+            bool enableMods = RWAssets.EnableMods;
+            RWAssets.EnableMods = !DisableModRegionsValue;
+
+            RegionList.Elements.Clear();
+
+            HashSet<string> foundMods = new();
+
+            foreach (var group in RWAssets.FindRegions().GroupBy(reg => reg.Mod))
+            {
+                foundMods.Add(group.Key.Id);
+                RegionList.Elements.Add(new UILabel
                 {
-                    Text = $"{name} ({id})",
+                    Text = group.Key.Name,
+                    TextAlign = new(.5f, 1f),
                     Height = 20,
-                    TextAlign = new(.5f),
-                    BorderColor = accessible ? new(100, 100, 100) : Color.Maroon
-                }.OnEvent(ClickEvent, (_, _) =>
+                });
+
+                foreach (RegionInfo region in group)
                 {
-                    ReturnResult(new()
+                    bool accessible = Slugcat is null
+                        || (StaticData.SlugcatRegionAvailability.GetValueOrDefault(Slugcat)?.Contains(region.Id)
+                        ?? StaticData.SlugcatRegionAvailability.GetValueOrDefault("")?.Contains(region.Id)
+                        ?? true);
+
+                    RegionList.Elements.Add(new UIButton
                     {
-                        Path = path
+                        Text = $"{region.Displayname} ({region.Id})",
+                        Height = 20,
+                        TextAlign = new(.5f),
+                        BorderColor = accessible ? new(100, 100, 100) : Color.Maroon
+                    }.OnEvent(ClickEvent, (_, _) =>
+                    {
+                        ReturnResult(new()
+                        {
+                            Region = region,
+                            ExcludeMods = DisableModRegionsValue
+                        });
+                    }));
+                }
+            }
+
+            if (!DisableModRegionsValue)
+            {
+                foreach (RWMod mod in RWAssets.Mods)
+                {
+                    if (mod.Active || foundMods.Contains(mod.Id))
+                        continue;
+
+                    string modWorld = Path.Combine(mod.Path, "world");
+                    if (!Directory.Exists(modWorld))
+                        continue;
+
+                    RegionList.Elements.Add(new UILabel
+                    {
+                        Text = $"{mod.Name} is disabled",
+                        TextAlign = new(.5f),
+                        Height = 20,
                     });
-                }));
+                }
             }
 
             RegionList.Recalculate();
+            RWAssets.EnableMods = enableMods;
         }
 
         public struct Result
         {
-            public string Path;
+            public RegionInfo Region;
+            public bool ExcludeMods;
         }
     }
 }
