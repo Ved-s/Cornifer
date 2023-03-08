@@ -55,7 +55,7 @@ namespace Cornifer
                 r.Load(File.ReadAllText(data!), settings is null ? null : File.ReadAllText(settings));
             }
             LoadConnections();
-            BindRooms();
+            PostRegionLoad();
         }
 
         private void LoadGates()
@@ -70,35 +70,33 @@ namespace Cornifer
             if (lockLines.Count > 0)
                 GateLockString = string.Join("\n", lockLines);
 
-            Dictionary<string, string> regionNames = new(RWAssets.FindRegions(Main.SelectedSlugcat).Select(r => new KeyValuePair<string, string>(r.Id, r.Displayname)));
-            if (regionNames.Count > 0)
+            foreach (Room room in Rooms)
             {
-                foreach (Room room in Rooms)
+                if (!room.IsGate || room.GateData is null || room.GateData.TargetRegionName is not null)
+                    continue;
+
+                string? otherRegionId;
+
+                if (room.GateData.RightRegionId is not null && StaticData.AreRegionsEquivalent(room.GateData.RightRegionId, Id))
                 {
-                    if (!room.IsGate || room.GateData is null)
-                        continue;
-
-                    Match match = GateNameRegex.Match(room.Name!);
-                    if (!match.Success)
-                        continue;
-
-                    string? otherRegionId;
-
-                    if (room.GateData.RightRegionId?.Equals(Id, StringComparison.InvariantCultureIgnoreCase) ?? false)
-                        otherRegionId = room.GateData.LeftRegionId;
-
-                    else if (room.GateData.LeftRegionId?.Equals(Id, StringComparison.InvariantCultureIgnoreCase) ?? false)
-                        otherRegionId = room.GateData.RightRegionId;
-
-                    else
-                        otherRegionId = room.GateData.Swapped ? room.GateData.RightRegionId : room.GateData.LeftRegionId;
-
-                    if (otherRegionId is null || !regionNames.TryGetValue(otherRegionId, out string? otherRegionName))
-                        continue;
-
-                    room.GateData.TargetRegionName = otherRegionName;
+                    otherRegionId = room.GateData.LeftRegionId;
                 }
+                else if (room.GateData.LeftRegionId is not null && StaticData.AreRegionsEquivalent(room.GateData.LeftRegionId, Id))
+                {
+                    otherRegionId = room.GateData.RightRegionId;
+                }
+                else // Can't determine other region, fallback to 50/50 working technique
+                {
+                    otherRegionId = room.GateData.Swapped ? room.GateData.RightRegionId : room.GateData.LeftRegionId;
+                }
+
+                otherRegionId = StaticData.GetProperRegionAcronym(otherRegionId, Main.SelectedSlugcat);
+                if (otherRegionId is null)
+                    continue;
+
+                room.GateData.TargetRegionName = RWAssets.GetRegionDisplayName(otherRegionId, Main.SelectedSlugcat);
             }
+
         }
 
         private void AddGateLocks(string data, HashSet<string>? processed, List<string>? lockLines)
@@ -123,17 +121,28 @@ namespace Cornifer
                     if (gate.GateData.Swapped)
                         (leftRegion, rightRegion) = (rightRegion, leftRegion);
 
-                    gate.GateData.LeftRegionId = leftRegion;
-                    gate.GateData.RightRegionId = rightRegion;
+                    gate.GateData.LeftRegionId = StaticData.GetProperRegionAcronym(leftRegion, Main.SelectedSlugcat);
+                    gate.GateData.RightRegionId = StaticData.GetProperRegionAcronym(rightRegion, Main.SelectedSlugcat);
                 }
 
                 if ((gate.GateData.LeftRegionId is null || !gate.GateData.LeftRegionId.Equals(Id, StringComparison.InvariantCultureIgnoreCase))
                  && (gate.GateData.RightRegionId is null || !gate.GateData.RightRegionId.Equals(Id, StringComparison.InvariantCultureIgnoreCase)))
                 {
-                    if (gate.GateData.Swapped)
-                        gate.GateData.LeftRegionId = Id.ToUpper();
-                    else
-                        gate.GateData.RightRegionId = Id.ToUpper();
+                    if (gate.GateData.RightRegionId is not null && StaticData.AreRegionsEquivalent(gate.GateData.RightRegionId, Id))
+                    {
+                        gate.GateData.RightRegionId = Id;
+                    }
+                    else if (gate.GateData.LeftRegionId is not null && StaticData.AreRegionsEquivalent(gate.GateData.LeftRegionId, Id))
+                    {
+                        gate.GateData.LeftRegionId = Id;
+                    }
+                    else // Can't determine other region, fallback to 50/50 working solution
+                    {
+                        if (gate.GateData.Swapped)
+                            gate.GateData.LeftRegionId = Id.ToUpper();
+                        else
+                            gate.GateData.RightRegionId = Id.ToUpper();
+                    }
                 }
                 gate.GateData.LeftKarma = split[1];
                 gate.GateData.RightKarma = split[2];
@@ -419,10 +428,10 @@ namespace Cornifer
         {
             Connections = new(this);
         }
-        public void BindRooms()
+        public void PostRegionLoad()
         {
             foreach (Room room in Rooms)
-                room.BindToRooms();
+                room.PostRegionLoad();
         }
 
         public bool TryGetRoom(string id, [NotNullWhen(true)] out Room? room)
@@ -451,9 +460,6 @@ namespace Cornifer
                 ["world"] = WorldString,
                 ["properties"] = PropertiesString,
                 ["map"] = MapString,
-                ["gateTargets"] = new JsonObject(Rooms
-                    .Where(r => r.IsGate && r.GateData?.TargetRegionName is not null)
-                    .Select(r => new KeyValuePair<string, JsonNode?>(r.Name!, r.GateData!.TargetRegionName!))),
                 ["locks"] = GateLockString,
                 ["rooms"] = new JsonArray(Rooms.Select(r => new JsonObject()
                 {
@@ -540,5 +546,5 @@ namespace Cornifer
             MarkRoomTilemapsDirty();
         }
     }
-    
+
 }

@@ -284,6 +284,18 @@ namespace Cornifer
             }
         }
 
+        public static string? GetRegionDisplayName(string regionId, string? slugcat)
+        {
+            string? displayname = null;
+            if (slugcat is not null)
+                displayname = ResolveFile($"world/{regionId}/displayname-{slugcat}.txt");
+
+            if (displayname is null)
+                displayname = ResolveFile($"world/{regionId}/displayname.txt");
+
+            return displayname is null ? null : File.ReadAllText(displayname);
+        }
+
         public static IEnumerable<RegionInfo> FindRegions(string? slugcat = null)
         {
             foreach (var (dir, mod) in RWAssets.EnumerateDirectories("world"))

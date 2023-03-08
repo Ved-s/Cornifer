@@ -679,7 +679,7 @@ namespace Cornifer
             if (node.TryGet("interface", out JsonNode? @interface))
                 InterfaceState.LoadJson(@interface);
 
-            Region?.BindRooms();
+            Region?.PostRegionLoad();
         }
 
         public static async Task OpenState()
@@ -773,49 +773,5 @@ namespace Cornifer
             }
 #endif
         }
-
-        //public static bool TryFindParentDir(string path, string dirName, [NotNullWhen(true)] out string? result)
-        //{
-        //    string? dir = path;
-        //    result = null;
-        //    while (dir is not null)
-        //    {
-        //        result = Path.Combine(dir, dirName);
-        //        if (Directory.Exists(result))
-        //            return true;
-        //        dir = Path.GetDirectoryName(dir);
-        //    }
-        //    return false;
-        //}
-        //public static bool FileExists(string dir, string file, out string filepath)
-        //{
-        //    filepath = Path.Combine(dir, file);
-        //    return File.Exists(filepath);
-        //}
-        //public static bool DirExists(string dir, string name, out string dirpath)
-        //{
-        //    dirpath = Path.Combine(dir, name);
-        //    return Directory.Exists(dirpath);
-        //}
-        //public static string CheckSlugcatAltFile(string filepath)
-        //{
-        //    TryCheckSlugcatAltFile(filepath, out string result);
-        //    return result;
-        //}
-        //public static bool TryCheckSlugcatAltFile(string filepath, out string result)
-        //{
-        //    result = filepath;
-        //    if (SelectedSlugcat is null)
-        //        return false;
-        //
-        //    // path/to/file.ext -> path/to/file-name.ext
-        //    string slugcatfile = Path.Combine(Path.GetDirectoryName(filepath) ?? "", $"{Path.GetFileNameWithoutExtension(filepath)}-{SelectedSlugcat}{Path.GetExtension(filepath)}");
-        //    if (File.Exists(slugcatfile))
-        //    {
-        //        result = slugcatfile;
-        //        return true;
-        //    }
-        //    return false;
-        //}
     }
 }

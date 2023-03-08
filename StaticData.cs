@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Windows.Forms;
 
 namespace Cornifer
@@ -103,6 +104,7 @@ namespace Cornifer
 
         public static HashSet<string> VanillaRegions = new() { "CC", "DS", "HI", "GW", "SI", "SU", "SH", "SL", "LF", "UW", "SB", "SS" };
 
+        // TODO: equivalences.txt
         public static Dictionary<string, List<string>> RegionEquivalences = new()
         {
             ["LM"] = new() { "SL" },
@@ -117,6 +119,40 @@ namespace Cornifer
             ["DM"] = new() { "MS" },
         };
 
+        // Slugcat -> { DefaultRegion -> StoryRegion }
+        // Saint -> { DS -> UG }
+        // TODO: equivalences.txt Region.GetProperRegionAcronym
+        public static Dictionary<string, Dictionary<string, string>> SlugcatRegionReplacements = new()
+        {
+            [""] = new()
+            {
+                ["UX"] = "UW",
+                ["SX"] = "SS"
+            },
+
+            ["Spear"] = new()
+            {
+                ["SL"] = "LM"
+            },
+
+            ["Artificer"] = new()
+            {
+                ["SL"] = "LM"
+            },
+
+            ["Saint"] = new()
+            {
+                ["DS"] = "UG",
+                ["SS"] = "RM",
+                ["SH"] = "CL",
+            },
+
+            ["Rivulet"] = new()
+            {
+                ["SS"] = "RM",
+            }
+        };
+
         public static Dictionary<string, List<string>> SlugcatRegionAvailability = new()
         {
             ["Rivulet"] = new() { "SU", "HI", "DS", "CC", "GW", "SH", "VS", "SL", "SI", "LF", "UW", "RM", "SB", "MS" },
@@ -126,6 +162,37 @@ namespace Cornifer
             ["Gourmand"] = new() { "SU", "HI", "DS", "CC", "GW", "SH", "VS", "SL", "SI", "LF", "UW", "SS", "SB", "OE" },
             [""] = new() { "SU", "HI", "DS", "CC", "GW", "SH", "VS", "SL", "SI", "LF", "UW", "SS", "SB" },
         };
+
+        [return: NotNullIfNotNull(nameof(acronym))]
+        public static string? GetProperRegionAcronym(string? acronym, string? slugcat)
+        {
+            if (acronym is null)
+                return null;
+
+            if (SlugcatRegionReplacements[""].TryGetValue(acronym, out string? defaultAcronym))
+                return defaultAcronym;
+
+            if (slugcat is not null
+             && SlugcatRegionReplacements.TryGetValue(slugcat, out var slugcatAcronyms)
+             && slugcatAcronyms.TryGetValue(acronym, out string? slugcatAcronym))
+                return slugcatAcronym;
+
+            return acronym;
+        }
+
+        public static bool AreRegionsEquivalent(string a, string b)
+        {
+            if (a.Equals(b, StringComparison.InvariantCultureIgnoreCase))
+                return true;
+
+            if (RegionEquivalences.TryGetValue(a, out var equivalencesA) && equivalencesA.Contains(b))
+                return true;
+
+            if (RegionEquivalences.TryGetValue(b, out var equivalencesB) && equivalencesB.Contains(a))
+                return true;
+
+            return false;
+        }
 
         public static Color GetPearlColor(string type)
         {

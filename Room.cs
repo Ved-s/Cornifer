@@ -534,48 +534,6 @@ namespace Cornifer
 
             Deathpit.OriginalValue = !IsShelter && !IsGate && WaterLevel.Value < 0 && Enumerable.Range(0, TileSize.X).Any(x => Tiles[x, TileSize.Y - 1].Terrain == Tile.TerrainType.Air);
 
-            if (GateData is not null && IsGate)
-            {
-                ColorRef? leftColor = null;
-                ColorRef? rightColor = null;
-                ColorRef? regionColor = null;
-
-                if (GateData.LeftRegionId is not null && GateData.RightRegionId is not null
-                 && (GateData.LeftRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase)
-                  || GateData.RightRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase)))
-                    FixGateData();
-
-                if (GateData.LeftRegionId is not null)
-                    leftColor = ColorDatabase.GetRegionColor(GateData.LeftRegionId, null);
-
-                if (GateData.RightRegionId is not null)
-                    rightColor = ColorDatabase.GetRegionColor(GateData.RightRegionId, null);
-
-                string? targetRegion = null;
-
-                if (GateData.LeftRegionId is not null && !GateData.LeftRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase))
-                    targetRegion = GateData.LeftRegionId;
-
-                else if (GateData.RightRegionId is not null && !GateData.RightRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase))
-                    targetRegion = GateData.RightRegionId;
-
-                if (targetRegion is not null)
-                    regionColor = ColorDatabase.GetRegionColor(targetRegion, null);
-
-                leftColor ??= ColorRef.White;
-                rightColor ??= ColorRef.White;
-                regionColor ??= ColorRef.White;
-
-                Children.Add(new GateSymbols(GateData.LeftKarma, GateData.RightKarma)
-                {
-                    LeftArrowColor = { OriginalValue = leftColor },
-                    RightArrowColor = { OriginalValue = rightColor },
-                });
-
-                if (GateData.TargetRegionName is not null)
-                    Children.Add(new MapText("TargetRegionText", Main.DefaultBigMapFont, $"To [c:{regionColor.GetKeyOrColorString()}]{GateData.TargetRegionName}[/c]"));
-            }
-
             Loaded = true;
         }
 
@@ -878,10 +836,52 @@ namespace Cornifer
             }
         }
 
-        public void BindToRooms()
+        public void PostRegionLoad()
         {
             if (IsShelter && Connections.Length == 1 && Connections[0] is not null)
                 BoundRoom = Connections[0]!.Target;
+
+            if (GateData is not null && IsGate)
+            {
+                ColorRef? leftColor = null;
+                ColorRef? rightColor = null;
+                ColorRef? regionColor = null;
+
+                if (GateData.LeftRegionId is not null && GateData.RightRegionId is not null
+                 && (GateData.LeftRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase)
+                  || GateData.RightRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase)))
+                    FixGateData();
+
+                if (GateData.LeftRegionId is not null)
+                    leftColor = ColorDatabase.GetRegionColor(GateData.LeftRegionId, null);
+
+                if (GateData.RightRegionId is not null)
+                    rightColor = ColorDatabase.GetRegionColor(GateData.RightRegionId, null);
+
+                string? targetRegion = null;
+
+                if (GateData.LeftRegionId is not null && !GateData.LeftRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase))
+                    targetRegion = GateData.LeftRegionId;
+
+                else if (GateData.RightRegionId is not null && !GateData.RightRegionId.Equals(Region.Id, StringComparison.InvariantCultureIgnoreCase))
+                    targetRegion = GateData.RightRegionId;
+
+                if (targetRegion is not null)
+                    regionColor = ColorDatabase.GetRegionColor(targetRegion, null);
+
+                leftColor ??= ColorRef.White;
+                rightColor ??= ColorRef.White;
+                regionColor ??= ColorRef.White;
+
+                Children.Add(new GateSymbols(GateData.LeftKarma, GateData.RightKarma)
+                {
+                    LeftArrowColor = { OriginalValue = leftColor },
+                    RightArrowColor = { OriginalValue = rightColor },
+                });
+
+                if (GateData.TargetRegionName is not null)
+                    Children.Add(new MapText("TargetRegionText", Main.DefaultBigMapFont, $"To [c:{regionColor.GetKeyOrColorString()}]{GateData.TargetRegionName}[/c]"));
+            }
         }
 
         protected override void DrawSelf(Renderer renderer)
@@ -1064,13 +1064,18 @@ namespace Cornifer
 
         protected override JsonNode? SaveInnerJson()
         {
-            return new JsonObject()
+            JsonObject obj = new JsonObject()
             .SaveProperty(Deathpit)
             .SaveProperty(Subregion)
             .SaveProperty(UseBetterTileCutout)
             .SaveProperty(CutoutAllSolidTiles)
             .SaveProperty(WaterLevel)
             .SaveProperty(DrawInRoomShortcuts);
+
+            if (IsGate && GateData is not null)
+                obj["gateData"] = GateData.SaveJson();
+
+            return obj;
         }
         protected override void LoadInnerJson(JsonNode node)
         {
@@ -1080,6 +1085,13 @@ namespace Cornifer
             CutoutAllSolidTiles.LoadFromJson(node);
             WaterLevel.LoadFromJson(node);
             DrawInRoomShortcuts.LoadFromJson(node);
+
+            if (node.TryGet("gateData", out JsonObject? gateData))
+            {
+                GateData ??= new();
+                GateData.LoadJson(gateData);
+            }
+
             TileMapDirty = true;
         }
 
