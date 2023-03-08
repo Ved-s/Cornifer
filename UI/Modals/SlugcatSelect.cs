@@ -11,7 +11,7 @@ namespace Cornifer.UI.Modals
             Height = 100;
 
             Margin = 5;
-            Padding = new(5, 40);
+            Padding = new(5, 25);
 
             Elements = new(this)
             {
@@ -41,6 +41,8 @@ namespace Cornifer.UI.Modals
                 {
                     Text = slugcat.Name,
                     Height = 20,
+                    Left = 25,
+                    Width = new(-25, 1),
                     TextAlign = new(.5f),
                     Top = y
                 };
@@ -53,6 +55,20 @@ namespace Cornifer.UI.Modals
                 });
                 Elements.Add(button);
 
+                AtlasSprite? slugcatSprite = SpriteAtlases.GetSpriteOrNull($"Slugcat_{slugcat.Id}");
+                if (slugcatSprite is not null)
+                {
+                    Elements.Add(new UIImage
+                    {
+                        Texture = slugcatSprite.Texture,
+                        TextureFrame = slugcatSprite.Frame,
+                        TextureColor = slugcatSprite.Color,
+
+                        Height = 20,
+                        Width = 20,
+                        Top = y
+                    });
+                }
                 y += 25;
             }
 
