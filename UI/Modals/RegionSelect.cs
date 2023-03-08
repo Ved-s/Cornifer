@@ -97,7 +97,7 @@ namespace Cornifer.UI.Modals
 
             HashSet<string> foundMods = new();
 
-            foreach (var group in RWAssets.FindRegions().GroupBy(reg => reg.Mod))
+            foreach (var group in RWAssets.FindRegions(Slugcat).GroupBy(reg => reg.Mod))
             {
                 foundMods.Add(group.Key.Id);
                 RegionList.Elements.Add(new UILabel
