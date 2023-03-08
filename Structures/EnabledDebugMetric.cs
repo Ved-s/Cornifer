@@ -4,6 +4,7 @@
     {
         None,
         Undos,
-        Timings
+        Timings,
+        Mods
     }
 }

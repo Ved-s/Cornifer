@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -196,6 +197,9 @@ namespace Cornifer
 
             if (active && !Interface.Active)
             {
+                if (InputHandler.ModsDebug.JustPressed)
+                    DebugMetric = DebugMetric == EnabledDebugMetric.Mods ? EnabledDebugMetric.None : EnabledDebugMetric.Mods;
+
                 if (InputHandler.UndoDebug.JustPressed)
                     DebugMetric = DebugMetric == EnabledDebugMetric.Undos ? EnabledDebugMetric.None : EnabledDebugMetric.Undos;
 
@@ -330,6 +334,39 @@ namespace Cornifer
                     foreach (string error in LoadErrors)
                     {
                         SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, error, new(x, y), Color.White);
+                        y += Cornifer.Content.Consolas10.LineSpacing;
+                    }
+
+                    break;
+
+                case EnabledDebugMetric.Mods:
+
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Loaded mods:", new(x, y), Color.OrangeRed);
+                    y += Cornifer.Content.Consolas10.LineSpacing;
+
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Enabled",  new(x, y), Color.White);
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Disabled", new(x + 60, y), Color.Gray);
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Ignored",  new(x + 125, y), Color.Maroon);
+
+                    y += Cornifer.Content.Consolas10.LineSpacing + 10;
+
+                    foreach (RWMod mod in RWAssets.Mods)
+                    {
+                        if (!mod.Enabled)
+                            continue;
+
+                        SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"{mod.Name} ({mod.Id}) {(mod.Version is null ? "" : $"v{mod.Version}")}", new(x, y), mod.Active ? Color.White : Color.Maroon);
+                        y += Cornifer.Content.Consolas10.LineSpacing;
+                    }
+
+                    y += Cornifer.Content.Consolas10.LineSpacing + 10;
+
+                    foreach (RWMod mod in RWAssets.Mods)
+                    {
+                        if (mod.Active || mod.Enabled)
+                            continue;
+
+                        SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"{mod.Name} ({mod.Id}) {(mod.Version is null ? "" : $"v{mod.Version}")}", new(x, y), Color.Gray);
                         y += Cornifer.Content.Consolas10.LineSpacing;
                     }
 

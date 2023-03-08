@@ -29,6 +29,7 @@ namespace Cornifer.Input
         public static Keybind ReinitUI = new("", Keys.F12);
         public static Keybind TimingsDebug = new("", Keys.F10);
         public static Keybind UndoDebug = new("", Keys.F8);
+        public static Keybind ModsDebug = new("", Keys.F7);
         public static Keybind ClearErrors = new("Clear errors", Keys.Escape);
 
         public static Keybind MoveMultiplier = new("Move multiplier", ModifierKeys.Shift);

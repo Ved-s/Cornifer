@@ -27,10 +27,15 @@ namespace Cornifer
 
         public static bool EnableMods = true;
 
-        static Regex SteamLibraryPath = new(@"""path""[ \t]*""([^""]+)""", RegexOptions.Compiled);
-        static Regex SteamManifestInstallDir = new(@"""installdir""[ \t]*""([^""]+)""", RegexOptions.Compiled);
+        static Regex SteamLibraryPathRegex = new(@"""path""[ \t]*""([^""]+)""", RegexOptions.Compiled);
+        static Regex SteamManifestInstallDirRegex = new(@"""installdir""[ \t]*""([^""]+)""", RegexOptions.Compiled);
+
         static Regex EnabledModsRegex = new(@"EnabledMods\&lt;optB\&gt;(.+?)(?:\&lt;optA|<)", RegexOptions.Compiled);
         static Regex ModLoadOrderRegex = new(@"ModLoadOrder\&lt;optB\&gt;(.+?)(?:\&lt;optA|<)", RegexOptions.Compiled);
+
+        static Regex ModInfoIdRegex = new(@"""id"":[ \t]+""(.+?)""", RegexOptions.Compiled);
+        static Regex ModInfoNameRegex = new(@"""name"":[ \t]+""(.+?)""", RegexOptions.Compiled);
+        static Regex ModInfoVersionRegex = new(@"""version"":[ \t]+""(.+?)""", RegexOptions.Compiled);
 
         const string OptionsListSplitter = "&lt;optC&gt;";
         const string OptionsKeyValueSplitter = "&lt;optD&gt;";
@@ -102,7 +107,7 @@ namespace Cornifer
                 return false;
             }
 
-            foreach (Match libmatch in SteamLibraryPath.Matches(File.ReadAllText(libraryfolders)))
+            foreach (Match libmatch in SteamLibraryPathRegex.Matches(File.ReadAllText(libraryfolders)))
             {
                 string libpath = Regex.Unescape(libmatch.Groups[1].Value);
 
@@ -110,7 +115,7 @@ namespace Cornifer
                 if (!File.Exists(manifest))
                     continue;
 
-                Match manmatch = SteamManifestInstallDir.Match(File.ReadAllText(manifest));
+                Match manmatch = SteamManifestInstallDirRegex.Match(File.ReadAllText(manifest));
                 if (!manmatch.Success)
                     continue;
 
@@ -155,7 +160,16 @@ namespace Cornifer
             string assets = Path.Combine(path, $"RainWorld_Data/StreamingAssets");
             if (Directory.Exists(assets))
             {
-                InsertMod(new("rainworld", "Rain World", assets, int.MaxValue, true));
+                string rwVersionPath = Path.Combine(assets, "GameVersion.txt");
+                string? rwVersion = null;
+
+                if (File.Exists(rwVersionPath))
+                    rwVersion = File.ReadAllText(rwVersionPath).TrimStart('v');
+
+                InsertMod(new("rainworld", "Rain World", assets, int.MaxValue, true) 
+                {
+                    Version = rwVersion
+                });
                 SetAssetsPath(assets);
             }
 
@@ -190,19 +204,28 @@ namespace Cornifer
 
                 try
                 {
-                    using FileStream fs = File.OpenRead(modinfoPath);
-                    JsonNode? modinfo = JsonSerializer.Deserialize<JsonNode>(fs);
+                    string modinfo = File.ReadAllText(modinfoPath);
+                    
+                    Match idMatch = ModInfoIdRegex.Match(modinfo);
 
-                    if (modinfo is null)
+                    if (!idMatch.Success)
                         continue;
 
-                    if (!modinfo.TryGet("id", out string? id) || !modinfo.TryGet("name", out string? name))
-                        continue;
+                    Match nameMatch = ModInfoNameRegex.Match(modinfo);
+                    Match versionMatch = ModInfoVersionRegex.Match(modinfo);
+
+                    string id = idMatch.Groups[1].Value;
+                    string name = id;
+                    if (nameMatch.Success)
+                        name = nameMatch.Groups[1].Value;
 
                     int loadOrder = ModLoadOrder is null ? 0 : ModLoadOrder.GetValueOrDefault(id, 0);
                     bool enabled = EnabledMods is null || EnabledMods.Contains(id);
 
-                    InsertMod(new(id, name, modDir, loadOrder, enabled));
+                    InsertMod(new(id, name, modDir, loadOrder, enabled)
+                    {
+                        Version = versionMatch.Success ? versionMatch.Groups[1].Value : null,
+                    });
                 }
                 catch (Exception e)
                 {

@@ -1,5 +1,6 @@
 Proper asset loading
 + equivalences.txt
++ regioncolor.txt (Region.RegionColor)
 
 Warnings system (2 wide gaps in connections)
 Color selection for shortcut types
