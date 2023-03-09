@@ -13,6 +13,8 @@ namespace Cornifer.MapObjects
 {
     public class SimpleIcon : SelectableIcon
     {
+
+
         public SimpleIcon()
         {
         }

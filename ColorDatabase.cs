@@ -147,6 +147,14 @@ namespace Cornifer
             name = name.Slice(0, writeIndex);
         }
 
+        public static string ConvertSubregionName(ReadOnlySpan<char> name)
+        {
+            Span<char> span = stackalloc char[name.Length];
+            name.CopyTo(span);
+            ConvertSubregionName(ref span);
+            return new(span);
+        }
+
         public static ColorRef LoadColorRefJson(ColorRef? existingRef, JsonValue node, Color defaultColor)
         {
             if (node.TryGetValue(out uint packedColor))

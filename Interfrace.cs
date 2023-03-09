@@ -30,6 +30,7 @@ namespace Cornifer
         public static UILabel NoConfigLabel = null!;
         public static UIPanel ConfigPanel = null!;
         public static UIList KeybindsTabList = null!;
+        public static UIList MapObjectVisibilityList = null!;
 
         public static UIList SubregionColorList = null!;
         public static Dictionary<string, UIButton> VisibilityPlacedObjects = new();
@@ -570,6 +571,45 @@ namespace Cornifer
 
                             new UIResizeablePanel
                             {
+                                BorderColor = new(100, 100, 100),
+                                Padding = 4,
+                                Height = 100,
+
+                                CanGrabLeft = false,
+                                CanGrabRight = false,
+                                CanGrabTop = false,
+
+                                MinHeight = 30,
+
+                                Elements =
+                                {
+                                    new UILabel
+                                    {
+                                        Height = 15,
+                                        Text = "Map objects",
+                                        WordWrap = false,
+                                        TextAlign = new(.5f)
+                                    },
+                                    new UIPanel
+                                    {
+                                        BackColor = new(40, 40, 40),
+
+                                        Top = 18,
+                                        Height = new(-18, 1),
+                                        Padding = 4,
+                                        Elements =
+                                        {
+                                            new UIList
+                                            {
+                                                ElementSpacing = 4
+                                            }.Assign(out MapObjectVisibilityList)
+                                        }
+                                    }
+                                }
+                            },
+
+                            new UIResizeablePanel
+                            {
                                 Height = 150,
 
                                 Padding = 4,
@@ -1006,6 +1046,51 @@ namespace Cornifer
                 }
 
                 SubregionColorList.Recalculate();
+            }
+
+            if (MapObjectVisibilityList is not null)
+            {
+                MapObjectVisibilityList.Elements.Clear();
+                foreach (MapObject obj in Main.WorldObjectLists)
+                {
+                    if (!obj.CanSetActive)
+                        continue;
+
+                    UIPanel panel = new()
+                    {
+                        Padding = 2,
+                        Height = 22,
+
+                        Elements =
+                        {
+                            new UILabel
+                            {
+                                Text = obj.Name,
+                                Top = 2,
+                                Left = 2,
+                                Height = 16,
+                                WordWrap = false,
+                                AutoSize = false,
+                                Width = new(-22, 1)
+                            },
+                            new UIButton
+                            {
+                                Text = "A",
+
+                                Selectable = true,
+                                Selected = obj.ActiveProperty.Value,
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                Left = new(0, 1, -1),
+                                Width = 18,
+                            }.OnEvent(UIElement.ClickEvent, (btn, _) => obj.ActiveProperty.Value = btn.Selected),
+                        }
+                    };
+                    panel.OnEvent(UIElement.ClickEvent, (p, _) => { if (p.Root?.Hover is not UIButton) Main.FocusOnObject(obj); });
+                    MapObjectVisibilityList.Elements.Add(panel);
+                }
             }
         }
 

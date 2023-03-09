@@ -15,6 +15,7 @@ namespace Cornifer.MapObjects
 {
     public class GateSymbols : SelectableIcon
     {
+        public override bool CanSetActive => true;
         public override Vector2 Size => new(107, 64);
         public override int ShadeSize => 5;
         public override int? ShadeCornerRadius => 6;

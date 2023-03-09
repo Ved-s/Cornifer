@@ -323,7 +323,7 @@ namespace Cornifer
             int x = 10;
 
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-
+            
             switch (DebugMetric)
             {
                 case EnabledDebugMetric.None when LoadErrors.Count > 0:
@@ -602,6 +602,11 @@ namespace Cornifer
                     Region?.Connections?.DrawConnections(renderer, true, betweenRoomConnections, inRoomConnections);
                     Region?.Connections?.DrawConnections(renderer, false, betweenRoomConnections, inRoomConnections);
                 }
+
+                if (Region is not null)
+                    foreach (MapObject obj in Region.Objects)
+                        obj.Draw(renderer, layers);
+
                 foreach (MapObject obj in WorldObjects)
                     obj.Draw(renderer, layers);
 
@@ -616,7 +621,8 @@ namespace Cornifer
         {
             string? worldFile = RWAssets.ResolveSlugcatFile($"world/{id}/world_{id}.txt");
             string? mapFile = RWAssets.ResolveSlugcatFile($"world/{id}/map_{id}.txt");
-            string? propertiesFile = RWAssets.ResolveSlugcatFile($"world/{id}/properties.txt");
+            string? propertiesFile = RWAssets.ResolveFile($"world/{id}/properties.txt");
+            string? slugcatPropertiedFile = SelectedSlugcat is null ? null : RWAssets.ResolveFile($"world/{id}/properties-{SelectedSlugcat}.txt");
 
             if (worldFile is null)
             {
@@ -630,7 +636,7 @@ namespace Cornifer
                 return;
             }
 
-            Region = new(id, worldFile, mapFile, propertiesFile);
+            Region = new(id, worldFile, mapFile, propertiesFile, slugcatPropertiedFile);
             RegionLoaded(Region);
         }
 
@@ -652,7 +658,7 @@ namespace Cornifer
             Dragging = false;
 
             WorldObjectLists.Clear();
-            WorldObjectLists.Add(region.Rooms);
+            WorldObjectLists.Add(region.ObjectLists);
             WorldObjectLists.Add(WorldObjects);
             WorldObjectLists.Add(FirstPrioritySelectionObjects);
             if (region.Connections is not null)
@@ -667,6 +673,11 @@ namespace Cornifer
             }
 
             Interface.RegionChanged(region);
+        }
+
+        public static void FocusOnObject(MapObject obj)
+        {
+            WorldCamera.Position = obj.WorldPosition + obj.VisualOffset + obj.VisualSize / 2 - WorldCamera.Size / (2 * WorldCamera.Scale);
         }
 
         public static JsonObject SaveJson()

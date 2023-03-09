@@ -1,4 +1,5 @@
-﻿using Cornifer.Structures;
+﻿using Cornifer.MapObjects;
+using Cornifer.Structures;
 using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
@@ -27,14 +28,33 @@ namespace Cornifer
         string? PropertiesString;
         string? GateLockString;
 
-        public Region() { }
+        string[]? SubregionOrder;
 
-        public Region(string id, string worldFilePath, string mapFilePath, string? propertiesFilePath)
+        public CompoundEnumerable<MapObject> ObjectLists = new();
+        public List<MapObject> Objects = new();
+
+        public Region() 
         {
+            ObjectLists.Add(Rooms);
+            ObjectLists.Add(Objects);
+        }
+
+        public Region(string id, string worldFilePath, string mapFilePath, string? defaultPropertiesPath, string? slugcatPropertiesPath) : this()
+        {
+            string? mainPropertiesPath = slugcatPropertiesPath ?? defaultPropertiesPath;
+
             Id = id.ToUpper();
             WorldString = File.ReadAllText(worldFilePath);
-            PropertiesString = propertiesFilePath is null ? null : File.ReadAllText(propertiesFilePath);
+            PropertiesString = mainPropertiesPath is null ? null : File.ReadAllText(mainPropertiesPath);
             MapString = File.ReadAllText(mapFilePath);
+
+            if (defaultPropertiesPath is not null)
+            {
+                SubregionOrder = File.ReadLines(defaultPropertiesPath)
+                    .Where(line => line.StartsWith("Subregion: "))
+                    .Select(line => line.Substring(11))
+                    .ToArray();
+            }
 
             Load();
             LoadGates();
@@ -257,13 +277,13 @@ namespace Cornifer
 
             if (Main.SelectedSlugcat is not null)
             {
-                foreach (var (room, slugcats) in exclusiveRooms)
-                    if (!slugcats.Contains(Main.SelectedSlugcat))
-                        Rooms.RemoveAll(r => r.Name.Equals(room, StringComparison.InvariantCultureIgnoreCase));
+                foreach (var (roomName, slugcats) in exclusiveRooms)
+                    if (!slugcats.Contains(Main.SelectedSlugcat) && TryGetRoom(roomName, out Room? room))
+                        room.ActiveProperty.OriginalValue = false;
 
-                foreach (var (room, slugcats) in hideRooms)
-                    if (slugcats.Contains(Main.SelectedSlugcat))
-                        Rooms.RemoveAll(r => r.Name.Equals(room, StringComparison.InvariantCultureIgnoreCase));
+                foreach (var (roomName, slugcats) in hideRooms)
+                    if (slugcats.Contains(Main.SelectedSlugcat) && TryGetRoom(roomName, out Room? room))
+                        room.ActiveProperty.OriginalValue = false;
             }
 
             foreach (var (room, target, disconnectedTarget, replacement) in connectionOverrides)
@@ -297,7 +317,44 @@ namespace Cornifer
                 if (connections.TryGetValue(room, out string[]? roomConnections))
                     roomConnections[exit] = replacement;
 
-            List<string> subregions = new() { "" };
+            Subregion defaultSubregion = new(this, "");
+            List<Subregion> subregions = new() { defaultSubregion };
+
+            foreach (Room room in Rooms)
+                room.Subregion.OriginalValue = defaultSubregion;
+
+            if (PropertiesString is not null)
+            {
+                int subregId = 0;
+
+                foreach (string line in PropertiesString.Split('\n', StringSplitOptions.TrimEntries))
+                {
+                    string[] split = line.Split(':', StringSplitOptions.TrimEntries);
+
+                    if (split[0] == "Broken Shelters" && split.Length >= 3)
+                    {
+                        foreach (string roomName in split[2].Split(',', StringSplitOptions.TrimEntries))
+                            if (TryGetRoom(roomName, out Room? room))
+                            {
+                                room.BrokenForSlugcats.Add(split[1]);
+                            }
+                    }
+                    else if (split[0] == "Subregion" && split.Length > 1)
+                    {
+                        Subregion subregion = new(this, split[1]);
+                        subregion.Id = subregId;
+                        subregions.Add(subregion);
+
+                        if (SubregionOrder is not null && subregId < SubregionOrder.Length)
+                        {
+                            subregion.AltName = subregion.Name;
+                            subregion.Name = SubregionOrder[subregId];
+                        }
+
+                        subregId++;
+                    }
+                }
+            }
 
             foreach (string line in MapString.Split('\n', StringSplitOptions.TrimEntries))
             {
@@ -334,20 +391,21 @@ namespace Cornifer
                 }
                 if (data.TryGet(5, out string subregion))
                 {
-                    int index = subregions.IndexOf(subregion);
-                    if (index < 0)
+                    Subregion? subreg = subregions.FirstOrDefault(s => s.Name == subregion || s.AltName == subregion);
+
+                    if (subreg is null)
                     {
-                        index = subregions.Count;
-                        subregions.Add(subregion);
+                        subreg = new(this, subregion);
+                        subregions.Add(subreg);
                     }
 
-                    room.Subregion.OriginalValue = index;
+                    room.Subregion.OriginalValue = subreg;
                 }
 
                 room.Positioned = true;
             }
 
-            Subregions = subregions.Select(s => new Subregion(Id, s)).ToArray();
+            Subregions = subregions.ToArray();
             ResetSubregionColors();
 
             foreach (var (roomName, roomConnections) in connections)
@@ -371,7 +429,7 @@ namespace Cornifer
                             room.Connections[i] = new(targetRoom, i, targetExit);
                         }
                     }
-                    else
+                    else if (room.Active)
                     {
                         if (hideRooms.ContainsKey(roomConnections[i]))
                             Main.LoadErrors.Add($"{room.Name} connects to hidden room {roomConnections[i]}!");
@@ -383,11 +441,13 @@ namespace Cornifer
                 }
             }
 
+            List<Room> nonPositionedRooms = new(Rooms.Where(r => !r.Positioned));
+
             bool any = true;
             while (any)
             {
                 any = false;
-                foreach (Room room in Rooms)
+                foreach (Room room in nonPositionedRooms)
                 {
                     if (!room.Positioned && room.Connections.Any(c => c is not null && c.Target.Positioned))
                     {
@@ -397,20 +457,34 @@ namespace Cornifer
                 }
             }
 
-            int nonPositioned = Rooms.RemoveAll(r => !r.Positioned);
-            if (nonPositioned > 0)
-                Main.LoadErrors.Add($"{nonPositioned} rooms aren't positioned! Removed them.");
+            if (nonPositionedRooms.Any(r => !r.Positioned))
+            {
+                foreach (Room room in nonPositionedRooms)
+                    if (!room.Positioned)
+                        room.ActiveProperty.OriginalValue = false;
 
-            if (PropertiesString is not null)
-                foreach (string line in PropertiesString.Split('\n', StringSplitOptions.TrimEntries))
+                Main.LoadErrors.Add($"{nonPositionedRooms.Count} rooms aren't positioned! Hiding {nonPositionedRooms.Count(r => !r.Positioned)} of them.");
+            }
+
+            foreach (var group in Rooms.Where(r => r.Subregion.OriginalValue.Id >= 0).GroupBy(r => r.Subregion.OriginalValue))
+            {
+                int count = 0;
+                Vector2 center = Vector2.Zero;
+
+                foreach (Room room in group)
                 {
-                    string[] split = line.Split(':', StringSplitOptions.TrimEntries);
-
-                    if (split[0] == "Broken Shelters" && split.Length >= 3)
-                        foreach (string roomName in split[2].Split(',', StringSplitOptions.TrimEntries))
-                            if (TryGetRoom(roomName, out Room? room))
-                                room.BrokenForSlugcats.Add(split[1]);
+                    center += room.WorldPosition + room.Size / 2;
+                    count++;
                 }
+
+                center /= count;
+
+                Objects.Add(new MapText($"SubregionText_{Id}_{ColorDatabase.ConvertSubregionName(group.Key.Name)}", Main.DefaultBigMapFont, group.Key.DisplayName)
+                {
+                    Color = { OriginalValue = group.Key.BackgroundColor },
+                    WorldPosition = center
+                });
+            }
         }
         public void ResetSubregionColors()
         {
@@ -437,7 +511,7 @@ namespace Cornifer
         public bool TryGetRoom(string id, [NotNullWhen(true)] out Room? room)
         {
             foreach (Room r in Rooms)
-                if (r.Name.Equals(id, StringComparison.InvariantCultureIgnoreCase))
+                if (r.Name!.Equals(id, StringComparison.InvariantCultureIgnoreCase))
                 {
                     room = r;
                     return true;
@@ -461,6 +535,7 @@ namespace Cornifer
                 ["properties"] = PropertiesString,
                 ["map"] = MapString,
                 ["locks"] = GateLockString,
+                ["subregionOrder"] = SubregionOrder is null ? null : JsonSerializer.SerializeToNode(SubregionOrder),
                 ["rooms"] = new JsonArray(Rooms.Select(r => new JsonObject()
                 {
                     ["id"] = r.Name,
@@ -492,6 +567,9 @@ namespace Cornifer
 
             if (node.TryGet("locks", out string? locks))
                 GateLockString = locks;
+
+            if (node.TryGet("subregionOrder", out JsonArray? subregionOrder))
+                SubregionOrder = JsonSerializer.Deserialize<string[]>(subregionOrder);
 
             Load();
 

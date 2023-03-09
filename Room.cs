@@ -103,7 +103,7 @@ namespace Cornifer
 
         public int Layer;
         public ObjectProperty<int> WaterLevel = new("waterLevel", -1);
-        public ObjectProperty<int, string> Subregion = new("subregion", 0);
+        public ObjectProperty<Subregion, string> Subregion = new("subregion", null!);
         public ObjectProperty<bool> Deathpit = new("deathpit", false);
         public ObjectProperty<bool> UseBetterTileCutout = new("betterTileCutout", true);
         public ObjectProperty<bool> CutoutAllSolidTiles = new("cutAllSolid", false);
@@ -123,6 +123,8 @@ namespace Cornifer
         public string? SettingsString;
 
         public readonly Region Region = null!;
+
+        public override bool CanSetActive => true;
 
         public override RenderLayers RenderLayer => RenderLayers.Rooms;
         public override bool LoadCreationForbidden => true;
@@ -165,8 +167,8 @@ namespace Cornifer
 
         public Room()
         {
-            Subregion.SaveValue = v => Region.Subregions[v].Name;
-            Subregion.LoadValue = s => Array.FindIndex(Region.Subregions, r => r.Name == s);
+            Subregion.SaveValue = v => v.Name;
+            Subregion.LoadValue = s => Region.Subregions.First(r => r.Name == s);
         }
 
         public Room(Region region, string id) : this()
@@ -278,9 +280,12 @@ namespace Cornifer
 
             if (tilesLine is null)
             {
+                int tileCount = TileSize.X * TileSize.Y;
                 for (int i = lines.Length - 1; i >= 0; i--)
                 {
-                    if (lines[i].Length > 0 && lines[i].All(c => char.IsDigit(c) || c == '|' || c == ','))
+                    int splitCount = lines[i].Count(c => c == '|');
+
+                    if (splitCount >= tileCount - 1 && splitCount <= tileCount + 1)
                     {
                         tilesLine = lines[i];
                         break;
@@ -385,6 +390,21 @@ namespace Cornifer
 
                 ProcessCutouts();
             }
+            else 
+            {
+                Main.LoadErrors.Add($"Could not find tile data for room {Name}");
+            }
+
+            if (lines.Length < 12)
+            {
+                int oldSize = lines.Length;
+                Array.Resize(ref lines, 12);
+
+                for (int i = oldSize - 1; i < lines.Length; i++)
+                    lines[i] = "";
+            }
+            if (tilesLine is not null)
+                lines[11] = tilesLine;
 
             for (int i = 0; i < lines.Length; i++)
             {
@@ -565,7 +585,7 @@ namespace Cornifer
                     }
                 }
 
-                Subregion subregion = Region.Subregions[Subregion.Value];
+                Subregion subregion = Subregion.Value;
 
                 for (int j = 0; j < TileSize.Y; j++)
                     for (int i = 0; i < TileSize.X; i++)
@@ -938,8 +958,8 @@ namespace Cornifer
                         TextAlign = new(.5f),
                         RadioGroup = group,
                         Selectable = true,
-                        Selected = i == Subregion.Value,
-                        RadioTag = i,
+                        Selected = subregion == Subregion.Value,
+                        RadioTag = subregion,
                         SelectedTextColor = Color.Black,
                         SelectedBackColor = Color.White,
                     };
@@ -949,9 +969,9 @@ namespace Cornifer
 
                 group.ButtonClicked += (_, tag) =>
                 {
-                    if (tag is not int index)
+                    if (tag is not Subregion subregion)
                         return;
-                    Subregion.Value = index;
+                    Subregion.Value = subregion;
                     TileMapDirty = true;
                 };
             }

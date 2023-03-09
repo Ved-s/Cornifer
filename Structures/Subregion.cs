@@ -1,18 +1,36 @@
-﻿namespace Cornifer.Structures
+﻿using System.Drawing;
+
+namespace Cornifer.Structures
 {
     public class Subregion
     {
-        public string Name;
+        private string name = null!;
+        public string? AltName;
+        public int Id = -1;
 
-        public ColorRef BackgroundColor;
-        public ColorRef WaterColor;
+        public string DisplayName => AltName ?? Name;
 
-        public Subregion(string region, string name)
+        public string Name 
         {
-            Name = name;
+            get => name;
+            set
+            {
+                name = value;
 
-            BackgroundColor = ColorDatabase.GetRegionColor(region, name, false);
-            WaterColor = ColorDatabase.GetRegionColor(region, name, true);
+                BackgroundColor = ColorDatabase.GetRegionColor(Region.Id, name, false);
+                WaterColor = ColorDatabase.GetRegionColor(Region.Id, name, true);
+            }
+        }
+
+        public Region Region;
+
+        public ColorRef BackgroundColor = null!;
+        public ColorRef WaterColor = null!;
+
+        public Subregion(Region region, string name)
+        {
+            Region = region;
+            Name = name;
         }
     }
 

@@ -26,6 +26,7 @@ namespace Cornifer
 
         private Vector2 size;
 
+        public override bool CanSetActive => true;
         public override Vector2 Size => size + new Vector2(10);
 
         public ObjectProperty<ColorRef> Color = new("color", ColorRef.White);

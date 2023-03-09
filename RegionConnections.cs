@@ -645,8 +645,8 @@ namespace Cornifer
             public bool Invalid;
             public bool IsInRoomShortcut = false;
 
-            public bool Active => !IsInRoomShortcut || Source.DrawInRoomShortcuts.Value;
-            public Color Color => IsInRoomShortcut ? Color.Lerp(Color.White, Source.Region.Subregions[Source.Subregion.Value].BackgroundColor.Color, .5f) : Color.White;
+            public bool Active => Source.Active && Destination.Active && (!IsInRoomShortcut || Source.DrawInRoomShortcuts.Value);
+            public Color Color => IsInRoomShortcut ? Color.Lerp(Color.White, Source.Subregion.Value.BackgroundColor.Color, .5f) : Color.White;
             public string JsonKey => IsInRoomShortcut ? $"#{Source.Name}~{SourcePoint.X}~{SourcePoint.Y}" : $"{Source.Name}~{Destination.Name}";
 
             public ObjectProperty<bool> AllowWhiteToRedPixel = new("whiteToRed", true);
@@ -684,11 +684,13 @@ namespace Cornifer
                 }
                 else if (connection.Exit < 0 || connection.Exit >= source.Exits.Length)
                 {
-                    Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.Exit} in {source?.Name ?? "NONE"}");
+                    //if (source.Active)
+                        Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.Exit} in {source?.Name ?? "NONE"}");
                 }
                 else if (connection.TargetExit < 0 || connection.TargetExit >= connection.Target.Exits.Length)
                 {
-                    Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.TargetExit} in {connection.Target?.Name ?? "NONE"}");
+                    //if (connection.Target.Active)
+                        Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.TargetExit} in {connection.Target?.Name ?? "NONE"}");
                 }
                 else
                 {
@@ -800,6 +802,8 @@ namespace Cornifer
         public class ConnectionPoint : MapObject
         {
             public override string? Name => $"Connection_{Connection.Source.Name}_{Connection.Destination.Name}_{Connection.Points.IndexOf(this)}";
+
+            public override bool CanSetActive => false;
 
             public override bool Active => Connection.Active && Main.ActiveRenderLayers.HasFlag(Connection.IsInRoomShortcut ? RenderLayers.InRoomShortcuts : RenderLayers.Connections);
             public override bool LoadCreationForbidden => true;

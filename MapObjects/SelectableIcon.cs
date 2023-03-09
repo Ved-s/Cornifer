@@ -10,6 +10,7 @@ namespace Cornifer.MapObjects
 
         Vector2 Offset;
 
+        public override bool CanSetActive => true;
         public override RenderLayers RenderLayer => RenderLayers.Icons;
         public override Vector2 ParentPosition
         {

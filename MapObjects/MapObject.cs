@@ -21,9 +21,11 @@ namespace Cornifer.MapObjects
         public virtual bool ParentSelected => Parent != null && (Parent.Selected || Parent.ParentSelected);
         public bool Selected => Main.SelectedObjects.Contains(this);
 
-        private ObjectProperty<bool> InternalActive = new("active", true);
+        public ObjectProperty<bool> ActiveProperty = new("active", true);
 
-        public virtual bool Active { get => InternalActive.Value; set => InternalActive.Value = value; }
+        public abstract bool CanSetActive { get; }
+
+        public virtual bool Active { get => ActiveProperty.Value; set => ActiveProperty.Value = value; }
         public virtual bool Selectable { get; set; } = true;
         public virtual bool LoadCreationForbidden { get; set; } = false;
         public virtual bool NeedsSaving { get; set; } = true;
@@ -191,6 +193,9 @@ namespace Cornifer.MapObjects
                 {
                     foreach (MapObject obj in Children)
                     {
+                        if (!obj.CanSetActive)
+                            continue;
+
                         UIPanel panel = new()
                         {
                             Padding = 2,
@@ -213,17 +218,17 @@ namespace Cornifer.MapObjects
                                     Text = "A",
 
                                     Selectable = true,
-                                    Selected = obj.InternalActive.Value,
+                                    Selected = obj.ActiveProperty.Value,
 
                                     SelectedBackColor = Color.White,
                                     SelectedTextColor = Color.Black,
 
                                     Left = new(0, 1, -1),
                                     Width = 18,
-                                }.OnEvent(UIElement.ClickEvent, (btn, _) => obj.InternalActive.Value = btn.Selected),
+                                }.OnEvent(UIElement.ClickEvent, (btn, _) => obj.ActiveProperty.Value = btn.Selected),
                             }
                         };
-
+                        panel.OnEvent(UIElement.ClickEvent, (p, _) => { if (p.Root?.Hover is not UIButton) Main.FocusOnObject(obj); });
                         ConfigChildrenList.Elements.Add(panel);
                     }
                 }
@@ -247,7 +252,7 @@ namespace Cornifer.MapObjects
                         $"Parent: {Parent?.Name ?? Parent?.GetType().Name ?? "null"}"),
                 ["pos"] = JsonTypes.SaveVector2(ParentPosition),
             };
-            InternalActive.SaveToJson(json);
+            ActiveProperty.SaveToJson(json);
 
             if (!LoadCreationForbidden)
                 json["type"] = GetType().FullName;
@@ -269,7 +274,7 @@ namespace Cornifer.MapObjects
             if (json.TryGet("pos", out JsonNode? pos))
                 ParentPosition = JsonTypes.LoadVector2(pos);
 
-            InternalActive.LoadFromJson(json);
+            ActiveProperty.LoadFromJson(json);
 
             if (json.TryGet("children", out JsonArray? children))
                 foreach (JsonNode? childNode in children)
