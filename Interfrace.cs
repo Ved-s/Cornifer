@@ -1051,7 +1051,7 @@ namespace Cornifer
             if (MapObjectVisibilityList is not null)
             {
                 MapObjectVisibilityList.Elements.Clear();
-                foreach (MapObject obj in Main.WorldObjectLists)
+                foreach (MapObject obj in Main.WorldObjectLists.OrderBy(o => o.Name))
                 {
                     if (!obj.CanSetActive)
                         continue;

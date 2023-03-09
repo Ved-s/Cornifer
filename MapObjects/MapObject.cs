@@ -191,7 +191,7 @@ namespace Cornifer.MapObjects
                 }
                 else
                 {
-                    foreach (MapObject obj in Children)
+                    foreach (MapObject obj in Children.OrderBy(o => o.Name))
                     {
                         if (!obj.CanSetActive)
                             continue;
