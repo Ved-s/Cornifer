@@ -121,7 +121,7 @@ namespace Cornifer
 
         private void AddGateLocks(string data, HashSet<string>? processed, List<string>? lockLines)
         {
-            foreach (string line in data.Split('\n', StringSplitOptions.TrimEntries))
+            foreach (string line in data.Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             {
                 string[] split = line.Split(':', StringSplitOptions.TrimEntries);
                 if (processed is not null && processed.Contains(split[0]) || !TryGetRoom(split[0], out Room? gate))

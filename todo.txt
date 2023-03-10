@@ -10,3 +10,5 @@ Switch slugcats after region load
 visibility presets (default: all layers + no pickups, pickups only, karmaflowers only, vista points only)
 Text presets
 Copy-paste objects
+Better default positions for gate icons and gate text
+Dotted lines for invalid connections
