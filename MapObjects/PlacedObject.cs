@@ -216,7 +216,7 @@ namespace Cornifer.MapObjects
                 currentAngle -= iconAngle;
 
                 offset.Floor();
-                SlugcatIcon icon = new($"Availability_{slugcat}")
+                SlugcatIcon icon = new($"Availability_{slugcat.Id}")
                 {
                     Id = slugcat.IconId,
                     ParentPosition = offset
