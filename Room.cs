@@ -160,6 +160,8 @@ namespace Cornifer
         }
 
         public GateRoomData? GateData;
+        public GateSymbols? GateSymbols;
+        public MapText? GateRegionText;
 
         bool[,]? CutOutSolidTiles = null;
         Vector2 Position;
@@ -534,6 +536,17 @@ namespace Cornifer
                     });
             }
 
+            if (GateData is not null && IsGate)
+            {
+                Children.Add(GateSymbols = new GateSymbols(GateData.LeftKarma, GateData.RightKarma));
+                Children.Add(GateRegionText = new MapText("TargetRegionText", Main.DefaultBigMapFont, $"Region Text"));
+
+                GateRegionText.NoAlignOverride = true;
+                GateRegionText.IconPosAlign = new(.5f);
+                GateSymbols.Offset = new(0, -Size.Y / 2 - GateSymbols.Size.Y / 2 - 5);
+                GateRegionText.Offset = new(0, -Size.Y / 2 - GateSymbols.Size.Y - 14 - Main.DefaultBigMapFont.LineSpacing/2);
+            }
+
             if (VistaRooms.TryGetValue(Name!, out Vector2 vistaPoint))
             {
                 Vector2 rel = (vistaPoint / 20) / Size;
@@ -893,14 +906,24 @@ namespace Cornifer
                 rightColor ??= ColorRef.White;
                 regionColor ??= ColorRef.White;
 
-                Children.Add(new GateSymbols(GateData.LeftKarma, GateData.RightKarma)
+                if (GateSymbols is not null)
                 {
-                    LeftArrowColor = { OriginalValue = leftColor },
-                    RightArrowColor = { OriginalValue = rightColor },
-                });
+                    GateSymbols.LeftArrowColor.OriginalValue = leftColor;
+                    GateSymbols.RightArrowColor.OriginalValue = rightColor;
+                }
 
-                if (GateData.TargetRegionName is not null)
-                    Children.Add(new MapText("TargetRegionText", Main.DefaultBigMapFont, $"To [c:{regionColor.GetKeyOrColorString()}]{GateData.TargetRegionName}[/c]"));
+                if (GateRegionText is not null)
+                {
+                    if (GateData.TargetRegionName is null)
+                    {
+                        GateRegionText.Parent = null;
+                    }
+                    else
+                    {
+                        GateRegionText.Text.OriginalValue = $"To [c:{regionColor.GetKeyOrColorString()}]{GateData.TargetRegionName}[/c]";
+                        GateRegionText.ParamsChanged();
+                    }
+                }
             }
         }
 

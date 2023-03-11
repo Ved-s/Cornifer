@@ -466,7 +466,7 @@ namespace Cornifer
                 Main.LoadErrors.Add($"{nonPositionedRooms.Count} rooms aren't positioned! Hiding {nonPositionedRooms.Count(r => !r.Positioned)} of them.");
             }
 
-            foreach (var group in Rooms.Where(r => r.Subregion.OriginalValue.Id >= 0).GroupBy(r => r.Subregion.OriginalValue))
+            foreach (var group in Rooms.Where(r => r.Subregion.OriginalValue.Id >= 0 && r.Subregion.Value.DisplayName.Length > 0).GroupBy(r => r.Subregion.OriginalValue))
             {
                 int count = 0;
                 Vector2 center = Vector2.Zero;

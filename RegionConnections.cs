@@ -435,7 +435,7 @@ namespace Cornifer
                     if (connection == HoveredConnection && i == HoveredConnectionLine)
                     {
                         Rect lineRect = GetLineBounds(start, end, .5f * Main.WorldCamera.Scale, out lineAngle);
-                        Main.SpriteBatch.Draw(Main.Pixel, lineRect.Position, null, Color.Yellow * .6f, lineAngle, Vector2.Zero, lineRect.Size, SpriteEffects.None, 0f);
+                        Main.SpriteBatch.Draw(Main.Pixel, lineRect.Position, null, connection.GuideColor * .6f, lineAngle, Vector2.Zero, lineRect.Size, SpriteEffects.None, 0f);
                     }
 
                     if (HoveredConnectionPoint is not null && i < connection.Points.Count && connection.Points[i] == HoveredConnectionPoint && !HoveredConnectionPoint.Selected)
@@ -444,7 +444,7 @@ namespace Cornifer
                             Main.Pixel,
                             Main.WorldCamera.TransformVector(HoveredConnectionPoint.VisualPosition),
                             null,
-                            Color.Yellow * .6f,
+                            connection.GuideColor * .6f,
                             lineAngle,
                             Vector2.Zero,
                             HoveredConnectionPoint.VisualSize * Main.WorldCamera.Scale,
@@ -454,32 +454,42 @@ namespace Cornifer
                     bool smallStartPoint = i == 0;
                     bool smallEndPoint = i == connection.Points.Count;
 
-                    Main.SpriteBatch.DrawLine(start, end, Color.Black, 3);
+                    bool visible = ShouldDrawLine(connection, i);
+
+                    float dashSize = 8;
+                    float shadeThickness = 3;
+
+                    if (visible)
+                        Main.SpriteBatch.DrawLine(start, end, Color.Black, 3);
+                    else
+                        Main.SpriteBatch.DrawDashLine(start, end, Color.Black, null, dashSize + shadeThickness, dashSize - shadeThickness, shadeThickness, -shadeThickness*.5f);
 
                     if (smallStartPoint)
                         Main.SpriteBatch.DrawRect(start - new Vector2(3), new(5), Color.Black);
                     if (smallEndPoint)
                         Main.SpriteBatch.DrawRect(end - new Vector2(3), new(5), Color.Black);
 
-                    bool visible = ShouldDrawLine(connection, i);
-                    Main.SpriteBatch.DrawLine(start, end, visible ? Color.Yellow : Color.Red, 1);
+                    if (visible)
+                        Main.SpriteBatch.DrawLine(start, end, visible ? connection.GuideColor : Color.Red, 1);
+                    else
+                        Main.SpriteBatch.DrawDashLine(start, end, visible ? connection.GuideColor : connection.GuideColor * .6f, null, dashSize, null, 1);
 
                     if (smallStartPoint)
-                        Main.SpriteBatch.DrawRect(start - new Vector2(2), new(3), Color.Yellow);
+                        Main.SpriteBatch.DrawRect(start - new Vector2(2), new(3), connection.GuideColor);
                     if (smallEndPoint)
-                        Main.SpriteBatch.DrawRect(end - new Vector2(2), new(3), Color.Yellow);
+                        Main.SpriteBatch.DrawRect(end - new Vector2(2), new(3), connection.GuideColor);
 
                     if (i > 0 && i <= connection.Points.Count)
                     {
                         Main.SpriteBatch.DrawRect(start - new Vector2(3), new(7), Color.Black);
-                        Main.SpriteBatch.DrawRect(start - new Vector2(2), new(5), Color.Yellow);
+                        Main.SpriteBatch.DrawRect(start - new Vector2(2), new(5), connection.GuideColor);
                     }
 
                     if (connection == HoveredConnection && i == HoveredConnectionLine && HoveredLineDist >= 0 && HoveredLineDist <= 1)
                     {
                         Vector2 point = Vector2.Lerp(start, end, HoveredLineDist);
                         Main.SpriteBatch.Draw(Main.Pixel, point, null, Color.Black, lineAngle, new Vector2(.5f), 9, SpriteEffects.None, 0f);
-                        Main.SpriteBatch.Draw(Main.Pixel, point, null, Color.Yellow, lineAngle, new Vector2(.5f), 7, SpriteEffects.None, 0f);
+                        Main.SpriteBatch.Draw(Main.Pixel, point, null, connection.GuideColor, lineAngle, new Vector2(.5f), 7, SpriteEffects.None, 0f);
                     }
                 }
             }
@@ -648,6 +658,8 @@ namespace Cornifer
             public bool Active => Source.Active && Destination.Active && (!IsInRoomShortcut || Source.DrawInRoomShortcuts.Value);
             public Color Color => IsInRoomShortcut ? Color.Lerp(Color.White, Source.Subregion.Value.BackgroundColor.Color, .5f) : Color.White;
             public string JsonKey => IsInRoomShortcut ? $"#{Source.Name}~{SourcePoint.X}~{SourcePoint.Y}" : $"{Source.Name}~{Destination.Name}";
+
+            public Color GuideColor => Color.White;
 
             public ObjectProperty<bool> AllowWhiteToRedPixel = new("whiteToRed", true);
 

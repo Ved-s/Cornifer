@@ -2,13 +2,17 @@ Proper asset loading
 + equivalences.txt
 + regioncolor.txt (Region.RegionColor)
 
+Switch slugcats after region load
++ properties.txt
++ room_settings.txt
++ world_xx.txt
++ map_xx.txt
++ displayname.txt
+
 Warnings system (2 wide gaps in connections)
 Color selection for shortcut types
 Better room selection - check if clicked pixel is transparent
 Exclusive keybinds
-Switch slugcats after region load
 visibility presets (default: all layers + no pickups, pickups only, karmaflowers only, vista points only)
 Text presets
 Copy-paste objects
-Better default positions for gate icons and gate text
-Dotted lines for invalid connections

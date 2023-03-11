@@ -8,7 +8,7 @@ namespace Cornifer.MapObjects
     {
         public Color LineColor = new(90, 90, 90);
 
-        Vector2 Offset;
+        public Vector2 Offset;
 
         public override bool CanSetActive => true;
         public override RenderLayers RenderLayer => RenderLayers.Icons;

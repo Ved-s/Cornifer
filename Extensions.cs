@@ -46,6 +46,38 @@ namespace Cornifer
             spriteBatch.Draw(Main.Pixel, a, null, color, angle, new Vector2(0, .5f), new Vector2(diff.Length(), thickness), SpriteEffects.None, 0);
         }
 
+        public static void DrawDashLine(this SpriteBatch spriteBatch, Vector2 a, Vector2 b, Color dashColor, Color? emptyColor, float dashLength, float? emptyLength = null, float thickness = 1, float? startOffset = null)
+        {
+            emptyLength ??= dashLength;
+
+            float remainingLength = (a - b).Length();
+            bool dash = true;
+            Vector2 dir = b - a;
+            dir.Normalize();
+            Vector2 pos = a;
+
+            if (startOffset.HasValue)
+                pos += dir * startOffset.Value;
+
+            while (remainingLength > 0)
+            {
+                float length = dash ? dashLength : emptyLength.Value;
+
+                if (length > remainingLength)
+                    length = remainingLength;
+
+                Vector2 nextPos = pos + dir * length;
+                Color? color = dash ? dashColor : emptyColor;
+
+                if (color.HasValue)
+                    DrawLine(spriteBatch, pos, nextPos, color.Value, thickness);
+
+                dash = !dash;
+                pos = nextPos;
+                remainingLength -= length;
+            }
+        }
+
         public static void DrawRect(this SpriteBatch spriteBatch, Vector2 pos, Vector2 size, Color? fill, Color? border = null, float thickness = 1)
         {
             if (fill.HasValue)

@@ -39,6 +39,7 @@ namespace Cornifer
 
         public override int ShadeSize => 5;
         public override RenderLayers RenderLayer => RenderLayers.Texts;
+        public bool NoAlignOverride = false;
 
         Texture2D? TextShadeTexture;
         bool TextShadeTextureDirty;
@@ -63,12 +64,13 @@ namespace Cornifer
             ParamsChanged();
         }
 
-        void ParamsChanged()
+        public void ParamsChanged()
         {
             string text = Text.Value.Length == 0 ? EmptyTextString : Text.Value;
             size = Font is null ? Vector2.Zero : FormattedText.Measure(Font.Value, text, Scale.Value);
 
-            IconPosAlign = new(Math.Min((Size.Y / 2) / Size.X, .5f), .5f);
+            if (!NoAlignOverride)
+                IconPosAlign = new(Math.Min((Size.Y / 2) / Size.X, .5f), .5f);
             TextShadeTextureDirty = true;
             ShadeTextureDirty = true;
         }
