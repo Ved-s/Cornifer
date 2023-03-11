@@ -243,6 +243,73 @@ namespace Cornifer
                     StopDragging();
                     Undo.Redo();
                 }
+
+                if (InputHandler.Copy.JustPressed)
+                {
+                    JsonArray arr = new();
+
+                    foreach (MapObject obj in SelectedObjects)
+                    {
+                        if (!obj.CanCopy || obj.LoadCreationForbidden)
+                            continue;
+
+                        JsonObject? node = obj.SaveJson(true);
+                        if (node is not null)
+                            arr.Add(node);
+                    }
+
+                    Platform.SetClipboard(JsonSerializer.Serialize(arr));
+                }
+
+                if (InputHandler.Paste.JustPressed)
+                {
+                    Task.Run(async () => 
+                    {
+                        string json = await Platform.GetClipboard();
+                        if (json.Length == 0 || string.IsNullOrWhiteSpace(json))
+                        {
+                            await Platform.MessageBox("Clipboard is empty, nothing to paste", "Paste from clipboard");
+                            return;
+                        }
+                        TryCatchReleaseException(() => 
+                        {
+                            JsonObject[] objectsJson = JsonSerializer.Deserialize<JsonObject[]>(json)!;
+
+                            List<MapObject> objects = objectsJson.Select(j => MapObject.CreateObject(j)).OfType<MapObject>().ToList();
+
+                            if (objects.Count == 0)
+                                return;
+
+                            Vector2 tl = objects[0].WorldPosition;
+                            Vector2 br = objects[0].WorldPosition + objects[0].Size;
+
+                            for (int i = 1; i < objects.Count; i++)
+                            {
+                                Vector2 pos = objects[i].WorldPosition;
+                                Vector2 size = objects[i].Size;
+
+                                tl.X = Math.Min(tl.X, pos.X);
+                                tl.Y = Math.Min(tl.Y, pos.Y);
+
+                                br.X = Math.Min(br.X, pos.X + size.X);
+                                br.Y = Math.Min(tl.Y, pos.Y + size.Y);
+                            }
+
+                            Vector2 bunchSize = br - tl;
+                            Vector2 bunchCenter = tl + bunchSize / 2;
+
+                            Vector2 offset = WorldCamera.InverseTransformVector(InputHandler.MouseState.Position.ToVector2()) - bunchCenter;
+
+                            foreach (MapObject obj in objects)
+                                obj.WorldPosition += offset;
+
+                            SelectedObjects.Clear();
+                            WorldObjects.AddRange(objects);
+                            SelectedObjects.UnionWith(objects);
+
+                        }, "Exception has been caught while pasting objects");
+                    });
+                }
             }
 
             WorldCamera.Update();

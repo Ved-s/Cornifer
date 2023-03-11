@@ -149,14 +149,14 @@ namespace Cornifer.MapObjects
             }.OnEvent(UIElement.ClickEvent, (btn, _) => (RightSymbolColor.Value, LeftSymbolColor.Value) = (LeftSymbolColor.Value, RightSymbolColor.Value)));
         }
 
-        protected override JsonNode? SaveInnerJson()
+        protected override JsonNode? SaveInnerJson(bool forCopy)
         {
             return new JsonObject()
-                .SaveProperty(SplitterColor)
-                .SaveProperty(LeftSymbolColor)
-                .SaveProperty(RightSymbolColor)
-                .SaveProperty(LeftArrowColor)
-                .SaveProperty(RightArrowColor);
+                .SaveProperty(SplitterColor, forCopy)
+                .SaveProperty(LeftSymbolColor, forCopy)
+                .SaveProperty(RightSymbolColor, forCopy)
+                .SaveProperty(LeftArrowColor, forCopy)
+                .SaveProperty(RightArrowColor, forCopy);
         }
 
         protected override void LoadInnerJson(JsonNode node)

@@ -26,6 +26,7 @@ namespace Cornifer
 
         private Vector2 size;
 
+        public override bool CanCopy => true;
         public override bool CanSetActive => true;
         public override Vector2 Size => size + new Vector2(10);
 
@@ -329,15 +330,15 @@ namespace Cornifer
             };
         }
 
-        protected override JsonNode? SaveInnerJson()
+        protected override JsonNode? SaveInnerJson(bool forCopy)
         {
             return new JsonObject()
-            .SaveProperty(Text)
-            .SaveProperty(Font)
-            .SaveProperty(Scale)
-            .SaveProperty(Color)
-            .SaveProperty(Shade)
-            .SaveProperty(ShadeColor);
+            .SaveProperty(Text, forCopy)
+            .SaveProperty(Font, forCopy)
+            .SaveProperty(Scale, forCopy)
+            .SaveProperty(Color, forCopy)
+            .SaveProperty(Shade, forCopy)
+            .SaveProperty(ShadeColor, forCopy);
         }
 
         protected override void LoadInnerJson(JsonNode node)

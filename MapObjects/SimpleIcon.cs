@@ -5,6 +5,7 @@ using Cornifer.UI;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
@@ -13,8 +14,6 @@ namespace Cornifer.MapObjects
 {
     public class SimpleIcon : SelectableIcon
     {
-
-
         public SimpleIcon()
         {
         }
@@ -29,6 +28,8 @@ namespace Cornifer.MapObjects
             Sprite = sprite;
         }
 
+        public override Type CopyType => typeof(SimpleIcon);
+        public override bool CanCopy => true;
         public override int ShadeSize => BorderSize.Value;
         public override int? ShadeCornerRadius => ShadeSize + 1;
 
@@ -123,14 +124,14 @@ namespace Cornifer.MapObjects
             }
         }
 
-        protected override JsonNode? SaveInnerJson()
+        protected override JsonNode? SaveInnerJson(bool forCopy)
         {
             JsonObject obj = new JsonObject()
-                .SaveProperty(Color)
-                .SaveProperty(Shade)
-                .SaveProperty(BorderSize);
+                .SaveProperty(Color, forCopy)
+                .SaveProperty(Shade, forCopy)
+                .SaveProperty(BorderSize, forCopy);
 
-            if (!SkipTextureSave)
+            if (!SkipTextureSave || forCopy)
             {
                 if (Sprite is not null)
                     obj["sprite"] = Sprite.Name;

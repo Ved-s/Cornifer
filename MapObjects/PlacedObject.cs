@@ -22,9 +22,7 @@ namespace Cornifer.MapObjects
         public bool RemoveByAvailability = true;
         public string? DebugDisplay = null;
 
-        public override int ShadeSize => 2;
         public override bool SkipTextureSave => true;
-        public override bool DisableBorderConfig => true;
 
         public override Vector2 Size => Frame.Size.ToVector2();
         public override Vector2 ParentPosAlign => Parent is not Room ? new(.5f) : new Vector2(RoomPos.X / Parent.Size.X, 1 - RoomPos.Y / Parent.Size.Y);
@@ -40,6 +38,11 @@ namespace Cornifer.MapObjects
         {
             "DevToken"
         };
+
+        public PlacedObject()
+        {
+            BorderSize.OriginalValue = 2;
+        }
 
         public static PlacedObject? Load(string data)
         {
@@ -181,6 +184,7 @@ namespace Cornifer.MapObjects
                 RoomPos = pos,
                 Frame = atlas.Frame,
                 Texture = atlas.Texture,
+                Sprite = atlas,
                 Color = { OriginalValue = new(null, atlas.Color) },
                 Shade = { OriginalValue = atlas.Shade }
             };
@@ -260,8 +264,6 @@ namespace Cornifer.MapObjects
                 AvailabilityIcons[i].ParentPosition = pos;
             }
         }
-
-
 
         protected override void BuildInnerConfig(UIList list)
         {

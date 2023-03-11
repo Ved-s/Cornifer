@@ -28,9 +28,9 @@ namespace Cornifer.Json
             OriginalValue = originalValue;
         }
 
-        public void SaveToJson(JsonNode node)
+        public void SaveToJson(JsonNode node, bool forCopy)
         {
-            if (!UserValueSet || (JsonValueConverter<T>.SaveSkipCheckOverride?.Invoke(UserValue, OriginalValue) ?? Equals(UserValue, OriginalValue)))
+            if (!forCopy && (!UserValueSet || (JsonValueConverter<T>.SaveSkipCheckOverride?.Invoke(UserValue, OriginalValue) ?? Equals(UserValue, OriginalValue))))
                 return;
 
             node[JsonName] = JsonValueConverter<T>.SaveValue(Value);
@@ -87,9 +87,9 @@ namespace Cornifer.Json
             LoadValue = loadValue;
         }
 
-        public void SaveToJson(JsonNode node)
+        public void SaveToJson(JsonNode node, bool forCopy)
         {
-            if (!UserValueSet || Equals(UserValue, OriginalValue))
+            if (!forCopy && (!UserValueSet || Equals(UserValue, OriginalValue)))
                 return;
 
             TJsonValue jsonValue = SaveValue(Value);

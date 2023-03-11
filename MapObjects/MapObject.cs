@@ -4,17 +4,21 @@ using Cornifer.Structures;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Media;
 using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace Cornifer.MapObjects
 {
     public abstract class MapObject
     {
+        static Regex RandomNameSuffixRegex = new(@"_([0-9A-Fa-f]+)", RegexOptions.Compiled);
+
         static ShadeRenderer? ShadeTextureRenderer;
         internal static RenderTarget2D? ShadeRenderTarget;
 
@@ -24,6 +28,8 @@ namespace Cornifer.MapObjects
         public ObjectProperty<bool> ActiveProperty = new("active", true);
 
         public abstract bool CanSetActive { get; }
+        public virtual bool CanCopy { get; } = false;
+        public virtual Type CopyType => GetType();
 
         public virtual bool Active { get => ActiveProperty.Value; set => ActiveProperty.Value = value; }
         public virtual bool Selectable { get; set; } = true;
@@ -237,28 +243,35 @@ namespace Cornifer.MapObjects
             UpdateInnerConfig();
         }
 
-        public JsonObject? SaveJson()
+        public JsonObject? SaveJson(bool forCopy = false)
         {
-            if (!NeedsSaving)
+            if (!NeedsSaving && !forCopy)
                 return null;
 
-            JsonNode? inner = SaveInnerJson();
+            JsonNode? inner = SaveInnerJson(forCopy);
 
-            JsonObject json = new()
+            JsonObject json = new();
+
+            if (forCopy)
             {
-                ["name"] = Name ?? throw new InvalidOperationException(
+                json["pos"] = JsonTypes.SaveVector2(WorldPosition);
+            }
+            else 
+            {
+                json["name"] = Name ?? throw new InvalidOperationException(
                         $"MapObject doesn't have a name and can't be saved.\n" +
                         $"Type: {GetType().Name}\n" +
-                        $"Parent: {Parent?.Name ?? Parent?.GetType().Name ?? "null"}"),
-                ["pos"] = JsonTypes.SaveVector2(ParentPosition),
-            };
-            ActiveProperty.SaveToJson(json);
+                        $"Parent: {Parent?.Name ?? Parent?.GetType().Name ?? "null"}");
+                json["pos"] = JsonTypes.SaveVector2(ParentPosition);
+            }
+
+            ActiveProperty.SaveToJson(json, forCopy);
 
             if (!LoadCreationForbidden)
-                json["type"] = GetType().FullName;
+                json["type"] = forCopy? CopyType.FullName : GetType().FullName;
             if (inner is not null && (inner is not JsonObject innerobj || innerobj.Count > 0))
                 json["data"] = inner;
-            if (Children.Count > 0)
+            if (Children.Count > 0 && !forCopy)
                 json["children"] = new JsonArray(Children.Select(c => c.SaveJson()).OfType<JsonNode>().ToArray());
 
             return json;
@@ -352,11 +365,39 @@ namespace Cornifer.MapObjects
             obj.Shading = false;
         }
 
-        protected virtual JsonNode? SaveInnerJson() => null;
+        protected virtual JsonNode? SaveInnerJson(bool forCopy) => null;
         protected virtual void LoadInnerJson(JsonNode node) { }
 
         protected virtual void BuildInnerConfig(UIList list) { }
         protected virtual void UpdateInnerConfig() { }
+
+        public virtual void RegenerateName()
+        {
+            if (Name is null)
+            {
+                Name = $"{GetType().Name}_{Random.Shared.Next():x}";
+                return;
+            }
+
+            string random = $"_{Random.Shared.Next():x}";
+
+            Match match = RandomNameSuffixRegex.Match(Name);
+            if (match.Success)
+            {
+                Name = match.Result(random);
+                return;
+            }
+
+            Name += random;
+        }
+
+        public bool ContainsPoint(Vector2 worldPoint)
+        {
+            return VisualPosition.X <= worldPoint.X
+                 && VisualPosition.Y <= worldPoint.Y
+                 && VisualPosition.X + VisualSize.X > worldPoint.X
+                 && VisualPosition.Y + VisualSize.Y > worldPoint.Y;
+        }
 
         protected static void ProcessShade(Color[] colors, int width, int height, int size, int? cornerRadius)
         {
@@ -434,14 +475,6 @@ namespace Cornifer.MapObjects
                 ArrayPool<bool>.Shared.Return(shadePattern);
         }
 
-        public bool ContainsPoint(Vector2 worldPoint)
-        {
-            return VisualPosition.X <= worldPoint.X
-                 && VisualPosition.Y <= worldPoint.Y
-                 && VisualPosition.X + VisualSize.X > worldPoint.X
-                 && VisualPosition.Y + VisualSize.Y > worldPoint.Y;
-        }
-
         public static MapObject? FindSelectableAtPos(IEnumerable<MapObject> objects, Vector2 pos, bool searchChildren)
         {
             foreach (MapObject obj in objects.SmartReverse())
@@ -506,6 +539,8 @@ namespace Cornifer.MapObjects
 
             if (node.TryGet("name", out string? name))
                 instance.Name = name;
+            else if (instance.Name is null)
+                instance.RegenerateName();
 
             instance.LoadJson(node);
             return instance;

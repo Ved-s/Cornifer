@@ -1105,7 +1105,7 @@ namespace Cornifer
             });
         }
 
-        protected override JsonNode? SaveInnerJson()
+        protected override JsonNode? SaveInnerJson(bool forCopy)
         {
             JsonObject obj = new JsonObject()
             .SaveProperty(Deathpit)

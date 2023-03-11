@@ -15,4 +15,3 @@ Better room selection - check if clicked pixel is transparent
 Exclusive keybinds
 visibility presets (default: all layers + no pickups, pickups only, karmaflowers only, vista points only)
 Text presets
-Copy-paste objects

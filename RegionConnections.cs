@@ -840,7 +840,7 @@ namespace Cornifer
             public override Vector2 VisualOffset => -(VisualSize - Vector2.One) / 2;
             public override Vector2 VisualSize => new(13);
 
-            public new JsonNode SaveJson()
+            public JsonNode SaveJson()
             {
                 return new JsonObject
                 {

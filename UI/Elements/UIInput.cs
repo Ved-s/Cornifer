@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Cornifer.UI.Elements
@@ -321,33 +320,31 @@ namespace Cornifer.UI.Elements
                         InsertNewline();
                     }
 
-                    if (Root.CtrlKey > KeybindState.JustPressed)
+                    if (Input.InputHandler.SelectAll.JustPressed)
                     {
-                        if (Root.GetKeyState(Keys.A) == KeybindState.JustPressed)
-                        {
-                            SelectionStartPos = Point.Zero;
-                            CaretPos = SelectionEndPos = new(Lines[^1].Length, Lines.Count - 1);
-                        }
+                        SelectionStartPos = Point.Zero;
+                        CaretPos = SelectionEndPos = new(Lines[^1].Length, Lines.Count - 1);
+                    }
 
-                        if (Root.GetKeyState(Keys.C) == KeybindState.JustPressed)
-                        {
-                            Platform.SetClipboard(GetSelection());
-                        }
+                    if (Input.InputHandler.Copy.JustPressed)
+                    {
+                        Platform.SetClipboard(GetSelection());
+                    }
 
-                        if (Root.GetKeyState(Keys.X) == KeybindState.JustPressed)
-                        {
-                            Platform.SetClipboard(GetSelection());
-                            ClearSelection();
-                        }
+                    if (Input.InputHandler.Cut.JustPressed)
+                    {
+                        Platform.SetClipboard(GetSelection());
+                        ClearSelection();
                     }
                 }
 
-                if (Root.CtrlKey != KeybindState.Released && Root.GetKeyState(Keys.V) == KeybindState.JustPressed)
+                if (Input.InputHandler.Paste.JustPressed)
                 {
                     Task.Run(async () =>
                     {
                         string clipboard = await Platform.GetClipboard();
-                        Main.MainThreadQueue.Enqueue(() => {
+                        Main.MainThreadQueue.Enqueue(() =>
+                        {
                             foreach (char c in clipboard)
                                 TextInput(null, new(c));
                         });
