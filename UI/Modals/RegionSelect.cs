@@ -11,7 +11,7 @@ namespace Cornifer.UI.Modals
     public class RegionSelect : Modal<RegionSelect, RegionSelect.Result?>
     {
         UIList RegionList;
-        static string? Slugcat;
+        static Slugcat? Slugcat;
         static bool DisableModRegionsValue;
 
         public RegionSelect()
@@ -70,13 +70,13 @@ namespace Cornifer.UI.Modals
             };
         }
 
-        public static async Task Show(string? slugcat)
+        public static async Task Show(Slugcat? slugcat)
         {
             Slugcat = slugcat;
             await Show();
         }
 
-        public static async Task<Result?> ShowDialog(string? slugcat)
+        public static async Task<Result?> ShowDialog(Slugcat? slugcat)
         {
             Slugcat = slugcat;
             await Show();
@@ -110,7 +110,7 @@ namespace Cornifer.UI.Modals
                 foreach (RegionInfo region in group)
                 {
                     bool accessible = Slugcat is null
-                        || (StaticData.SlugcatRegionAvailability.GetValueOrDefault(Slugcat)?.Contains(region.Id)
+                        || (StaticData.SlugcatRegionAvailability.GetValueOrDefault(Slugcat.Id)?.Contains(region.Id)
                         ?? StaticData.SlugcatRegionAvailability.GetValueOrDefault("")?.Contains(region.Id)
                         ?? true);
 

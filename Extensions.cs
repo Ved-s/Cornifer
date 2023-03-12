@@ -126,13 +126,13 @@ namespace Cornifer
 
         public static void DrawPoint(this SpriteBatch spriteBatch, Vector2 pos, float size, Color color)
         {
-            spriteBatch.DrawRect(pos - new Vector2(size/2), new Vector2(size), color);
+            spriteBatch.DrawRect(pos - new Vector2(size / 2), new Vector2(size), color);
         }
 
         public static void Clamp01(ref this Vector2 vector)
         {
             vector.X = Math.Clamp(vector.X, 0, 1);
-            vector.Y = Math.Clamp(vector.Y, 0, 1);    
+            vector.Y = Math.Clamp(vector.Y, 0, 1);
         }
 
         delegate void DrawSpriteBatchRawDelegate(SpriteBatch spriteBatch, Texture2D texture, float sortingKey, VertexPositionColorTexture tl, VertexPositionColorTexture tr, VertexPositionColorTexture bl, VertexPositionColorTexture br);
@@ -160,7 +160,7 @@ namespace Cornifer
                 Expression itemVertexBR = Expression.Field(batchItem, "vertexBR");
 
                 BlockExpression body = Expression.Block(
-                    new ParameterExpression[] 
+                    new ParameterExpression[]
                     {
                         batchItem
                     },
@@ -318,6 +318,14 @@ namespace Cornifer
                 MouseKeys.XButton2 => state.XButton2 == ButtonState.Released,
                 _ => false
             };
+        }
+
+        public static string ToHexString(this Color color, bool alpha = false)
+        {
+            if (alpha)
+                return $"{color.R:x2}{color.G:x2}{color.B:x2}{color.A:x2}";
+
+           return $"{color.R:x2}{color.G:x2}{color.B:x2}";
         }
     }
 }

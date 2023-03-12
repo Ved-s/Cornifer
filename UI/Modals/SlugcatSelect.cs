@@ -35,7 +35,7 @@ namespace Cornifer.UI.Modals
 
             float y = 50;
 
-            foreach (SlugcatData slugcat in StaticData.Slugcats)
+            foreach (Slugcat slugcat in StaticData.Slugcats)
             {
                 UIButton button = new()
                 {
@@ -50,7 +50,7 @@ namespace Cornifer.UI.Modals
                 {
                     ReturnResult(new()
                     {
-                        Slugcat = slugcat.Id
+                        Slugcat = slugcat
                     });
                 });
                 Elements.Add(button);
@@ -95,7 +95,7 @@ namespace Cornifer.UI.Modals
 
         public struct Result
         {
-            public string? Slugcat;
+            public Slugcat? Slugcat;
         }
     }
 }

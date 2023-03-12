@@ -51,7 +51,7 @@ namespace Cornifer
         public static RenderLayers ActiveRenderLayers = RenderLayers.All;
         public static EnabledDebugMetric DebugMetric = EnabledDebugMetric.None;
 
-        public static string? SelectedSlugcat;
+        public static Slugcat? SelectedSlugcat;
 
         public static List<string> LoadErrors = new();
 
@@ -751,7 +751,7 @@ namespace Cornifer
         {
             return new()
             {
-                ["slugcat"] = SelectedSlugcat,
+                ["slugcat"] = SelectedSlugcat?.Id,
                 ["region"] = Region?.SaveJson(),
                 ["connections"] = Region?.Connections?.SaveJson(),
                 ["objects"] = new JsonArray(WorldObjectLists.Enumerate().Select(o => o.SaveJson()).OfType<JsonNode>().ToArray()),
@@ -767,7 +767,7 @@ namespace Cornifer
             }
             if (node.TryGet("slugcat", out string? slugcat))
             {
-                SelectedSlugcat = slugcat;
+                SelectedSlugcat = StaticData.Slugcats.FirstOrDefault(s => s.Id.Equals(slugcat, StringComparison.InvariantCultureIgnoreCase));
             }
             if (node.TryGet("region", out JsonNode? region))
             {

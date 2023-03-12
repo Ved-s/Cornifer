@@ -196,7 +196,7 @@ namespace Cornifer
                     Sprites[name] = new(name, sprite.Texture, sprite.Frame, spriteData.Color, true);
                 }
 
-            foreach (SlugcatData slugcat in StaticData.Slugcats)
+            foreach (Slugcat slugcat in StaticData.Slugcats)
             {
                 string name = "SlugcatIcon_" + slugcat.Id;
                 Rectangle frame = new(slugcat.IconId * 8, 0, 8, 8);

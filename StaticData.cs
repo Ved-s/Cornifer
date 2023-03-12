@@ -68,18 +68,18 @@ namespace Cornifer
             ["Red_stomach"] = new(1f, 1f, 1f),
         };
 
-        public static List<SlugcatData> Slugcats = new()
+        public static List<Slugcat> Slugcats = new()
         {
-            new("Yellow",    "Monk",         1, true,  new(255, 255, 115)),
-            new("White",     "Survivor",     0, true,  new(255, 255, 255)),
-            new("Red",       "Hunter",       2, true,  new(255, 115, 115)),
-            new("Night",     "Nightcat",     3, false, new(25,  15,  48)),
-            new("Gourmand",  "Gourmand",     4, true,  new(240, 193, 151)),
-            new("Artificer", "Artificer",    5, true,  new(112, 35,  60)),
-            new("Rivulet",   "Rivulet",      6, true,  new(145, 204, 240)),
-            new("Spear",     "Spearmaster",  7, true,  new(79,  46,  105)),
-            new("Saint",     "Saint",        8, true,  new(170, 241, 86)),
-            new("Inv",       "Inv",          9, false, new(0,   19,  58)),
+            new("Yellow",    "Monk",         1, true,  new(255, 255, 115), "SU_C04"),
+            new("White",     "Survivor",     0, true,  new(255, 255, 255), "SU_C04"),
+            new("Red",       "Hunter",       2, true,  new(255, 115, 115), "LF_H01"),
+            new("Night",     "Nightcat",     3, false, new(25,  15,  48),  null),
+            new("Gourmand",  "Gourmand",     4, true,  new(240, 193, 151), "SH_GOR02"),
+            new("Artificer", "Artificer",    5, true,  new(112, 35,  60) , "GW_A24"),
+            new("Rivulet",   "Rivulet",      6, true,  new(145, 204, 240), "DS_RIVSTART"),
+            new("Spear",     "Spearmaster",  7, true,  new(79,  46,  105), "GATE_OE_SU"),
+            new("Saint",     "Saint",        8, true,  new(170, 241, 86),  "SI_SAINTINTRO"),
+            new("Inv",       "Inv",          9, false, new(0,   19,  58),  "SH_E01"),
         };
 
         public static List<string> PlacedObjectTypes = new()
@@ -164,7 +164,7 @@ namespace Cornifer
         };
 
         [return: NotNullIfNotNull(nameof(acronym))]
-        public static string? GetProperRegionAcronym(string? acronym, string? slugcat)
+        public static string? GetProperRegionAcronym(string? acronym, Slugcat? slugcat)
         {
             if (acronym is null)
                 return null;
@@ -173,7 +173,7 @@ namespace Cornifer
                 return defaultAcronym;
 
             if (slugcat is not null
-             && SlugcatRegionReplacements.TryGetValue(slugcat, out var slugcatAcronyms)
+             && SlugcatRegionReplacements.TryGetValue(slugcat.Id, out var slugcatAcronyms)
              && slugcatAcronyms.TryGetValue(acronym, out string? slugcatAcronym))
                 return slugcatAcronym;
 

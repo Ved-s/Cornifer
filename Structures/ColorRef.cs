@@ -30,7 +30,7 @@ namespace Cornifer.Structures
         {
             if (Key is not null)
                 return Key;
-            return $"{Color.R:x2}{Color.G:x2}{Color.B:x2}";
+            return Color.ToHexString();
         }
 
         public JsonValue SaveJson(bool valueOnly = false)
@@ -38,7 +38,7 @@ namespace Cornifer.Structures
             if (Key is not null && !valueOnly)
                 return JsonValue.Create(Key)!;
 
-            return JsonValue.Create($"{Color.R:x2}{Color.G:x2}{Color.B:x2}")!;
+            return JsonValue.Create(Color.ToHexString())!;
         }
 
         public override bool Equals(object? obj)

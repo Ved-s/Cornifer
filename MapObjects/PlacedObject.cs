@@ -91,7 +91,7 @@ namespace Cornifer.MapObjects
                 switch (objName)
                 {
                     case "GreenToken":
-                        SlugcatData slugcat = StaticData.Slugcats.FirstOrDefault(s => s.Name == subname || s.Id == subname);
+                        Slugcat slugcat = StaticData.Slugcats.FirstOrDefault(s => s.Name == subname || s.Id == subname);
 
                         obj.Children.Add(new SlugcatIcon("GreenTokenSlugcat")
                         {
@@ -157,7 +157,7 @@ namespace Cornifer.MapObjects
                 obj.Color.OriginalValue.Color.A = 165;
             }
 
-            if (obj.RemoveByAvailability && Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Count > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat))
+            if (obj.RemoveByAvailability && Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Count > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat.Id))
                 return null;
 
             return obj;
@@ -207,7 +207,7 @@ namespace Cornifer.MapObjects
             int i = 0;
 
             List<SlugcatIcon> icons = new();
-            foreach (SlugcatData slugcat in StaticData.Slugcats)
+            foreach (Slugcat slugcat in StaticData.Slugcats)
             {
                 if (!SlugcatAvailability.Contains(slugcat.Id))
                     continue;

@@ -262,7 +262,7 @@ namespace Cornifer
                         if (Main.SelectedSlugcat is not null)
                         {
                             string[] slugcats = split[0].Split(',', StringSplitOptions.TrimEntries);
-                            if (slugcats.Contains(Main.SelectedSlugcat))
+                            if (slugcats.Contains(Main.SelectedSlugcat.Id))
                             {
                                 if (int.TryParse(split[2], out int disconnectedTarget))
                                     connectionOverrides.Add((split[1], null, disconnectedTarget, split[3]));
@@ -278,11 +278,11 @@ namespace Cornifer
             if (Main.SelectedSlugcat is not null)
             {
                 foreach (var (roomName, slugcats) in exclusiveRooms)
-                    if (!slugcats.Contains(Main.SelectedSlugcat) && TryGetRoom(roomName, out Room? room))
+                    if (!slugcats.Contains(Main.SelectedSlugcat.Id) && TryGetRoom(roomName, out Room? room))
                         room.ActiveProperty.OriginalValue = false;
 
                 foreach (var (roomName, slugcats) in hideRooms)
-                    if (slugcats.Contains(Main.SelectedSlugcat) && TryGetRoom(roomName, out Room? room))
+                    if (slugcats.Contains(Main.SelectedSlugcat.Id) && TryGetRoom(roomName, out Room? room))
                         room.ActiveProperty.OriginalValue = false;
             }
 
@@ -484,6 +484,33 @@ namespace Cornifer
                     Color = { OriginalValue = group.Key.BackgroundColor },
                     WorldPosition = center
                 });
+            }
+
+            Dictionary<Room, List<Slugcat>> slugcatStartingRooms = new();
+            foreach (Slugcat slugcat in StaticData.Slugcats)
+            {
+                Room? spawnRoom = slugcat.GetStartingRoom(this);
+
+                if (spawnRoom is null)
+                    continue;
+
+                if (!slugcatStartingRooms.TryGetValue(spawnRoom, out List<Slugcat>? slugcats))
+                {
+                    slugcats = new();
+                    slugcatStartingRooms[spawnRoom] = slugcats;
+                }
+                slugcats.Add(slugcat);
+            }
+
+            foreach (var (room, slugcats) in slugcatStartingRooms)
+            {
+                string text = 
+                    $"{string.Join("", slugcats.Select(s => $"[ic:Slugcat_{s.Id}]"))}\n" +
+                    $"{string.Join("/", slugcats.Select(s => $"[c:{s.Color.ToHexString()}]{s.Name}[/c]"))} spawn";
+
+                string name = $"SlugcatSpawn_{string.Join("_", slugcats.Select(s => s.Id))}";
+
+                room.Children.Add(new MapText(name, Main.DefaultSmallMapFont, text));
             }
         }
         public void ResetSubregionColors()

@@ -511,7 +511,7 @@ namespace Cornifer
                 }
                 else
                 {
-                    drawPos.X += (context.Font.Spacing + glyph.LeftSideBearing) * context.Scale;
+                    drawPos.X += glyph.LeftSideBearing * context.Scale;
                 }
 
                 float glyphWidth = glyph.Width;
@@ -530,7 +530,7 @@ namespace Cornifer
                     if (context.Bold)
                         DrawGlyph(glyph, linePos + drawPos + new Vector2(0.5f), context);
                 }
-                drawPos.X += (glyphWidth + glyph.RightSideBearing) * context.Scale;
+                drawPos.X += (glyphWidth + glyph.RightSideBearing + context.Font.Spacing) * context.Scale;
             }
 
             if (context.Underline && !context.MeasuringSize && context.SpriteBatch is not null)

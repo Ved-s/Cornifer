@@ -462,7 +462,7 @@ namespace Cornifer
 
                                 obj.SlugcatAvailability.IntersectWith(filter.SlugcatAvailability);
 
-                                if (obj.RemoveByAvailability && Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Count > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat))
+                                if (obj.RemoveByAvailability && Main.SelectedSlugcat is not null && obj.SlugcatAvailability.Count > 0 && !obj.SlugcatAvailability.Contains(Main.SelectedSlugcat.Id))
                                     remove.Add(obj);
                             }
                         }
@@ -543,8 +543,8 @@ namespace Cornifer
 
                 GateRegionText.NoAlignOverride = true;
                 GateRegionText.IconPosAlign = new(.5f);
-                GateSymbols.Offset = new(0, -Size.Y / 2 - GateSymbols.Size.Y / 2 - 5);
-                GateRegionText.Offset = new(0, -Size.Y / 2 - GateSymbols.Size.Y - 14 - Main.DefaultBigMapFont.LineSpacing/2);
+                GateSymbols.Offset = new(0, MathF.Floor(-Size.Y / 2 - GateSymbols.Size.Y / 2 - 5));
+                GateRegionText.Offset = new(0, MathF.Floor(-Size.Y / 2 - GateSymbols.Size.Y - 19 - Main.DefaultBigMapFont.LineSpacing/2));
             }
 
             if (VistaRooms.TryGetValue(Name!, out Vector2 vistaPoint))
@@ -1133,6 +1133,13 @@ namespace Cornifer
             {
                 GateData ??= new();
                 GateData.LoadJson(gateData);
+
+                // Set non-colored text to properly align it before loading new position
+                if (GateData.TargetRegionName is not null && GateRegionText is not null)
+                {
+                    GateRegionText.Text.OriginalValue = $"To {GateData.TargetRegionName}";
+                    GateRegionText.ParamsChanged();
+                }
             }
 
             TileMapDirty = true;

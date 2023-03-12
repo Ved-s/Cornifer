@@ -307,11 +307,11 @@ namespace Cornifer
             }
         }
 
-        public static string? GetRegionDisplayName(string regionId, string? slugcat)
+        public static string? GetRegionDisplayName(string regionId, Slugcat? slugcat)
         {
             string? displayname = null;
             if (slugcat is not null)
-                displayname = ResolveFile($"world/{regionId}/displayname-{slugcat}.txt");
+                displayname = ResolveFile($"world/{regionId}/displayname-{slugcat.Id}.txt");
 
             if (displayname is null)
                 displayname = ResolveFile($"world/{regionId}/displayname.txt");
@@ -319,7 +319,7 @@ namespace Cornifer
             return displayname is null ? null : File.ReadAllText(displayname);
         }
 
-        public static IEnumerable<RegionInfo> FindRegions(string? slugcat = null)
+        public static IEnumerable<RegionInfo> FindRegions(Slugcat? slugcat = null)
         {
             foreach (var (dir, mod) in RWAssets.EnumerateDirectories("world"))
             {
@@ -335,7 +335,7 @@ namespace Cornifer
 
                 if (slugcat is not null)
                 {
-                    string? slugcatDisplayName = RWAssets.ResolveFile($"world/{id}/displayname-{slugcat}.txt");
+                    string? slugcatDisplayName = RWAssets.ResolveFile($"world/{id}/displayname-{slugcat.Id}.txt");
                     if (slugcatDisplayName is not null)
                         displayname = slugcatDisplayName;
                 }
