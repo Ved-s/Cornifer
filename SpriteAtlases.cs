@@ -133,6 +133,8 @@ namespace Cornifer
             { "KarmaR",        (new(23, 0, 36, 36), new(255, 255, 255, 255)) },
         };
 
+        static List<string> SlugcatIconOrder = new() { "White", "Yellow", "Red", "Night", "Gourmand", "Artificer", "Rivulet", "Spear", "Saint", "Inv" };
+
         public static void Load()
         {
             foreach (var (objectName, objectSprite) in ObjectSpriteFrames)
@@ -196,18 +198,20 @@ namespace Cornifer
                     Sprites[name] = new(name, sprite.Texture, sprite.Frame, spriteData.Color, true);
                 }
 
-            foreach (Slugcat slugcat in StaticData.Slugcats)
+            for (int i = 0; i < SlugcatIconOrder.Count; i++)
             {
-                string name = "SlugcatIcon_" + slugcat.Id;
-                Rectangle frame = new(slugcat.IconId * 8, 0, 8, 8);
+                string slugcat = SlugcatIconOrder[i];
+
+                string name = "SlugcatIcon_" + slugcat;
+                Rectangle frame = new(i * 8, 0, 8, 8);
                 Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
 
-                name = "SlugcatDiamond_" + slugcat.Id;
-                frame = new(slugcat.IconId * 9, 8, 9, 9);
+                name = "SlugcatDiamond_" + slugcat;
+                frame = new(i * 9, 8, 9, 9);
                 Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
 
-                name = "Slugcat_" + slugcat.Id;
-                frame = new(slugcat.IconId * 20, 17, 20, 19);
+                name = "Slugcat_" + slugcat;
+                frame = new(i * 20, 17, 20, 19);
                 Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
             }
         }

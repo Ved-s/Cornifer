@@ -689,7 +689,7 @@ namespace Cornifer
             string? worldFile = RWAssets.ResolveSlugcatFile($"world/{id}/world_{id}.txt");
             string? mapFile = RWAssets.ResolveSlugcatFile($"world/{id}/map_{id}.txt");
             string? propertiesFile = RWAssets.ResolveFile($"world/{id}/properties.txt");
-            string? slugcatPropertiedFile = SelectedSlugcat is null ? null : RWAssets.ResolveFile($"world/{id}/properties-{SelectedSlugcat}.txt");
+            string? slugcatPropertiedFile = SelectedSlugcat is null ? null : RWAssets.ResolveFile($"world/{id}/properties-{SelectedSlugcat.WorldStateSlugcat}.txt");
 
             if (worldFile is null)
             {

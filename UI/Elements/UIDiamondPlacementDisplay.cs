@@ -36,7 +36,11 @@ namespace Cornifer.UI.Elements
                 if (i >= Icons.Count)
                     break;
 
-                spriteBatch.Draw(Content.SlugcatIcons, center + Placement.Positions[i], SlugcatIcon.GetFrame(Icons[i].Id, true), Color.White);
+                AtlasSprite? sprite = Icons[i].DiamondSprite;
+                if (sprite is null)
+                    continue;
+
+                spriteBatch.Draw(sprite.Texture, center + Placement.Positions[i], sprite.Frame, sprite.Color);
             }
 
             spriteBatch.RestoreState();

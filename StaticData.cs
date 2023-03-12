@@ -70,16 +70,16 @@ namespace Cornifer
 
         public static List<Slugcat> Slugcats = new()
         {
-            new("Yellow",    "Monk",         1, true,  new(255, 255, 115), "SU_C04"),
-            new("White",     "Survivor",     0, true,  new(255, 255, 255), "SU_C04"),
-            new("Red",       "Hunter",       2, true,  new(255, 115, 115), "LF_H01"),
-            new("Night",     "Nightcat",     3, false, new(25,  15,  48),  null),
-            new("Gourmand",  "Gourmand",     4, true,  new(240, 193, 151), "SH_GOR02"),
-            new("Artificer", "Artificer",    5, true,  new(112, 35,  60) , "GW_A24"),
-            new("Rivulet",   "Rivulet",      6, true,  new(145, 204, 240), "DS_RIVSTART"),
-            new("Spear",     "Spearmaster",  7, true,  new(79,  46,  105), "GATE_OE_SU"),
-            new("Saint",     "Saint",        8, true,  new(170, 241, 86),  "SI_SAINTINTRO"),
-            new("Inv",       "Inv",          9, false, new(0,   19,  58),  "SH_E01"),
+            new("Yellow",    "Monk",        true,  new(255, 255, 115), Color.Black, "SU_C04"),
+            new("White",     "Survivor",    true,  new(255, 255, 255), Color.Black, "SU_C04"),
+            new("Red",       "Hunter",      true,  new(255, 115, 115), Color.Black, "LF_H01"),
+            new("Night",     "Nightcat",    false, new(25,  15,  48),  Color.White, null),
+            new("Gourmand",  "Gourmand",    true,  new(240, 193, 151), Color.Black, "SH_GOR02"),
+            new("Artificer", "Artificer",   true,  new(112, 35,  60) , Color.White, "GW_A24"),
+            new("Rivulet",   "Rivulet",     true,  new(145, 204, 240), Color.Black, "DS_RIVSTART"),
+            new("Spear",     "Spearmaster", true,  new(79,  46,  105), Color.White, "GATE_OE_SU"),
+            new("Saint",     "Saint",       true,  new(170, 241, 86),  Color.Black, "SI_SAINTINTRO"),
+            new("Inv",       "Inv",         false, new(0,   19,  58),  Color.White, "SH_E01"),
         };
 
         public static List<string> PlacedObjectTypes = new()
@@ -173,7 +173,7 @@ namespace Cornifer
                 return defaultAcronym;
 
             if (slugcat is not null
-             && SlugcatRegionReplacements.TryGetValue(slugcat.Id, out var slugcatAcronyms)
+             && SlugcatRegionReplacements.TryGetValue(slugcat.WorldStateSlugcat, out var slugcatAcronyms)
              && slugcatAcronyms.TryGetValue(acronym, out string? slugcatAcronym))
                 return slugcatAcronym;
 

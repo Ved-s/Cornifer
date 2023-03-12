@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace Cornifer.UI.Modals
 {
@@ -97,6 +98,7 @@ namespace Cornifer.UI.Modals
 
             HashSet<string> foundMods = new();
 
+            string? slugcatWorldName = Slugcat?.WorldStateSlugcat;
             foreach (var group in RWAssets.FindRegions(Slugcat).GroupBy(reg => reg.Mod))
             {
                 foundMods.Add(group.Key.Id);
@@ -110,7 +112,7 @@ namespace Cornifer.UI.Modals
                 foreach (RegionInfo region in group)
                 {
                     bool accessible = Slugcat is null
-                        || (StaticData.SlugcatRegionAvailability.GetValueOrDefault(Slugcat.Id)?.Contains(region.Id)
+                        || (StaticData.SlugcatRegionAvailability.GetValueOrDefault(slugcatWorldName!)?.Contains(region.Id)
                         ?? StaticData.SlugcatRegionAvailability.GetValueOrDefault("")?.Contains(region.Id)
                         ?? true);
 

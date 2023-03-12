@@ -93,9 +93,8 @@ namespace Cornifer.MapObjects
                     case "GreenToken":
                         Slugcat slugcat = StaticData.Slugcats.FirstOrDefault(s => s.Name == subname || s.Id == subname);
 
-                        obj.Children.Add(new SlugcatIcon("GreenTokenSlugcat")
+                        obj.Children.Add(new SlugcatIcon("GreenTokenSlugcat", slugcat)
                         {
-                            Id = slugcat.IconId,
                             ParentPosition = new(0, 8),
                             Parent = obj,
                             ForceSlugcatIcon = true,
@@ -216,9 +215,8 @@ namespace Cornifer.MapObjects
                 currentAngle -= iconAngle;
 
                 offset.Floor();
-                SlugcatIcon icon = new($"Availability_{slugcat.Id}")
+                SlugcatIcon icon = new($"Availability_{slugcat.Id}", slugcat)
                 {
-                    Id = slugcat.IconId,
                     ParentPosition = offset
                 };
                 Children.Add(icon);

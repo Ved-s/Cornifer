@@ -1,6 +1,7 @@
 ﻿using Cornifer.Structures;
 using Cornifer.UI.Modals;
 using Microsoft.Win32;
+using Microsoft.Xna.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -176,6 +177,9 @@ namespace Cornifer
             string workshop = Path.Combine(path, "../../workshop/content/312520");
             if (Directory.Exists(workshop))
                 LoadModsFolder(workshop);
+
+            foreach (RWMod mod in Mods)
+                LoadMod(mod);
         }
 
         public static void SetAssetsPath(string? path)
@@ -254,6 +258,78 @@ namespace Cornifer
             Mods.Insert(index, mod);
         }
 
+        static void LoadMod(RWMod mod)
+        {
+            string slugbaseDir = Path.Combine(mod.Path, "slugbase");
+            if (Directory.Exists(slugbaseDir))
+            {
+                foreach (string slugcatFile in Directory.EnumerateFiles(slugbaseDir, "*.json"))
+                {
+                    try
+                    {
+                        using FileStream fs = File.OpenRead(slugcatFile);
+                        JsonObject? obj = JsonSerializer.Deserialize<JsonObject>(fs);
+
+                        if (obj is null || !obj.TryGet("id", out string? id))
+                            continue;
+
+                        Slugcat slugcat = new() { Id = id };
+
+                        if (obj.TryGet("name", out string? name))
+                            slugcat.Name = name;
+
+                        if (obj.TryGet("features", out JsonObject? features))
+                        {
+                            bool setColor = false;
+                            if (features.TryGet("color", out string? color))
+                            {
+                                Color? bodyColor = ColorDatabase.ParseColor(color);
+                                setColor = bodyColor.HasValue;
+                                if (bodyColor.HasValue)
+                                    slugcat.Color = bodyColor.Value;
+                            }
+
+                            if (features.TryGet("custom_colors", out JsonArray? customColors))
+                            {
+                                foreach (JsonNode? node in customColors)
+                                {
+                                    if (node is not JsonObject || !node.TryGet("name", out string? colorName))
+                                        continue;
+
+                                    if (colorName == "Body" && !setColor && node.TryGet("story", out string? storyBodyColor))
+                                        slugcat.Color = ColorDatabase.ParseColor(storyBodyColor) ?? Color.White;
+
+                                    if (colorName == "Eyes" && node.TryGet("story", out string? storyEyesColor))
+                                    {
+                                        slugcat.EyeColor = ColorDatabase.ParseColor(storyEyesColor) ?? Color.Black;
+                                        if (slugcat.EyeColor == new Color(16, 16, 16))
+                                            slugcat.EyeColor = Color.Black;
+                                    }
+                                }
+                            }
+
+                            if (features.TryGet("start_room", out string? startRoomString))
+                                slugcat.PossibleStartingRooms = new[] { startRoomString };
+                            else if (features.TryGet("start_room", out JsonArray? startRoomArray))
+                                slugcat.PossibleStartingRooms = startRoomArray.Deserialize<string[]>();
+
+                            if (features.TryGet("world_state", out string? worldStateString))
+                                slugcat.PossibleWorldStates = new[] { worldStateString };
+                            else if (features.TryGet("world_state", out JsonArray? worldStateArray))
+                                slugcat.PossibleWorldStates = worldStateArray.Deserialize<string[]>();
+                        }
+
+                        slugcat.GenerateIcons();
+                        StaticData.Slugcats.Add(slugcat);
+                    }
+                    catch (Exception ex)
+                    {
+                        Main.LoadErrors.Add($"Cannot load {Path.GetFileNameWithoutExtension(slugcatFile)} slugcat: {ex.Message}");
+                    }
+                }
+            }
+        }
+
         public static string? ResolveFile(string path)
         {
             foreach (var mod in Mods)
@@ -273,7 +349,7 @@ namespace Cornifer
             if (Main.SelectedSlugcat is null)
                 return ResolveFile(path);
 
-            string slugcatPath = Path.Combine(Path.GetDirectoryName(path)!, $"{Path.GetFileNameWithoutExtension(path)}-{Main.SelectedSlugcat}{Path.GetExtension(path)}");
+            string slugcatPath = Path.Combine(Path.GetDirectoryName(path)!, $"{Path.GetFileNameWithoutExtension(path)}-{Main.SelectedSlugcat.WorldStateSlugcat}{Path.GetExtension(path)}");
             string? resolved = ResolveFile(slugcatPath);
 
             if (resolved is not null)
@@ -311,7 +387,7 @@ namespace Cornifer
         {
             string? displayname = null;
             if (slugcat is not null)
-                displayname = ResolveFile($"world/{regionId}/displayname-{slugcat.Id}.txt");
+                displayname = ResolveFile($"world/{regionId}/displayname-{slugcat.WorldStateSlugcat}.txt");
 
             if (displayname is null)
                 displayname = ResolveFile($"world/{regionId}/displayname.txt");
@@ -321,6 +397,7 @@ namespace Cornifer
 
         public static IEnumerable<RegionInfo> FindRegions(Slugcat? slugcat = null)
         {
+            string? worldSlugcat = slugcat?.WorldStateSlugcat;
             foreach (var (dir, mod) in RWAssets.EnumerateDirectories("world"))
             {
                 string properties = Path.Combine(dir, "properties.txt");
@@ -335,7 +412,7 @@ namespace Cornifer
 
                 if (slugcat is not null)
                 {
-                    string? slugcatDisplayName = RWAssets.ResolveFile($"world/{id}/displayname-{slugcat.Id}.txt");
+                    string? slugcatDisplayName = RWAssets.ResolveFile($"world/{id}/displayname-{worldSlugcat}.txt");
                     if (slugcatDisplayName is not null)
                         displayname = slugcatDisplayName;
                 }
