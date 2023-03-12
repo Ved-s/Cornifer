@@ -269,7 +269,7 @@ namespace Cornifer
                     try
                     {
                         using FileStream fs = File.OpenRead(slugcatFile);
-                        JsonObject? obj = JsonSerializer.Deserialize<JsonObject>(fs);
+                        JsonObject? obj = JsonSerializer.Deserialize<JsonObject>(fs, new JsonSerializerOptions() { AllowTrailingCommas = true });
 
                         if (obj is null || !obj.TryGet("id", out string? id))
                             continue;

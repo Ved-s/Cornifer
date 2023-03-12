@@ -44,7 +44,8 @@ namespace Cornifer.UI.Modals
                     Left = 25,
                     Width = new(-25, 1),
                     TextAlign = new(.5f),
-                    Top = y
+                    Top = y,
+                    AutoSize = false
                 };
                 button.OnEvent(ClickEvent, (_, _) =>
                 {

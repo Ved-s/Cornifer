@@ -40,6 +40,7 @@ namespace Cornifer.UI.Elements
         public Texture2D? Image;
         public Rectangle? ImageFrame = null;
         public Vec2 ImageAlign;
+        public bool AutoSize = true;
 
         public bool Selectable
         {
@@ -86,12 +87,15 @@ namespace Cornifer.UI.Elements
 
         public override void Recalculate()
         {
-            MinWidth = 0;
-            MinHeight = 0;
-            if (Font is not null && Lines?.Length is not null and > 0)
+            if (AutoSize)
             {
-                MinWidth = Lines.Select(line => Font.MeasureString(line).X).Max() + Padding.Horizontal;
-                MinHeight = Lines.Length * (Font.LineSpacing - 3) + Padding.Vertical;
+                MinWidth = 0;
+                MinHeight = 0;
+                if (Font is not null && Lines?.Length is not null and > 0)
+                {
+                    MinWidth = Lines.Select(line => Font.MeasureString(line).X).Max() + Padding.Horizontal;
+                    MinHeight = Lines.Length * (Font.LineSpacing - 3) + Padding.Vertical;
+                }
             }
 
             base.Recalculate();
