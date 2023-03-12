@@ -179,7 +179,8 @@ namespace Cornifer
                 LoadModsFolder(workshop);
 
             foreach (RWMod mod in Mods)
-                LoadMod(mod);
+                if (mod.Enabled)
+                    LoadMod(mod);
         }
 
         public static void SetAssetsPath(string? path)
