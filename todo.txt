@@ -17,6 +17,5 @@ visibility presets (default: all layers + no pickups, pickups only, karmaflowers
 Text presets
 Text dialog for "Add text to map"
 Threaded region loading, status box
-SlugBase compat: Id, Name, Colors, Starting rooms, World state
 Mark important rooms with icons and texts (RM_CORE, RM_AI, SS_AI, ...)
 Fix "Could not find data for room "

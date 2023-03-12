@@ -273,7 +273,11 @@ namespace Cornifer
                         if (obj is null || !obj.TryGet("id", out string? id))
                             continue;
 
-                        Slugcat slugcat = new() { Id = id };
+                        Slugcat slugcat = new()
+                        {
+                            Id = id,
+                            Playable = true,
+                        };
 
                         if (obj.TryGet("name", out string? name))
                             slugcat.Name = name;
