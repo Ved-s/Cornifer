@@ -106,7 +106,6 @@ namespace Cornifer
                 {
                     case "texture":
                         texture = Texture2D.FromFile(Main.Instance.GraphicsDevice, Path.Combine(Path.GetDirectoryName(path)!, split[1]));
-                        SpriteAtlases.PremultiplyTexture(texture);
                         break;
 
                     case "defaultChar" when split[1].Length == 1:

@@ -671,7 +671,7 @@ namespace Cornifer
 
         public static void DrawMap(Renderer renderer, RenderLayers layers, bool? border)
         {
-            SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            SpriteBatch.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.NonPremultiplied);
 
             bool betweenRoomConnections = layers.HasFlag(RenderLayers.Connections);
             bool inRoomConnections = layers.HasFlag(RenderLayers.InRoomShortcuts);
