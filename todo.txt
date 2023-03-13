@@ -17,6 +17,8 @@ visibility presets (default: all layers + no pickups, pickups only, karmaflowers
 Text presets
 Text dialog for "Add text to map"
 Threaded region loading, status box
++ Async state file opening with status
+
 Mark important rooms with icons and texts (RM_CORE, RM_AI, SS_AI, ...)
 Fix "Could not find data for room "
 Dynamically position diamonds

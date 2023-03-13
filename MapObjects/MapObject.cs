@@ -4,7 +4,6 @@ using Cornifer.Structures;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Media;
 using System;
 using System.Buffers;
 using System.Collections;
@@ -256,7 +255,7 @@ namespace Cornifer.MapObjects
             {
                 json["pos"] = JsonTypes.SaveVector2(WorldPosition);
             }
-            else 
+            else
             {
                 json["name"] = Name ?? throw new InvalidOperationException(
                         $"MapObject doesn't have a name and can't be saved.\n" +
@@ -268,7 +267,7 @@ namespace Cornifer.MapObjects
             ActiveProperty.SaveToJson(json, forCopy);
 
             if (!LoadCreationForbidden)
-                json["type"] = forCopy? CopyType.FullName : GetType().FullName;
+                json["type"] = forCopy ? CopyType.FullName : GetType().FullName;
             if (inner is not null && (inner is not JsonObject innerobj || innerobj.Count > 0))
                 json["data"] = inner;
             if (Children.Count > 0 && !forCopy)
@@ -467,8 +466,7 @@ namespace Cornifer.MapObjects
                 }
 
             for (int i = 0; i < arraysize; i++)
-                if (shade[i])
-                    colors[i] = Color.Black;
+                colors[i] = shade[i] ? Color.Black : Color.Transparent;
 
             ArrayPool<bool>.Shared.Return(shade);
             if (cornerRadius.HasValue)

@@ -1,7 +1,9 @@
 ﻿using Cornifer.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Security.Policy;
 using System.Text.Json.Nodes;
@@ -169,6 +171,7 @@ namespace Cornifer
                 if (json["frames"] is JsonObject frames)
                 {
                     Texture2D texture = Texture2D.FromFile(Main.Instance.GraphicsDevice, textureFile);
+                    PremultiplyTexture(texture);
                     foreach (var (assetName, assetFrameData) in frames)
                         if (assetName is not null && assetFrameData is not null)
                         {
@@ -223,6 +226,21 @@ namespace Cornifer
             if (!Sprites.TryGetValue(name, out AtlasSprite? sprite))
                 sprite = null;
             return sprite;
+        }
+
+        public static void PremultiplyTexture(Texture2D texture)
+        {
+            int arraysize = texture.Width * texture.Height;
+            Color[] colors = ArrayPool<Color>.Shared.Rent(arraysize);
+            texture.GetData(colors, 0, arraysize);
+            for (int i = 0; i < arraysize; i++)
+            {
+                Color color = colors[i];
+                float alpha = color.A / 255f;
+                colors[i] = new((int)(color.R * alpha), (int)(color.G * alpha), (int)(color.B * alpha), color.A);
+            }
+            texture.SetData(colors, 0, arraysize);
+            ArrayPool<Color>.Shared.Return(colors);
         }
     }
 

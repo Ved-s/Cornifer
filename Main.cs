@@ -538,7 +538,7 @@ namespace Cornifer
             Vector2 pos = -(OverlayImage.Size() / 2);
             pos.Floor();
 
-            SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
+            SpriteBatch.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.NonPremultiplied);
             WorldCamera.DrawTexture(OverlayImage, pos, null, null, Color.White * InterfaceState.OverlayTransparency.Value);
             SpriteBatch.End();
         }
