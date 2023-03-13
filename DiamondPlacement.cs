@@ -60,13 +60,15 @@ namespace Cornifer
 
         public static void Load()
         {
-            if (!File.Exists(FilePath))
+            string filePath = Path.Combine(Main.MainDir, FilePath);
+
+            if (!File.Exists(filePath))
                 return;
 
             List<Vector2> positions = new List<Vector2>();
             List<DiamondPlacement> placements = new();
 
-            foreach (string line in File.ReadLines(FilePath))
+            foreach (string line in File.ReadLines(filePath))
             {
                 if (line.StartsWith("//") || line.Length == 0 || string.IsNullOrWhiteSpace(line))
                     continue;

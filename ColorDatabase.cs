@@ -35,10 +35,12 @@ namespace Cornifer
 
         public static void Load()
         {
-            if (!File.Exists(DatabasePath))
+            string databasePath = Path.Combine(Main.MainDir, DatabasePath);
+
+            if (!File.Exists(databasePath))
                 return;
 
-            foreach (string line in File.ReadLines(DatabasePath))
+            foreach (string line in File.ReadLines(databasePath))
             {
                 if (line.Length == 0 || line.StartsWith("//") || !line.Contains(':'))
                     continue;

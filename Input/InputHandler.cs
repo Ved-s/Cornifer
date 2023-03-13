@@ -24,7 +24,7 @@ namespace Cornifer.Input
         public static MouseKeys[] AllMouseKeys = Enum.GetValues<MouseKeys>();
 
         public static Dictionary<string, Keybind> Keybinds = new();
-        const string KeybindsFile = "keybinds.txt";
+        public static string KeybindsFile => Path.Combine(Main.MainDir, "keybinds.txt");
 
         public static Keybind ReinitUI = new("", Keys.F12);
         public static Keybind TimingsDebug = new("", Keys.F10);

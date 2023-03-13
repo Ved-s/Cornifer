@@ -149,10 +149,12 @@ namespace Cornifer
                 Sprites[name] = new(name, Content.MiscSprites, objectSprite.Frame, objectSprite.Color, false);
             }
 
-            if (!Directory.Exists(AtlasesPath))
+            string atlasesPath = Path.Combine(Main.MainDir, AtlasesPath);
+
+            if (!Directory.Exists(atlasesPath))
                 return;
 
-            foreach (string atlasFile in Directory.EnumerateFiles(AtlasesPath, "*.txt"))
+            foreach (string atlasFile in Directory.EnumerateFiles(atlasesPath, "*.txt"))
             {
                 string textureFile = Path.ChangeExtension(atlasFile, ".png");
                 if (!File.Exists(atlasFile))

@@ -1,4 +1,5 @@
-﻿
+﻿using Cornifer;
+
 #if !DEBUG
 using System;
 using System.Windows.Forms;
@@ -7,8 +8,9 @@ try
 {
 #endif
 
-    using var game = new Cornifer.Main();
-    game.Run();
+Platform.Start(args);
+using var game = new Cornifer.Main();
+game.Run();
 
 #if !DEBUG
 }

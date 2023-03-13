@@ -1,30 +1,23 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using SixLabors.ImageSharp.ColorSpaces.Conversion;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static System.Net.Mime.MediaTypeNames;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace Cornifer
 {
     public static class Platform
     {
-        public enum MessageBoxButtons
-        {
-            Ok,
-            OkCancel
-        }
-
-        public enum MessageBoxResult
-        {
-            Ok,
-            Cancel,
-            None
-        }
-
-        static IWin32Window? GameWindow
+        private static IWin32Window? GameWindow
         {
             get
             {
@@ -36,8 +29,79 @@ namespace Cornifer
             }
         }
 
-        static WindowsInteractionTaskSheduler Sheduler = new();
+        private static WindowsInteractionTaskSheduler Sheduler = new();
         private static IWin32Window? gameWindow;
+
+        private static Stream? StartupStateStream;
+        private static string? StartupStatePath;
+
+        const int RegistryDataVersion = 1;
+        const string OpenWebMapProtocol = "cornifer://openweb/";
+
+        public static void Start(string[] args)
+        {
+            if (args.Length >= 1 && args[0].StartsWith(OpenWebMapProtocol))
+            {
+                Main.TryCatchReleaseException(() =>
+                {
+                    string url = $"https://{args[0].Substring(OpenWebMapProtocol.Length)}";
+                    StartupStateStream = new HttpClient().GetStreamAsync(url).Result;
+                }, "Exception has been thrown while opening web map");
+            }
+            if (args.Length >= 1 && File.Exists(args[0]))
+            {
+                StartupStateStream = File.OpenRead(args[0]);
+                StartupStatePath = args[0];
+            }
+
+            object? registryVersionObject = Registry.ClassesRoot.OpenSubKey("cornimapFile")?.GetValue("RegistryDataVersion", null);
+            if (registryVersionObject is not int registryVersion || registryVersion != RegistryDataVersion)
+            {
+                string? corniferExe = Process.GetCurrentProcess().MainModule?.FileName;
+                if (corniferExe is not null)
+                {
+                    try
+                    {
+                        RegistryKey cornimapExtension = Registry.ClassesRoot.CreateSubKey(".cornimap");
+                        cornimapExtension.SetValue(null, "cornimapFile");
+
+                        RegistryKey cornimapFile = Registry.ClassesRoot.CreateSubKey("cornimapFile");
+                        cornimapFile.SetValue(null, "Cornifer map");
+                        cornimapFile.SetValue("RegistryDataVersion", RegistryDataVersion);
+
+                        RegistryKey open = cornimapFile.CreateSubKey("shell").CreateSubKey("open");
+                        open.SetValue(null, "Open map");
+                        open.CreateSubKey("command").SetValue(null, @$"{corniferExe} ""%1""");
+
+                        RegistryKey corniferProtocol = Registry.ClassesRoot.CreateSubKey("cornifer");
+                        corniferProtocol.SetValue(null, "Cornifer");
+                        corniferProtocol.SetValue("URL Protocol", "");
+                        open = corniferProtocol.CreateSubKey("shell").CreateSubKey("open");
+                        open.SetValue(null, "Open map");
+                        open.CreateSubKey("command").SetValue(null, @$"{corniferExe} ""%1""");
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        if (!File.Exists(Path.Combine(Main.MainDir, "noAdminWarning.txt")))
+                        {
+                            Sheduler.Shedule(() =>
+                            {
+                                System.Windows.Forms.MessageBox.Show(GameWindow,
+                                    "Cannot update registry values.\n" +
+                                    "Please restart Cornifer with admin privileges to register file extension\n" +
+                                    "Or create file named \"noAdminWarning.txt\" in Cornifer folder.", "Admin access required");
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        public static Stream? GetStartupStateFileStream(out string? saveFileName)
+        {
+            saveFileName = StartupStatePath;
+            return StartupStateStream;
+        }
 
         public static async Task<MessageBoxResult> MessageBox(string text, string caption, MessageBoxButtons buttons = MessageBoxButtons.Ok)
         {
@@ -207,6 +271,19 @@ namespace Cornifer
             }
 
             public IntPtr Handle { get; }
+        }
+
+        public enum MessageBoxButtons
+        {
+            Ok,
+            OkCancel
+        }
+
+        public enum MessageBoxResult
+        {
+            Ok,
+            Cancel,
+            None
         }
     }
 }

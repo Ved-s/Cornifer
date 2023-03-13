@@ -23,9 +23,11 @@ namespace Cornifer
 
         public static void Load()
         {
-            if (File.Exists("gitinfo"))
+            string gitinfoPath = Path.Combine(Main.MainDir, "gitinfo");
+
+            if (File.Exists(gitinfoPath))
             {
-                string[] gitinfo = File.ReadAllLines("gitinfo");
+                string[] gitinfo = File.ReadAllLines(gitinfoPath);
                 if (gitinfo.Length >= 2)
                 {
                     Commit = gitinfo[0];

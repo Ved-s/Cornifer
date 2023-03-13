@@ -78,11 +78,18 @@ namespace Cornifer
         static bool OldActive;
         static string? CurrentStatePath;
 
+        public static readonly string MainDir = null!;
+
+        static Main()
+        {
+            MainDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName) ?? "";
+        }
+
         public Main()
         {
             Instance = this;
             GraphicsManager = new GraphicsDeviceManager(this);
-            Content.RootDirectory = "Content";
+            Content.RootDirectory = Path.Combine(MainDir, "Content");
             IsMouseVisible = true;
 
             WorldObjectLists.Add(WorldObjects);
@@ -94,7 +101,7 @@ namespace Cornifer
             base.Initialize();
 
 #if !DEBUG
-            DebugModeEnforcement = File.Exists("debugmode.txt");
+            DebugModeEnforcement = File.Exists(Path.Combine(MainDir, "debugmode.txt"));
 #endif
 
             GithubInfo.Load();
@@ -104,8 +111,37 @@ namespace Cornifer
             GraphicsDevice.PresentationParameters.RenderTargetUsage = RenderTargetUsage.PreserveContents;
             Window.AllowUserResizing = true;
             Window.ClientSizeChanged += (_, _) => Interface.Root?.Recalculate();
+            LoadState();
 
-            FileInfo stateFile = new("state.json");
+            InputHandler.Init();
+            Interface.Init();
+            FpsStopwatch.Start();
+
+            Thread.CurrentThread.Name = "Main thread";
+
+            RWAssets.ShowDialogs();
+        }
+
+        private static void LoadState()
+        {
+            Stream? externalStream = Platform.GetStartupStateFileStream(out string? externalStreamSaveFile);
+
+            if (externalStream is not null)
+            {
+                if (!TryCatchReleaseException(() =>
+                {
+                    JsonNode node = JsonSerializer.Deserialize<JsonNode>(externalStream)
+                        ?? throw new NullReferenceException("Json was null");
+                    LoadJson(node);
+                }, "Exception has been thrown while opening external state."))
+                {
+                    CurrentStatePath = externalStreamSaveFile;
+                    return;
+                }
+                externalStream.Dispose();
+            }
+
+            FileInfo stateFile = new(Path.Combine(MainDir, "state.json"));
 
             if (stateFile.Exists && stateFile.Length > 0)
             {
@@ -113,7 +149,7 @@ namespace Cornifer
                 try
                 {
 #endif
-                using FileStream fs = File.OpenRead("state.json");
+                using FileStream fs = File.OpenRead(stateFile.FullName);
 
                 JsonNode? node = JsonSerializer.Deserialize<JsonNode>(fs);
                 if (node is not null)
@@ -133,19 +169,11 @@ namespace Cornifer
                     {
                         Environment.Exit(1);
                     }
-                    File.Delete("state.json");
+                    File.Delete(stateFile.FullName);
                     Region = null;
                 }
 #endif
             }
-
-            InputHandler.Init();
-            Interface.Init();
-            FpsStopwatch.Start();
-
-            Thread.CurrentThread.Name = "Main thread";
-
-            RWAssets.ShowDialogs();
         }
 
         protected override void LoadContent()
@@ -494,7 +522,7 @@ namespace Cornifer
                     $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}", "Error").Wait();
                 return;
             }
-            FileStream fs = File.Create("state.json");
+            FileStream fs = File.Create(Path.Combine(MainDir, "state.json"));
             ms.Position = 0;
             ms.CopyTo(fs);
             fs.Flush();
