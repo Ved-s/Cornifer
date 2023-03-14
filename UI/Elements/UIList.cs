@@ -92,7 +92,7 @@ namespace Cornifer.UI.Elements
             if (!AutoSize)
                 ScrollBar.Recalculate();
 
-            float contentHeight = Elements.Where(e => e != ScrollBar).Select(e => e.ScreenRect.Height).Sum() + ElementSpacing * Math.Max(0, Elements.Count - (ScrollBar.Parent is null ? 1 : 2));
+            float contentHeight = Elements.Where(e => e != ScrollBar).Select(e => e.ScreenRect.Height + e.Margin.Vertical).Sum() + ElementSpacing * Math.Max(0, Elements.Count - (ScrollBar.Parent is null ? 1 : 2));
             if (AutoSize)
             {
                 MinHeight = contentHeight;
@@ -129,9 +129,9 @@ namespace Cornifer.UI.Elements
             }
             else
             {
-                screenRect.Top = CurrentLayoutElementY;
-                screenRect.Left = ScreenRect.X + Padding.Left;
-                screenRect.Width = ScreenRect.Width - Padding.Horizontal - (!AutoSize && ScrollBar.Visible ? ScrollBar.ScreenRect.Width : 0);
+                screenRect.Top = CurrentLayoutElementY + child.Margin.Top;
+                screenRect.Left = ScreenRect.X + Padding.Left + child.Margin.Left;
+                screenRect.Width = ScreenRect.Width - child.Margin.Horizontal - Padding.Horizontal - (!AutoSize && ScrollBar.Visible ? ScrollBar.ScreenRect.Width : 0);
             }
         }
 
@@ -143,10 +143,9 @@ namespace Cornifer.UI.Elements
             {
                 if (element == ScrollBar || !element.Visible)
                     continue;
-
                 CurrentLayoutElementY = startPos;
                 element.Recalculate();
-                startPos += element.ScreenRect.Height + ElementSpacing;
+                startPos += element.ScreenRect.Height + element.Margin.Vertical + ElementSpacing;
             }
             OldScroll = ScrollBar.ScrollPosition;
         }

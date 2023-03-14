@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using SixLabors.ImageSharp.ColorSpaces.Conversion;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -32,7 +33,7 @@ namespace Cornifer
         private static WindowsInteractionTaskSheduler Sheduler = new();
         private static IWin32Window? gameWindow;
 
-        private static Stream? StartupStateStream;
+        private static Task<Stream>? StartupStateStream;
         private static string? StartupStatePath;
 
         const int RegistryDataVersion = 1;
@@ -45,12 +46,45 @@ namespace Cornifer
                 Main.TryCatchReleaseException(() =>
                 {
                     string url = $"https://{args[0].Substring(OpenWebMapProtocol.Length)}";
-                    StartupStateStream = new HttpClient().GetStreamAsync(url).Result;
+
+                    StartupStateStream = Task.Run(async () =>
+                    {
+                        HttpResponseMessage response = await new HttpClient().GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+
+                        long? max = response.Content.Headers.ContentLength;
+
+                        MemoryStream bufferStream = new((int?)max ?? 1024 * 1024);
+                        TaskProgress progress = new("Downloading file", max is null ? null : 1);
+
+                        byte[] buffer = ArrayPool<byte>.Shared.Rent(65536);
+
+                        Stream stream = response.Content.ReadAsStream();
+
+                        long current = 0;
+                        while (true)
+                        {
+                            int read = await stream.ReadAsync(buffer);
+                            if (read <= 0)
+                                break;
+
+                            await bufferStream.WriteAsync(buffer, 0, read);
+                            current += read;
+
+                            if (max.HasValue)
+                                progress.Progress = (float)((double)current / max.Value);
+                        }
+
+                        ArrayPool<byte>.Shared.Return(buffer);
+                        progress.Dispose();
+                        bufferStream.Position = 0;
+                        return bufferStream as Stream;
+                    });
+
                 }, "Exception has been thrown while opening web map");
             }
             if (args.Length >= 1 && File.Exists(args[0]))
             {
-                StartupStateStream = File.OpenRead(args[0]);
+                StartupStateStream = Task.FromResult<Stream>(File.OpenRead(args[0]));
                 StartupStatePath = args[0];
             }
 
@@ -97,10 +131,12 @@ namespace Cornifer
             }
         }
 
-        public static Stream? GetStartupStateFileStream(out string? saveFileName)
+        public static async Task<(Stream? stream, string? saveFileName)> GetStartupStateFileStream()
         {
-            saveFileName = StartupStatePath;
-            return StartupStateStream;
+            if (StartupStateStream is null)
+                return (null, null);
+
+            return (await StartupStateStream, StartupStatePath);
         }
 
         public static async Task<MessageBoxResult> MessageBox(string text, string caption, MessageBoxButtons buttons = MessageBoxButtons.Ok)

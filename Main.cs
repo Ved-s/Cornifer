@@ -4,19 +4,15 @@ using Cornifer.MapObjects;
 using Cornifer.Renderers;
 using Cornifer.Structures;
 using Cornifer.UndoActions;
-using Microsoft.Win32;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -122,9 +118,9 @@ namespace Cornifer
             RWAssets.ShowDialogs();
         }
 
-        private static void LoadState()
+        private static async void LoadState()
         {
-            Stream? externalStream = Platform.GetStartupStateFileStream(out string? externalStreamSaveFile);
+            var (externalStream, externalStreamSaveFile) = await Platform.GetStartupStateFileStream();
 
             if (externalStream is not null)
             {
@@ -291,7 +287,7 @@ namespace Cornifer
 
                 if (InputHandler.Paste.JustPressed)
                 {
-                    Task.Run(async () => 
+                    Task.Run(async () =>
                     {
                         string json = await Platform.GetClipboard();
                         if (json.Length == 0 || string.IsNullOrWhiteSpace(json))
@@ -299,7 +295,7 @@ namespace Cornifer
                             await Platform.MessageBox("Clipboard is empty, nothing to paste", "Paste from clipboard");
                             return;
                         }
-                        TryCatchReleaseException(() => 
+                        TryCatchReleaseException(() =>
                         {
                             JsonObject[] objectsJson = JsonSerializer.Deserialize<JsonObject[]>(json)!;
 
@@ -418,7 +414,7 @@ namespace Cornifer
             int x = 10;
 
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
-            
+
             switch (DebugMetric)
             {
                 case EnabledDebugMetric.None when LoadErrors.Count > 0:
@@ -439,9 +435,9 @@ namespace Cornifer
                     SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Loaded mods:", new(x, y), Color.OrangeRed);
                     y += Cornifer.Content.Consolas10.LineSpacing;
 
-                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Enabled",  new(x, y), Color.White);
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Enabled", new(x, y), Color.White);
                     SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Disabled", new(x + 60, y), Color.Gray);
-                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Ignored",  new(x + 125, y), Color.Maroon);
+                    SpriteBatch.DrawStringShaded(Cornifer.Content.Consolas10, $"Ignored", new(x + 125, y), Color.Maroon);
 
                     y += Cornifer.Content.Consolas10.LineSpacing + 10;
 
@@ -717,7 +713,7 @@ namespace Cornifer
             string? worldFile = RWAssets.ResolveSlugcatFile($"world/{id}/world_{id}.txt");
             string? mapFile = RWAssets.ResolveSlugcatFile($"world/{id}/map_{id}.txt");
             string? propertiesFile = RWAssets.ResolveFile($"world/{id}/properties.txt");
-            string? slugcatPropertiedFile = SelectedSlugcat is null ? null : RWAssets.ResolveFile($"world/{id}/properties-{SelectedSlugcat.WorldStateSlugcat}.txt");
+            string? slugcatPropertiesFile = SelectedSlugcat is null ? null : RWAssets.ResolveFile($"world/{id}/properties-{SelectedSlugcat.WorldStateSlugcat}.txt");
 
             if (worldFile is null)
             {
@@ -731,8 +727,16 @@ namespace Cornifer
                 return;
             }
 
-            Region = new(id, worldFile, mapFile, propertiesFile, slugcatPropertiedFile);
-            RegionLoaded(Region);
+            ThreadPool.QueueUserWorkItem((_) =>
+            {
+                Region region = new(id, worldFile, mapFile, propertiesFile, slugcatPropertiesFile);
+
+                MainThreadQueue.Enqueue(() =>
+                {
+                    Region = region;
+                    RegionLoaded(Region);
+                });
+            });
         }
 
         public static void ClearRegion()

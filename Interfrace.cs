@@ -96,6 +96,8 @@ namespace Cornifer
 
                 Elements =
                 {
+                    TaskProgress.InitUI(),
+
                     new UIResizeablePanel()
                     {
                         Left = new(0, 1, -1),

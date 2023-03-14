@@ -15,6 +15,9 @@ namespace Cornifer.UI.Structures
         public float All { set => Top = Left = Right = Bottom = value; }
 
         public Vec2 TopLeft => new(Left, Top);
+        public Vec2 TopRight => new(Right, Top);
+        public Vec2 BottomLeft => new(Left, Bottom);
+        public Vec2 BottomRight => new(Right, Bottom);
         public Vec2 AllPadding => new(Horizontal, Vertical);
 
         public Offset4(float top, float left, float right, float bottom)

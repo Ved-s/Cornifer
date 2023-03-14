@@ -41,6 +41,8 @@ namespace Cornifer
 
         public Region(string id, string worldFilePath, string mapFilePath, string? defaultPropertiesPath, string? slugcatPropertiesPath) : this()
         {
+            using TaskProgress progress = new($"Loading region {id}", 6);
+
             string? mainPropertiesPath = slugcatPropertiesPath ?? defaultPropertiesPath;
 
             Id = id.ToUpper();
@@ -55,27 +57,41 @@ namespace Cornifer
                     .Select(line => line.Substring(11))
                     .ToArray();
             }
+            progress.Progress = 1;
 
             Load();
+            progress.Progress = 2;
+
             LoadGates();
+            progress.Progress = 3;
 
-            foreach (Room r in Rooms)
+            using (TaskProgress roomProgress = new("Loding rooms", Rooms.Count))
             {
-                string roomPath = r.IsGate ? $"world/gates/{r.Name}" : $"world/{id}-rooms/{r.Name}";
-
-                string? settings = RWAssets.ResolveSlugcatFile(roomPath + "_settings.txt");
-                string? data = RWAssets.ResolveFile(roomPath + ".txt");
-
-                if (data is null)
+                for (int i = 0; i < Rooms.Count; i++)
                 {
-                    Main.LoadErrors.Add($"Could not find data for room {r.Name}");
-                    continue;
-                }
+                    Room r = Rooms[i];
+                    string roomPath = r.IsGate ? $"world/gates/{r.Name}" : $"world/{id}-rooms/{r.Name}";
 
-                r.Load(File.ReadAllText(data!), settings is null ? null : File.ReadAllText(settings));
+                    string? settings = RWAssets.ResolveSlugcatFile(roomPath + "_settings.txt");
+                    string? data = RWAssets.ResolveFile(roomPath + ".txt");
+
+                    if (data is null)
+                    {
+                        Main.LoadErrors.Add($"Could not find data for room {r.Name}");
+                        continue;
+                    }
+
+                    r.Load(File.ReadAllText(data!), settings is null ? null : File.ReadAllText(settings));
+                    roomProgress.Progress = i + 1;
+                }
             }
+            progress.Progress = 4;
+
             LoadConnections();
+            progress.Progress = 5;
+
             PostRegionLoad();
+            progress.Progress = 6;
         }
 
         private void LoadGates()
