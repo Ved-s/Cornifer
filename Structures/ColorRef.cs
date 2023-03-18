@@ -10,15 +10,17 @@ namespace Cornifer.Structures
 
         public readonly Color DefaultColor;
         public Color Color;
+        public bool IsDefinedColor;
 
         public static ColorRef White => new(null, Color.White);
         public static ColorRef Black => new(null, Color.Black);
 
-        public ColorRef(string? key, Color color)
+        public ColorRef(string? key, Color color, bool isDefinedColor = false)
         {
             Key = key;
             DefaultColor = color;
             Color = color;
+            IsDefinedColor = isDefinedColor;
         }
 
         public void ResetToDefault()

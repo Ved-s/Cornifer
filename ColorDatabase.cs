@@ -53,7 +53,7 @@ namespace Cornifer
                 if (!color.HasValue)
                     continue;
 
-                Colors[split[0]] = new(split[0], color.Value);
+                Colors[split[0]] = new(split[0], color.Value, true);
             }
         }
 
@@ -184,7 +184,7 @@ namespace Cornifer
         public static JsonObject SaveJson()
         {
             return new(Colors
-                .Where(kvp => kvp.Value.Color != kvp.Value.DefaultColor)
+                .Where(kvp => !kvp.Value.IsDefinedColor || kvp.Value.Color != kvp.Value.DefaultColor)
                 .Select(kvp => new KeyValuePair<string, JsonNode?>(kvp.Key, kvp.Value.SaveJson(true))));
         }
 
