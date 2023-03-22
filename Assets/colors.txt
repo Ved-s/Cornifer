@@ -74,3 +74,8 @@ reg_MS_submerged-superstructure-vents: 53A263
 reg_MS_submerged-superstructure-the-heart: 03FFF3
 reg_MS_bitter-aerie: 8B92FF
 reg_MS_auxiliary-transmission-array: CDA1EB
+
+reg_GW_acid: 8AFF00
+reg_HR_acid: FF9900
+reg_HR_water: FF9900
+reg_HR_rubicon_water: FF9900

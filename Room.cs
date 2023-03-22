@@ -108,6 +108,8 @@ namespace Cornifer
         public ObjectProperty<bool> UseBetterTileCutout = new("betterTileCutout", true);
         public ObjectProperty<bool> CutoutAllSolidTiles = new("cutAllSolid", false);
         public ObjectProperty<bool> DrawInRoomShortcuts = new("inRoomShortcuts", false);
+        public ObjectProperty<bool> AcidWater = new("acidWater", false);
+        public ObjectProperty<ColorRef> AcidColor = new("acidWater", new(null, Color.Blue));
 
         public Effect[] Effects = Array.Empty<Effect>();
         public Connection?[] Connections = Array.Empty<Connection>();
@@ -567,6 +569,16 @@ namespace Cornifer
 
             Deathpit.OriginalValue = !IsShelter && !IsGate && WaterLevel.Value < 0 && Enumerable.Range(0, TileSize.X).Any(x => Tiles[x, TileSize.Y - 1].Terrain == Tile.TerrainType.Air);
 
+            if (Effects.Any(e => e.Name == "LethalWater"))
+            {
+                string key = $"reg_{Region.Id}_acid";
+                if (ColorDatabase.Colors.TryGetValue(key, out ColorRef? cref))
+                {
+                    AcidWater.OriginalValue = true;
+                    AcidColor.OriginalValue = cref;
+                }
+            }
+
             Loaded = true;
         }
 
@@ -579,7 +591,9 @@ namespace Cornifer
 
         public void UpdateTileMap()
         {
+            Subregion subregion = Subregion.Value;
             Color[] colors = ArrayPool<Color>.Shared.Rent(TileSize.X * TileSize.Y);
+            Color waterColor = AcidWater.Value ? AcidColor.Value.Color : subregion.WaterColor.Color;
             try
             {
                 bool invertedWater = Effects.Any(ef => ef.Name == "InvertedWater");
@@ -597,8 +611,6 @@ namespace Cornifer
                         waterLevel = (int)(waterMid * TileSize.Y) + 2;
                     }
                 }
-
-                Subregion subregion = Subregion.Value;
 
                 for (int j = 0; j < TileSize.Y; j++)
                     for (int i = 0; i < TileSize.X; i++)
@@ -634,7 +646,7 @@ namespace Cornifer
 
                         if (!solid && (invertedWater ? j <= waterLevel : j >= TileSize.Y - waterLevel))
                         {
-                            color = Color.Lerp(subregion.WaterColor.Color, color, InterfaceState.WaterTransparency.Value);
+                            color = Color.Lerp(waterColor, color, InterfaceState.WaterTransparency.Value);
                         }
 
                         if (Deathpit.Value && j >= TileSize.Y - 5 && Tiles[i, TileSize.Y - 1].Terrain == Tile.TerrainType.Air)
@@ -1076,6 +1088,38 @@ namespace Cornifer
                 TextAlign = new(.5f)
 
             }.OnEvent(UIElement.ClickEvent, (btn, _) => DrawInRoomShortcuts.Value = btn.Selected));
+
+            list.Elements.Add(new UIButton
+            {
+                Height = 20,
+
+                Selectable = true,
+                Selected = AcidWater.Value,
+                Text = "Acid water",
+
+                SelectedBackColor = Color.White,
+                SelectedTextColor = Color.Black,
+
+                TextAlign = new(.5f)
+
+            }.OnEvent(UIElement.ClickEvent, (btn, _) =>
+            {
+                AcidWater.Value = btn.Selected;
+                TileMapDirty = true;
+            }));
+
+            list.Elements.Add(new UIButton
+            {
+                Height = 20,
+
+                Text = "Set acid color",
+                TextAlign = new(.5f)
+
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Acid color", AcidColor.Value, (_, c) => 
+            {
+                AcidColor.Value = c;
+                Region?.MarkRoomTilemapsDirty();
+            })));
 
             list.Elements.Add(new UIPanel
             {
