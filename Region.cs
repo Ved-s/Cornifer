@@ -65,7 +65,7 @@ namespace Cornifer
             LoadGates();
             progress.Progress = 3;
 
-            using (TaskProgress roomProgress = new("Loding rooms", Rooms.Count))
+            using (TaskProgress roomProgress = new("Loading rooms", Rooms.Count))
             {
                 for (int i = 0; i < Rooms.Count; i++)
                 {
@@ -206,7 +206,7 @@ namespace Cornifer
 
             foreach (string line in WorldString.Split('\n', StringSplitOptions.TrimEntries))
             {
-                if (line.StartsWith("//"))
+                if (line.StartsWith("//") || line.IsNullEmptyOrWhitespace())
                     continue;
 
                 if (line == "ROOMS")

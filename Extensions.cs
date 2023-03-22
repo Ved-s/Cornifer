@@ -327,5 +327,8 @@ namespace Cornifer
 
            return $"{color.R:x2}{color.G:x2}{color.B:x2}";
         }
+
+        public static bool IsNullEmptyOrWhitespace(this string? str)
+            => string.IsNullOrWhiteSpace(str) || str.Length == 0;
     }
 }

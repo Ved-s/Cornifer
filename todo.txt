@@ -18,7 +18,6 @@ Text presets
 Text dialog for "Add text to map"
 Threaded region loading
 Mark important rooms with icons and texts (RM_CORE, RM_AI, SS_AI, ...)
-Fix "Could not find data for room "
 Dynamically position diamonds
 Shallow state load (load state over existing region, ignoring region data from state)
 Fix hack with "To Region" by making a property to manually load/save position data
