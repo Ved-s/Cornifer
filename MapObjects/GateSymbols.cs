@@ -159,7 +159,7 @@ namespace Cornifer.MapObjects
                 .SaveProperty(RightArrowColor, forCopy);
         }
 
-        protected override void LoadInnerJson(JsonNode node)
+        protected override void LoadInnerJson(JsonNode node, bool shallow)
         {
             SplitterColor.LoadFromJson(node);
             LeftSymbolColor.LoadFromJson(node);

@@ -341,7 +341,7 @@ namespace Cornifer
             .SaveProperty(ShadeColor, forCopy);
         }
 
-        protected override void LoadInnerJson(JsonNode node)
+        protected override void LoadInnerJson(JsonNode node, bool shallow)
         {
             Text.LoadFromJson(node);
             Font.LoadFromJson(node);

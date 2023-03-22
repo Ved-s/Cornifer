@@ -1164,7 +1164,7 @@ namespace Cornifer
 
             return obj;
         }
-        protected override void LoadInnerJson(JsonNode node)
+        protected override void LoadInnerJson(JsonNode node, bool shallow)
         {
             Subregion.LoadFromJson(node);
             Deathpit.LoadFromJson(node);
@@ -1173,7 +1173,7 @@ namespace Cornifer
             WaterLevel.LoadFromJson(node);
             DrawInRoomShortcuts.LoadFromJson(node);
 
-            if (node.TryGet("gateData", out JsonObject? gateData))
+            if (!shallow && node.TryGet("gateData", out JsonObject? gateData))
             {
                 GateData ??= new();
                 GateData.LoadJson(gateData);

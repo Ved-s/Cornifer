@@ -3,6 +3,7 @@ using Cornifer.Json;
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
 using Cornifer.Structures;
+using Cornifer.UI.Modals;
 using Cornifer.UndoActions;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -128,7 +129,7 @@ namespace Cornifer
                 {
                     JsonNode node = JsonSerializer.Deserialize<JsonNode>(externalStream)
                         ?? throw new NullReferenceException("Json was null");
-                    LoadJson(node);
+                    LoadJson(node, false);
                 }, "Exception has been thrown while opening external state."))
                 {
                     CurrentStatePath = externalStreamSaveFile;
@@ -149,7 +150,7 @@ namespace Cornifer
 
                 JsonNode? node = JsonSerializer.Deserialize<JsonNode>(fs);
                 if (node is not null)
-                    LoadJson(node);
+                    LoadJson(node, false);
 #if !DEBUG
                 }
                 catch (Exception ex)
@@ -299,7 +300,7 @@ namespace Cornifer
                         {
                             JsonObject[] objectsJson = JsonSerializer.Deserialize<JsonObject[]>(json)!;
 
-                            List<MapObject> objects = objectsJson.Select(j => MapObject.CreateObject(j)).OfType<MapObject>().ToList();
+                            List<MapObject> objects = objectsJson.Select(j => MapObject.CreateObject(j, false)).OfType<MapObject>().ToList();
 
                             if (objects.Count == 0)
                                 return;
@@ -708,7 +709,7 @@ namespace Cornifer
             SpriteBatch.End();
         }
 
-        public static void LoadRegion(string id)
+        public static Task LoadRegion(string id)
         {
             string? worldFile = RWAssets.ResolveSlugcatFile($"world/{id}/world_{id}.txt");
             string? mapFile = RWAssets.ResolveSlugcatFile($"world/{id}/map_{id}.txt");
@@ -718,25 +719,42 @@ namespace Cornifer
             if (worldFile is null)
             {
                 LoadErrors.Add("Could not find world file");
-                return;
+                return Task.CompletedTask;
             }
 
             if (mapFile is null)
             {
                 LoadErrors.Add("Could not find world map file");
-                return;
+                return Task.CompletedTask;
             }
 
+            TaskCompletionSource completion = new();
             ThreadPool.QueueUserWorkItem((_) =>
             {
-                Region region = new(id, worldFile, mapFile, propertiesFile, slugcatPropertiesFile);
-
-                MainThreadQueue.Enqueue(() =>
+                try
                 {
-                    Region = region;
-                    RegionLoaded(Region);
-                });
+                    Region region = new(id, worldFile, mapFile, propertiesFile, slugcatPropertiesFile);
+
+                    MainThreadQueue.Enqueue(() =>
+                    {
+                        try
+                        {
+                            Region = region;
+                            RegionLoaded(Region);
+                            completion.SetResult();
+                        }
+                        catch (Exception ex)
+                        {
+                            completion.SetException(ex);
+                        }
+                    });
+                }
+                catch (Exception ex)
+                {
+                    completion.SetException(ex);
+                }
             });
+            return completion.Task;
         }
 
         public static void ClearRegion()
@@ -791,8 +809,13 @@ namespace Cornifer
                 ["colors"] = ColorDatabase.SaveJson(),
             };
         }
-        public static void LoadJson(JsonNode node)
+        public static void LoadJson(JsonNode node, bool shallow)
         {
+            if (Region is not null)
+            {
+                Region.UnbindRooms();
+            }
+
             if (node.TryGet("colors", out JsonObject? colors))
             {
                 ColorDatabase.LoadJson(colors);
@@ -801,7 +824,7 @@ namespace Cornifer
             {
                 SelectedSlugcat = StaticData.Slugcats.FirstOrDefault(s => s.Id.Equals(slugcat, StringComparison.InvariantCultureIgnoreCase));
             }
-            if (node.TryGet("region", out JsonNode? region))
+            if (!shallow && node.TryGet("region", out JsonNode? region))
             {
                 ClearRegion();
                 Region = new();
@@ -813,9 +836,9 @@ namespace Cornifer
 
             if (node.TryGet("objects", out JsonArray? objects))
                 foreach (JsonNode? objNode in objects)
-                    if (objNode is not null && !MapObject.LoadObject(objNode, WorldObjectLists))
+                    if (objNode is not null && !MapObject.LoadObject(objNode, WorldObjectLists, shallow))
                     {
-                        MapObject? obj = MapObject.CreateObject(objNode);
+                        MapObject? obj = MapObject.CreateObject(objNode, shallow);
 
                         if (obj is null || obj.LoadCreationForbidden)
                             continue;
@@ -835,14 +858,43 @@ namespace Cornifer
             if (fileName is null)
                 return;
 
-            if (TryCatchReleaseException(() =>
+            if (TryCatchReleaseException(async () =>
             {
                 using FileStream fs = File.OpenRead(fileName);
 
                 JsonNode? node = JsonSerializer.Deserialize<JsonNode>(fs);
                 if (node is not null)
                 {
-                    LoadJson(node);
+                    int choice = await MessageBox.Show(
+                        "Select state loading mode\n" +
+                        "Full will load region from the state\n" +
+                        "Shallow will load region from the game (if state has region data), then load changes from the state\n" +
+                        "Overlay will overlay state with current region (if loaded)", new[]
+                        {
+                            ("Full", 0),
+                            ("Shallow", 1),
+                            ("Overlay", 2)
+                        });
+
+                    bool shallow = choice > 0;
+
+                    if (choice == 1)
+                    {
+                        string? region = (node["region"]?["id"] as JsonValue)?.TryGetValue(out string? s) is true ? s : null;
+                        string? slugcat = (node["slugcat"] as JsonValue)?.TryGetValue(out s) is true ? s : null;
+
+                        if (region is null)
+                        {
+                            await Interface.SelectRegionClicked();
+                        }
+                        else 
+                        {
+                            SelectedSlugcat = StaticData.Slugcats.FirstOrDefault(s => s.Id.Equals(slugcat, StringComparison.InvariantCultureIgnoreCase));
+                            await LoadRegion(region);
+                        }
+                    }
+
+                    LoadJson(node, shallow);
                     CurrentStatePath = fileName;
                 }
             }, "Exception has been thrown while opening selected state."))

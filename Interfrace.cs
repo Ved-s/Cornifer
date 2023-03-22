@@ -199,18 +199,7 @@ namespace Cornifer
                         TextAlign = new(.5f)
                     }.OnEvent(UIElement.ClickEvent, async (_, _) =>
                     {
-                        SlugcatSelect.Result? slugcat = await SlugcatSelect.ShowDialog();
-                        if (!slugcat.HasValue)
-                            return;
-
-                        RegionSelect.Result? region = await RegionSelect.ShowDialog(slugcat.Value.Slugcat);
-                        if (!region.HasValue)
-                            return;
-
-                        Main.SelectedSlugcat = slugcat.Value.Slugcat;
-                        InterfaceState.DrawSlugcatIcons.Value = slugcat.Value.Slugcat is null;
-                        RWAssets.EnableMods = !region.Value.ExcludeMods;
-                        Main.LoadRegion(region.Value.Region.Id);
+                        await SelectRegionClicked();
                     }),
 
                     new UIList()
@@ -943,6 +932,22 @@ namespace Cornifer
                 Capture.CaptureMapLayered(renderDir);
                 GC.Collect();
             });
+        }
+        internal static async Task<bool> SelectRegionClicked()
+        {
+            SlugcatSelect.Result? slugcat = await SlugcatSelect.ShowDialog();
+            if (!slugcat.HasValue)
+                return false;
+
+            RegionSelect.Result? region = await RegionSelect.ShowDialog(slugcat.Value.Slugcat);
+            if (!region.HasValue)
+                return false;
+
+            Main.SelectedSlugcat = slugcat.Value.Slugcat;
+            InterfaceState.DrawSlugcatIcons.Value = slugcat.Value.Slugcat is null;
+            RWAssets.EnableMods = !region.Value.ExcludeMods;
+            await Main.LoadRegion(region.Value.Region.Id);
+            return true;
         }
 
         static void CreateModals()

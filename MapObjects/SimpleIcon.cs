@@ -144,7 +144,7 @@ namespace Cornifer.MapObjects
             return obj;
         }
 
-        protected override void LoadInnerJson(JsonNode node)
+        protected override void LoadInnerJson(JsonNode node, bool shallow)
         {
             if (!node.TryGet("sprite", out string? spriteName))
             {

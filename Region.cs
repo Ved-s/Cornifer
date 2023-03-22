@@ -551,6 +551,12 @@ namespace Cornifer
                 room.PostRegionLoad();
         }
 
+        internal void UnbindRooms()
+        {
+            foreach (Room room in Rooms)
+                room.BoundRoom = null;
+        }
+
         public bool TryGetRoom(string id, [NotNullWhen(true)] out Room? room)
         {
             foreach (Room r in Rooms)

@@ -275,10 +275,10 @@ namespace Cornifer.MapObjects
 
             return json;
         }
-        public void LoadJson(JsonNode json)
+        public void LoadJson(JsonNode json, bool shallow)
         {
             if (json.TryGet("data", out JsonNode? data))
-                LoadInnerJson(data);
+                LoadInnerJson(data, shallow);
 
             if (json.TryGet("name", out string? name))
                 Name = name;
@@ -291,7 +291,7 @@ namespace Cornifer.MapObjects
             if (json.TryGet("children", out JsonArray? children))
                 foreach (JsonNode? childNode in children)
                     if (childNode is not null)
-                        LoadObject(childNode, Children);
+                        LoadObject(childNode, Children, shallow);
         }
 
         public void EnsureCorrectShadeTexture()
@@ -365,7 +365,7 @@ namespace Cornifer.MapObjects
         }
 
         protected virtual JsonNode? SaveInnerJson(bool forCopy) => null;
-        protected virtual void LoadInnerJson(JsonNode node) { }
+        protected virtual void LoadInnerJson(JsonNode node, bool shallow) { }
 
         protected virtual void BuildInnerConfig(UIList list) { }
         protected virtual void UpdateInnerConfig() { }
@@ -512,7 +512,7 @@ namespace Cornifer.MapObjects
             }
         }
 
-        public static bool LoadObject(JsonNode node, IEnumerable<MapObject> objEnumerable)
+        public static bool LoadObject(JsonNode node, IEnumerable<MapObject> objEnumerable, bool shallow)
         {
             if (!node.TryGet("name", out string? name))
                 return false;
@@ -521,10 +521,10 @@ namespace Cornifer.MapObjects
             if (obj is null)
                 return false;
 
-            obj.LoadJson(node);
+            obj.LoadJson(node, shallow);
             return true;
         }
-        public static MapObject? CreateObject(JsonNode node)
+        public static MapObject? CreateObject(JsonNode node, bool shallow)
         {
             if (!node.TryGet("type", out string? typeName))
                 return null;
@@ -540,7 +540,7 @@ namespace Cornifer.MapObjects
             else if (instance.Name is null)
                 instance.RegenerateName();
 
-            instance.LoadJson(node);
+            instance.LoadJson(node, shallow);
             return instance;
         }
 
