@@ -17,7 +17,6 @@ visibility presets (default: all layers + no pickups, pickups only, karmaflowers
 Text presets
 Text dialog for "Add text to map"
 Threaded region loading
-Mark important rooms with icons and texts (RM_CORE, RM_AI, SS_AI, ...)
 Dynamically position diamonds
 Fix hack with "To Region" by making a property to manually load/save position data
 Room settings templates

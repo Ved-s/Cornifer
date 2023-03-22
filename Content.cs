@@ -63,6 +63,10 @@ namespace Cornifer
             if (Fonts.TryGetValue(name, out SpriteFont? font))
                 return font;
 
+            font = Fonts.FirstOrDefault(kvp => kvp.Key.Equals(name, StringComparison.InvariantCultureIgnoreCase)).Value;
+            if (font is not null)
+                return font;
+
             switch (name)
             {
                 case "Rodondo20":

@@ -1,0 +1,15 @@
+// RoomName[|[X-]Slugcat, ...] : ObjectType ObjectName
+// RoomName[|[X-]Slugcat, ...] : Icon ObjectName IconName [Color string (default: fff), Shade bool (T, F) (default: T), Border int (default: 5)]
+// RoomName[|[X-]Slugcat, ...] : Text ObjectName [Color string (default: fff), Shade color string or None (default: 0), Scale float (default: 1), Font name string (Name or Small/Big) (default: Small)] : Text contents
+// Text content can contain \n for newlines
+// Icon defaults are as listed above unless overridden by sprite (Object icons have color, builtin icons have shade disabled for example)
+
+SS_AI : Icon PebblesIcon GuidancePebbles 72e6c4
+RM_AI : Icon PebblesIcon GuidancePebbles 72e6c4
+CL_AI : Icon PebblesIcon GuidancePebbles 72e6c4
+SL_AI|X-Saint : Icon MoonIconFuture GuidanceMoon f
+SL_AI|Saint : Icon MoonIcon GuidanceMoon 4b7386
+DM_AI : Icon MoonIcon GuidanceMoon ffeb04
+RM_CORE : Text CellText 05a5d9 : Rarefaction Cell
+RM_CORE : Icon CellIcon Object_EnergyCell
+LC_FINAL : Icon ScavKingIcon Kill_ScavengerKing

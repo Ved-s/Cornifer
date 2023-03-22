@@ -330,5 +330,36 @@ namespace Cornifer
 
         public static bool IsNullEmptyOrWhitespace(this string? str)
             => string.IsNullOrWhiteSpace(str) || str.Length == 0;
+
+        public static bool TrySplitOnce(this string str, char splitter,
+            [NotNullWhen(true)] out string? left,
+            [NotNullWhen(true)] out string? right,
+            StringSplitOptions options)
+        {
+            left = null;
+            right = null;
+
+            int index = str.IndexOf(splitter);
+
+            if (index < 0)
+                return false;
+
+            ReadOnlySpan<char> leftSpan = str.AsSpan()[..index];
+            ReadOnlySpan<char> rightSpan = str.AsSpan()[(index+1)..];
+
+            if ((options & StringSplitOptions.TrimEntries) is not StringSplitOptions.None)
+            {
+                leftSpan = leftSpan.Trim();
+                rightSpan = rightSpan.Trim();
+            }
+
+            if ((options & StringSplitOptions.RemoveEmptyEntries) is not StringSplitOptions.None && (leftSpan.Length == 0 || rightSpan.Length == 0))
+                return false;
+
+            left = new(leftSpan);
+            right = new(rightSpan);
+
+            return true;
+        }
     }
 }

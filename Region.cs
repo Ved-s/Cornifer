@@ -7,9 +7,11 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.ObjectiveC;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Cornifer
 {
@@ -528,6 +530,7 @@ namespace Cornifer
 
                 room.Children.Add(new MapText(name, Main.DefaultSmallMapFont, text));
             }
+            LoadExtraRoomObjects();
         }
         public void ResetSubregionColors()
         {
@@ -545,6 +548,182 @@ namespace Cornifer
         {
             Connections = new(this);
         }
+
+        void LoadExtraRoomObjects()
+        {
+            string roomobjectsPath = Path.Combine(Main.MainDir, "Assets/roomobjects.txt");
+            if (!File.Exists(roomobjectsPath))
+                return;
+
+            int lineNumber = 0;
+            foreach (string line in File.ReadLines(roomobjectsPath))
+            {
+                lineNumber++;
+                if (line.StartsWith("//") || line.IsNullEmptyOrWhitespace())
+                    continue;
+
+                if (!line.TrySplitOnce(':', out string? roomName, out string? objectInfo, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                {
+                    Main.LoadErrors.Add($"[roomobjects.txt:{lineNumber}] Invalid line format (missing : )");
+                    continue;
+                }
+
+                if (roomName.TrySplitOnce('|', out string? roomName2, out string? roomSlugcats, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                {
+                    roomName = roomName2;
+
+                    if (Main.SelectedSlugcat is not null)
+                    {
+                        bool exclude = roomSlugcats.StartsWith("X-", StringComparison.InvariantCultureIgnoreCase);
+                        if (exclude)
+                            roomSlugcats = roomSlugcats[2..];
+
+                        string[] slugcats = roomSlugcats.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+                        if (exclude == slugcats.Any(s => Main.SelectedSlugcat.Id.Equals(s, StringComparison.InvariantCultureIgnoreCase)))
+                            continue;
+                     }
+                }
+
+                if (!TryGetRoom(roomName, out Room? room))
+                {
+                    if (roomName.StartsWith(Id, StringComparison.InvariantCultureIgnoreCase))
+                        Main.LoadErrors.Add($"[roomobjects.txt:{lineNumber}] No room named {roomName}");
+                    continue;
+                }
+
+                if (!objectInfo.TrySplitOnce(' ', out string? objectType, out string? objectAttrs, StringSplitOptions.TrimEntries))
+                {
+                    Main.LoadErrors.Add($"[roomobjects.txt:{lineNumber}] Invalid line format (missing object type and name)");
+                    continue;
+                }
+
+                if (!objectAttrs.TrySplitOnce(' ', out string? objectName, out string? objectAttrs2, StringSplitOptions.TrimEntries))
+                {
+                    objectName = objectAttrs;
+                    objectAttrs2 = null;
+                }
+                objectAttrs = objectAttrs2;
+
+                MapObject? obj = null;
+
+                if (objectType.Equals("text", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    MapText text = new();
+                    obj = text;
+
+                    if (objectAttrs is not null)
+                    {
+                        if (!objectAttrs.TrySplitOnce(':', out string? textAttrs, out string? textContent, StringSplitOptions.TrimEntries))
+                        {
+                            textAttrs = objectAttrs;
+                            textContent = "";
+                        }
+
+                        text.Text.OriginalValue = textContent.Replace("\\n", "\n");
+                        string[] split = textAttrs.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+                        // Color Shade Scale Font
+                        for (int i = 0; i < split.Length; i++)
+                        {
+                            string data = split[i];
+                            switch (i)
+                            {
+                                case 0:
+                                    Color? color = ColorDatabase.ParseColor(data);
+                                    text.Color.OriginalValue = color.HasValue ? new(null, color.Value) : ColorDatabase.GetColor(data) ?? text.Color.OriginalValue;
+                                    break;
+
+                                case 1:
+                                    text.Shade.OriginalValue = !data.Equals("none", StringComparison.InvariantCultureIgnoreCase);
+                                    if (text.Shade.OriginalValue)
+                                    {
+                                        Color? shadeColor = ColorDatabase.ParseColor(data);
+                                        text.ShadeColor.OriginalValue = shadeColor.HasValue ? new(null, shadeColor.Value) : ColorDatabase.GetColor(data) ?? text.ShadeColor.OriginalValue;
+                                    }
+                                    break;
+
+                                case 2:
+                                    if (float.TryParse(data, NumberStyles.Any, CultureInfo.InvariantCulture, out float scale))
+                                        text.Scale.OriginalValue = scale;
+                                    else
+                                        Main.LoadErrors.Add($"[roomobjects.txt:{lineNumber}] Could not parse float (Scale parameter)");
+                                    break;
+
+                                case 3:
+                                    if (data.Equals("big", StringComparison.InvariantCultureIgnoreCase))
+                                        text.Font.OriginalValue = Main.DefaultBigMapFont;
+                                    else if (data.Equals("small", StringComparison.InvariantCultureIgnoreCase))
+                                        text.Font.OriginalValue = Main.DefaultSmallMapFont;
+                                    else
+                                        text.Font.OriginalValue = Content.GetFontByName(data, Main.DefaultSmallMapFont);
+
+                                    break;
+                            }
+                        }
+                    }
+                    text.ParamsChanged();
+                }
+                else if (objectType.Equals("icon", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    SimpleIcon icon = null!;
+
+                    if (objectAttrs is not null)
+                    {
+                        string[] split = objectAttrs.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+
+                        // Name Color Shade Border
+                        for (int i = 0; i < split.Length; i++)
+                        {
+                            string data = split[i];
+                            switch (i)
+                            {
+                                case 0:
+                                    if (SpriteAtlases.Sprites.TryGetValue(data, out AtlasSprite? sprite))
+                                    {
+                                        icon = new(objectName, sprite);
+                                        icon.SkipTextureSave = true;
+                                        obj = icon;
+                                    }
+                                    else 
+                                    {
+                                        Main.LoadErrors.Add($"[roomobjects.txt:{lineNumber}] No sprite named {data}");
+                                    }
+                                    break;
+
+                                case 1:
+                                    Color? color = ColorDatabase.ParseColor(data);
+                                    icon.Color.OriginalValue = color.HasValue ? new(null, color.Value) : ColorDatabase.GetColor(data) ?? icon.Color.OriginalValue;
+                                    break;
+
+                                case 2:
+                                    if ("True".StartsWith(data, StringComparison.InvariantCultureIgnoreCase))
+                                        icon.Shade.OriginalValue = true;
+                                    else if ("False".StartsWith(data, StringComparison.InvariantCultureIgnoreCase))
+                                        icon.Shade.OriginalValue = false;
+                                    else
+                                        Main.LoadErrors.Add($"[roomobjects.txt:{lineNumber}] Invalid bool value (Shade parameter)");
+                                    break;
+
+                                case 3:
+                                    if (int.TryParse(data, out int border))
+                                        icon.BorderSize.OriginalValue = border;
+                                    else
+                                        Main.LoadErrors.Add($"[roomobjects.txt:{lineNumber}] Could not parse int (Border parameter)");
+                                    break;
+                            }
+                        }
+                    }
+                }
+                else continue;
+
+                if (obj is null)
+                    continue;
+
+                obj.Name = objectName;
+                room.Children.Add(obj);
+            }
+        }
+
         public void PostRegionLoad()
         {
             foreach (Room room in Rooms)
