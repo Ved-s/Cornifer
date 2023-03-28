@@ -165,7 +165,10 @@ namespace Cornifer
         public GateSymbols? GateSymbols;
         public MapText? GateRegionText;
 
+
+        public bool CutOutsDirty = true;
         bool[,]? CutOutSolidTiles = null;
+        
         Vector2 Position;
         private Room? boundRoom;
 
@@ -391,8 +394,6 @@ namespace Cornifer
 
                 Shortcuts = tracedShortcuts.ToArray();
                 Exits = exitEntrances;
-
-                ProcessCutouts();
             }
             else 
             {
@@ -845,6 +846,8 @@ namespace Cornifer
                 if (point.Y < TileSize.Y - 1)
                     queue.Enqueue(new(point.X, point.Y + 1));
             }
+
+            CutOutsDirty = false;
         }
 
         void FixGateData()
@@ -943,6 +946,9 @@ namespace Cornifer
         {
             if (!Loaded)
                 return;
+
+            if (CutOutsDirty)
+                ProcessCutouts();
 
             renderer.DrawTexture(GetTileMap(), WorldPosition);
 
@@ -1047,7 +1053,7 @@ namespace Cornifer
             {
                 UseBetterTileCutout.Value = btn.Selected;
 
-                ProcessCutouts();
+                CutOutsDirty = true;
                 TileMapDirty = true;
                 ShadeTextureDirty = true;
             }));
@@ -1069,7 +1075,7 @@ namespace Cornifer
             {
                 CutoutAllSolidTiles.Value = btn.Selected;
 
-                ProcessCutouts();
+                CutOutsDirty = true;
                 TileMapDirty = true;
                 ShadeTextureDirty = true;
             }));
