@@ -771,6 +771,7 @@ namespace Cornifer
         }
         public static void RegionLoaded(Region region)
         {
+            CurrentStatePath = null;
             SelectedObjects.Clear();
             Selecting = false;
             Dragging = false;

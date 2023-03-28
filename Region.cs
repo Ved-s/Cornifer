@@ -355,6 +355,8 @@ namespace Cornifer
                             if (TryGetRoom(roomName, out Room? room))
                             {
                                 room.BrokenForSlugcats.Add(split[1]);
+                                if (Main.SelectedSlugcat is not null && Main.SelectedSlugcat.CompareIDs(split[1]))
+                                    room.ActiveProperty.OriginalValue = false;
                             }
                     }
                     else if (split[0] == "Subregion" && split.Length > 1)

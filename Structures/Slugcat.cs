@@ -78,5 +78,7 @@ namespace Cornifer.Structures
             SpriteAtlases.Sprites[smallIcon.Name] = smallIcon;
             SpriteAtlases.Sprites[diamond.Name] = diamond;
         }
+
+        public bool CompareIDs(string id) => Id.Equals(id, StringComparison.InvariantCultureIgnoreCase);
     }
 }
