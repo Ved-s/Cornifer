@@ -133,6 +133,7 @@ namespace Cornifer
                 }, "Exception has been thrown while opening external state."))
                 {
                     CurrentStatePath = externalStreamSaveFile;
+                    externalStream.Dispose();
                     return;
                 }
                 externalStream.Dispose();

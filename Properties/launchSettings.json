@@ -1,7 +1,8 @@
 {
   "profiles": {
     "Cornifer": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "\"C:\\Users\\vedom\\Desktop\\rainworld-things\\rwmaps\\hr_world.cornimap\""
     }
   }
 }

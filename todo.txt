@@ -20,3 +20,6 @@ Threaded region loading
 Dynamically position diamonds
 Fix hack with "To Region" by making a property to manually load/save position data
 Room settings templates
+Fix Better tile cutouts
+Hide shelters that are broken for this slugcat
+Fix crash when saving .cornimap that has been opened by file click
