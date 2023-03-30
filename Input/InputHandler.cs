@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Xml.Serialization;
 
 namespace Cornifer.Input
 {
@@ -24,7 +25,7 @@ namespace Cornifer.Input
         public static MouseKeys[] AllMouseKeys = Enum.GetValues<MouseKeys>();
 
         public static Dictionary<string, Keybind> Keybinds = new();
-        public static string KeybindsFile => Path.Combine(Main.MainDir, "keybinds.txt");
+        public static string OldKeybindsFile => Path.Combine(Main.MainDir, "keybinds.txt");
 
         public static Keybind ReinitUI = new("", Keys.F12);
         public static Keybind TimingsDebug = new("", Keys.F10);
@@ -66,10 +67,20 @@ namespace Cornifer.Input
                 Keybinds[field.Name] = (Keybind)field.GetValue(null)!;
             }
 
-            if (!File.Exists(KeybindsFile))
+            string oldKeybindsFile = OldKeybindsFile;
+            if (File.Exists(oldKeybindsFile))
+            {
+                LoadOldKeybinds();
                 SaveKeybinds();
+                File.Delete(oldKeybindsFile);
+            }
             else
-                LoadKeybinds();
+            {
+                if (Profile.Current.Keybinds is null)
+                    SaveKeybinds();
+                else
+                    LoadKeybinds();
+            }
         }
 
         public static void Update()
@@ -83,53 +94,88 @@ namespace Cornifer.Input
 
         public static void SaveKeybinds()
         {
-            using FileStream fs = File.Create(KeybindsFile);
-            using StreamWriter writer = new(fs);
-
-            writer.WriteLine("// Cornifer keybindings file");
-
-            writer.WriteLine("//");
-            writer.WriteLine($"// Keyboard key names: \n//    {string.Join(", ", Enum.GetNames<Keys>().Skip(1))}");
-
-            writer.WriteLine("//");
-            writer.WriteLine($"// Mouse key names: \n//    {string.Join(", ", Enum.GetNames<MouseKeys>())}");
-
-            writer.WriteLine("//");
-            writer.WriteLine($"// Modifier key names: \n//    {string.Join(", ", Enum.GetNames<ModifierKeys>())}");
-
-            writer.WriteLine();
+            Profile.Current.Keybinds ??= new();
+            Profile.Current.Keybinds.Clear();
 
             foreach (var (name, keybind) in Keybinds)
             {
                 if (keybind.Inputs.Count == 0)
                 {
-                    writer.Write(name);
-                    writer.Write('=');
-                    writer.WriteLine();
+                    Profile.Keybind keybindInfo = new()
+                    {
+                        Name = name,
+                        Keys = Array.Empty<string>()
+                    };
+                    Profile.Current.Keybinds.Add(keybindInfo);
                     continue;
                 }
 
                 foreach (List<KeybindInput> keyCombo in keybind.Inputs)
                 {
-                    writer.Write(name);
-                    writer.Write('=');
-                    for (int i = 0; i < keyCombo.Count; i++)
+                    Profile.Keybind keybindInfo = new()
                     {
-                        if (i > 0)
-                            writer.Write("&");
-                        writer.Write(keyCombo[i].KeyName);
-                    }
-                    writer.WriteLine();
+                        Name = name,
+                        Keys = keyCombo.Select(k => k.KeyName).ToArray()
+                    };
+                    Profile.Current.Keybinds.Add(keybindInfo);
                 }
             }
+
+            Profile.Save();
         }
+
         public static void LoadKeybinds()
+        {
+            if (Profile.Current.Keybinds is null)
+                return;
+
+            HashSet<string> keybindsReset = new();
+
+            foreach (var keybindInfo in Profile.Current.Keybinds)
+            {
+                if (!Keybinds.TryGetValue(keybindInfo.Name, out Keybind? keybind))
+                    continue;
+
+                if (!keybindsReset.Contains(keybindInfo.Name))
+                {
+                    keybind.Inputs.Clear();
+                    keybindsReset.Add(keybindInfo.Name);
+                }
+                if (keybindInfo.Keys.Length == 0)
+                    continue;
+
+                List<KeybindInput> inputs = new();
+                // Convert the key strings to inputs and add them to the dictionary
+                foreach (string keyString in keybindInfo.Keys)
+                {
+                    string trimmedKey = keyString.Trim();
+
+                    if (Enum.TryParse(trimmedKey, out ModifierKeys modifierKey))
+                    {
+                        inputs.Add(modifierKey);
+                    }
+
+                    if (Enum.TryParse(trimmedKey, out MouseKeys mouseKey))
+                    {
+                        inputs.Add(mouseKey);
+                    }
+
+                    else if (Enum.TryParse(trimmedKey, out Keys key))
+                    {
+                        inputs.Add(key);
+                    }
+                }
+                keybind.Inputs.Add(inputs);
+            }
+        }
+
+        public static void LoadOldKeybinds()
         {
             HashSet<string> keybindsReset = new();
 
             try
             {
-                string[] lines = File.ReadAllLines(KeybindsFile);
+                string[] lines = File.ReadAllLines(OldKeybindsFile);
                 foreach (string line in lines)
                 {
                     if (line.StartsWith("//"))

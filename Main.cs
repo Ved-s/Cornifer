@@ -100,7 +100,7 @@ namespace Cornifer
 #if !DEBUG
             DebugModeEnforcement = File.Exists(Path.Combine(MainDir, "debugmode.txt"));
 #endif
-
+            Profile.Load();
             GithubInfo.Load();
             RWAssets.Load();
             JsonValueConverter.Load();
@@ -506,6 +506,8 @@ namespace Cornifer
 
         protected override void EndRun()
         {
+            Profile.Save();
+
             using MemoryStream ms = new();
             try
             {
@@ -524,6 +526,7 @@ namespace Cornifer
             ms.Position = 0;
             ms.CopyTo(fs);
             fs.Flush();
+
 
             Platform.Stop();
         }

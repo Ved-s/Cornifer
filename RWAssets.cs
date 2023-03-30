@@ -41,7 +41,7 @@ namespace Cornifer
         const string OptionsListSplitter = "&lt;optC&gt;";
         const string OptionsKeyValueSplitter = "&lt;optD&gt;";
 
-        const string PathFile = "rainworldpath.txt";
+        const string OldPathFile = "rainworldpath.txt";
 
         public static void Load()
         {
@@ -78,14 +78,27 @@ namespace Cornifer
                 }
             }
 
-            if (File.Exists(PathFile))
+            if (File.Exists(OldPathFile))
             {
-                string path = File.ReadAllText(PathFile);
+                string path = File.ReadAllText(OldPathFile);
                 if (Directory.Exists(path))
                     SetRainWorldPath(path);
+                Profile.Current.RainWorldPath = path;
+                Profile.Save();
+                File.Delete(OldPathFile);
             }
+
+            else if (Profile.Current.RainWorldPath is not null)
+            {
+                if (Directory.Exists(Profile.Current.RainWorldPath))
+                    SetRainWorldPath(Profile.Current.RainWorldPath);
+            }
+
             if (RainWorldRoot is null && SearchRainWorld())
-                File.WriteAllText(PathFile, RainWorldRoot);
+            {
+                Profile.Current.RainWorldPath = RainWorldRoot;
+                Profile.Save();
+            }
         }
 
         static bool SearchRainWorld()
@@ -103,7 +116,7 @@ namespace Cornifer
                 if (Directory.Exists(rainworld))
                 {
                     SetRainWorldPath(rainworld);
-                    return false;
+                    return true;
                 }
                 return false;
             }
@@ -126,7 +139,7 @@ namespace Cornifer
                 if (Directory.Exists(rainworld))
                 {
                     SetRainWorldPath(rainworld);
-                    return false;
+                    return true;
                 }
             }
 
@@ -144,7 +157,8 @@ namespace Cornifer
                 if (rainWorld is not null)
                 {
                     string root = Path.GetDirectoryName(rainWorld)!;
-                    File.WriteAllText(PathFile, root);
+                    Profile.Current.RainWorldPath = root;
+                    Profile.Save();
                     SetRainWorldPath(root);
                 }
             }
@@ -152,7 +166,7 @@ namespace Cornifer
 
         public static void SetRainWorldPath(string? path)
         {
-            RainWorldRoot = path;
+            RainWorldRoot = path is null ? null : Path.GetFullPath(path);
 
             Mods.Clear();
             if (path is null)
