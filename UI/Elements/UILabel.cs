@@ -3,15 +3,14 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Cornifer.UI.Elements
 {
     public class UILabel : UIElement
     {
+        static RasterizerState Scissors = new() { ScissorTestEnable = true };
+
         public string? Text
         {
             get => text;
@@ -31,6 +30,7 @@ namespace Cornifer.UI.Elements
 
         public bool WordWrap = true;
         public bool AutoSize = true;
+        public bool ScissorsEnabled = true;
 
         private string[]? Lines;
         private float MaxLineWidth;
@@ -43,6 +43,13 @@ namespace Cornifer.UI.Elements
 
             Vec2 pos = TextAlign * (ScreenRect.Size - new Vec2(MaxLineWidth, Lines.Length * Font.LineSpacing));
 
+            Rectangle oldScissors = spriteBatch.GraphicsDevice.ScissorRectangle;
+            if (ScissorsEnabled)
+            {
+                spriteBatch.PushAndChangeState(rasterizerState: Scissors);
+                spriteBatch.GraphicsDevice.ScissorRectangle = (Rectangle)ScreenRect.Intersect(oldScissors);
+            }
+
             foreach (string line in Lines)
             {
                 float lineWidth = Font.MeasureString(line).X;
@@ -53,6 +60,12 @@ namespace Cornifer.UI.Elements
                 else
                     spriteBatch.DrawStringShaded(Font, line, (ScreenRect.Position + pos + off).Rounded(), TextColor, TextShadowColor);
                 pos.Y += Font.LineSpacing;
+            }
+
+            if (ScissorsEnabled)
+            {
+                spriteBatch.RestoreState();
+                spriteBatch.GraphicsDevice.ScissorRectangle = oldScissors;
             }
         }
 
@@ -66,7 +79,7 @@ namespace Cornifer.UI.Elements
 
             base.Recalculate();
 
-            if (Text is null || Font is null || ScreenRect.Width <= 0)
+            if (Text is null || Font is null)
             {
                 Lines = null;
                 return;
@@ -75,8 +88,14 @@ namespace Cornifer.UI.Elements
             if (!WordWrap)
             {
                 Lines = Text.Split('\n');
-                MinHeight = Lines.Length * Font.LineSpacing;
                 MaxLineWidth = Lines.Select(l => Font.MeasureString(l).X).Max();
+                if (AutoSize)
+                {
+                    MinWidth = MaxLineWidth;
+                    MinHeight = Lines.Length * Font.LineSpacing;
+
+                    base.Recalculate();
+                }
                 return;
             }
 

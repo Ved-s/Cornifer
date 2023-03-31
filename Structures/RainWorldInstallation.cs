@@ -39,5 +39,30 @@ namespace Cornifer.Structures
             Features = features;
             CanSave = canSave;
         }
+
+        public string GetFeaturesString()
+        {
+            if (Features == RainWorldFeatures.None)
+                return "No features";
+
+            List<RainWorldFeatures> features = new();
+
+            for (int i = 0; i < 32; i++)
+            {
+                if ((int)RainWorldFeatures.All >> i == 0)
+                    break;
+
+                int mask = 1 << i;
+                if (((int)RainWorldFeatures.All & mask) == 0)
+                    continue;
+
+                RainWorldFeatures feature = (RainWorldFeatures)mask;
+
+                if ((Features & feature) != 0)
+                    features.Add(feature);
+            }
+
+            return string.Join(", ", features);
+        }
     }
 }

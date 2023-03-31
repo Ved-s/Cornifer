@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace Cornifer.UI.Elements
 {
-    public class UIButton : UIElement
+    public class UIButton : UIElement, IHoverable
     {
         public string? Text
         {

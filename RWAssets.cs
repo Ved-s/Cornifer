@@ -66,8 +66,7 @@ namespace Cornifer
             {
                 RainWorldInstallation install = CreateInstallation(path);
                 install.Name = "Custom installation";
-                Installations.Add(install);
-                SaveInstallations();
+                AddInstallation(install);
             }
 
             if (File.Exists(OldPathFile))
@@ -117,7 +116,8 @@ namespace Cornifer
             if (Directory.Exists(Path.Combine(path, "RainWorld_Data/StreamingAssets/mods")))
                 install.Features |= RainWorldFeatures.Remix;
 
-            // TODO: install type detecion logic
+            if (Directory.Exists(Path.Combine(path, "RainWorld_Data/StreamingAssets/mods")))
+                install.Features |= RainWorldFeatures.Downpour;
 
             return install;
         }
@@ -131,6 +131,7 @@ namespace Cornifer
                 Profile.Save();
             }
 
+            Interface.ActiveInstallChanged();
             RainWorldRoot = installation?.Path;
 
             Mods.Clear();
@@ -202,7 +203,25 @@ namespace Cornifer
                         LoadMod(mod);
             }
         }
-        
+
+        public static void AddInstallation(RainWorldInstallation installation, bool save = true)
+        {
+            Installations.Add(installation);
+            if (save)
+                SaveInstallations();
+            Interface.PopulateInstallations();
+        }
+
+        public static void RemoveInstallation(RainWorldInstallation installation)
+        {
+            if (RWAssets.CurrentInstallation == installation)
+                RWAssets.SetActiveInstallation(null);
+
+            Installations.Remove(installation);
+            SaveInstallations();
+            Interface.PopulateInstallations();
+        }
+
         public static async void ShowDialogs()
         {
             if (RainWorldRoot is not null)
@@ -267,7 +286,7 @@ namespace Cornifer
                 install.Features |= RainWorldFeatures.Steam;
                 install.CanSave = false;
 
-                Installations.Add(install);
+                AddInstallation(install);
             }
 
             object? steampathobj =

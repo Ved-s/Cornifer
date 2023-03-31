@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace Cornifer.UI.Elements
 {
-    public class UIInput : UIElement
+    public class UIInput : UIElement, IHoverable
     {
         public static readonly ElementEvent<Empty, UIInput> TextChangedEvent = new();
         public static readonly ElementEvent<TextInputEventArgs, UIInput> CharacterTypedEvent = new();

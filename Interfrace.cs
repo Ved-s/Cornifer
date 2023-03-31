@@ -35,6 +35,8 @@ namespace Cornifer
         public static UIList SubregionColorList = null!;
         public static Dictionary<string, UIButton> VisibilityPlacedObjects = new();
         public static Dictionary<RenderLayers, UIButton> VisibilityRenderLayers = new();
+        public static UIList InstallsList = null!;
+        public static List<(RainWorldInstallation, UIHoverPanel)> InstallsPanels = new();
 
         public static bool Hovered => Root?.Hover is not null;
         public static bool Active => Root?.Active is not null;
@@ -147,6 +149,11 @@ namespace Cornifer
                                     {
                                         Name = "Keybinds",
                                         Element = InitKeybindsTab(),
+                                    },
+                                    new()
+                                    {
+                                        Name = "Installs",
+                                        Element = InitInstallationsTab(),
                                     }
                                 }
                             }.Execute(tabs =>
@@ -868,7 +875,7 @@ namespace Cornifer
                         Text = "Test diamond placement",
                         Height = 20,
                         TextAlign = new(.5f),
-                    }.OnEvent(UIElement.ClickEvent, (_, _) => 
+                    }.OnEvent(UIElement.ClickEvent, (_, _) =>
                     {
                         Vector2 pos = Main.WorldCamera.InverseTransformVector(Main.WorldCamera.Size / 2);
 
@@ -879,7 +886,7 @@ namespace Cornifer
                             for (int i = 0; i < placement.Positions.Length; i++)
                             {
                                 SimpleIcon icon = new(
-                                    $"Debug_DiamondPlacement_{Random.Shared.Next():x}", 
+                                    $"Debug_DiamondPlacement_{Random.Shared.Next():x}",
                                     SpriteAtlases.Sprites[$"SlugcatDiamond_{StaticData.Slugcats[i].Id}"]);
                                 icon.BorderSize.OriginalValue = 1;
                                 icon.WorldPosition = pos + placement.Positions[i];
@@ -890,6 +897,55 @@ namespace Cornifer
                             pos.X += placement.Size.X / 2 + 5;
                         }
                     })
+                }
+            };
+        }
+        static UIElement InitInstallationsTab()
+        {
+            return new UIPanel
+            {
+                BackColor = new(30, 30, 30),
+                BorderColor = new(100, 100, 100),
+
+                Padding = new(5),
+                Elements =
+                {
+                    new UIList
+                    {
+                        Height = 0,
+                        AutoSize = true,
+                        ElementSpacing = 4,
+
+                        Elements =
+                        {
+                            new UILabel
+                            {
+                                Text = "Rain World installations",
+                                TextAlign = new(.5f),
+                                Height = 0,
+                            },
+                            new UIList
+                            {
+                                Height = 0,
+                                AutoSize = true,
+                                ElementSpacing = 4,
+                            }.Assign(out InstallsList)
+                            .Execute(_ => PopulateInstallations()),
+                            new UIButton
+                            {
+                                Height = 25,
+                                TextAlign = new(.5f),
+                                Text = "Add installation"
+                            }.OnEvent(UIElement.ClickEvent, async (_, _) =>
+                            {
+                                RainWorldInstallation? install = await InstallationSelection.ShowDialog();
+                                if (install is null)
+                                    return;
+
+                                RWAssets.AddInstallation(install);
+                            })
+                        }
+                    }
                 }
             };
         }
@@ -995,6 +1051,98 @@ namespace Cornifer
             await waitingTask.Task;
         }
 
+        public static void ActiveInstallChanged()
+        {
+            foreach (var (install, panel) in InstallsPanels)
+            {
+                if (install == RWAssets.CurrentInstallation)
+                {
+                    panel.BorderColor = Color.Lime;
+                    panel.HoverBackColor = panel.BackColor;
+                    panel.HoverBorderColor = Color.Lime;
+                }
+                else
+                {
+                    panel.BorderColor = new(100, 100, 100);
+                    panel.HoverBackColor = new(.3f, .3f, .3f);
+                    panel.HoverBorderColor = Color.Green;
+                }
+            }
+        }
+        public static void PopulateInstallations()
+        {
+            if (InstallsList is null)
+                return;
+
+            InstallsPanels.Clear();
+            InstallsList.Elements.Clear();
+
+            foreach (RainWorldInstallation install in RWAssets.Installations)
+            {
+                RainWorldInstallation inst = install;
+                UIHoverPanel panel = new()
+                {
+                    Padding = 4,
+                    Height = 60,
+
+                    Elements =
+                    {
+                        new UIButton()
+                        {
+                            Visible = inst.CanSave,
+                            Width = 18,
+                            Height = 18,
+                            Top = new(0, 1, -1),
+                            Left = new(0, 1, -1),
+                            AutoSize = false,
+                            Text = "D",
+                        }.OnEvent(UIElement.ClickEvent, (_, _) => RWAssets.RemoveInstallation(inst)),
+                        new UILabel
+                        {
+                            Top = 0,
+                            Height = 20,
+                            Text = install.Name,
+                            AutoSize = false,
+                            WordWrap = false,
+                        },
+                        new UILabel
+                        {
+                            Top = 20,
+                            Height = 20,
+                            Text = install.Path,
+                            TextAlign = new(1, 0),
+                            MaxWidth = new(0, 1),
+                            Width = 0,
+                            AutoSize = true,
+                            WordWrap = false,
+                        },
+                        new UILabel
+                        {
+                            Top = 40,
+                            Height = 20,
+                            Text = install.GetFeaturesString(),
+                            AutoSize = false,
+                            WordWrap = false,
+                        }
+                    }
+                };
+
+                panel.OnEvent(UIElement.ClickEvent, (panel, _) =>
+                {
+                    if (inst == RWAssets.CurrentInstallation || panel.Root?.Hover is IHoverable or null)
+                        return;
+
+                    RWAssets.SetActiveInstallation(inst);
+                });
+
+                InstallsList.Elements.Add(panel);
+                InstallsPanels.Add((install, panel));
+            }
+
+            ActiveInstallChanged();
+
+            InstallsList.Recalculate();
+        }
         public static void RegionChanged(Region region)
         {
             if (SubregionColorList is not null)

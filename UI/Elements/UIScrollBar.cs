@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace Cornifer.UI.Elements
 {
-    public class UIScrollBar : UIElement
+    public class UIScrollBar : UIElement, IHoverable
     {
         public static readonly ElementEvent<float, UIScrollBar> ScrollChanged = new();
 
