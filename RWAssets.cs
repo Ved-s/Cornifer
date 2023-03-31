@@ -19,7 +19,19 @@ namespace Cornifer
     {
         public static string? RainWorldRoot { get; private set; }
         public static string? RainWorldAssets { get; private set; }
+
         public static string? SaveFolder;
+
+        public static List<RainWorldInstallation> Installations = new();
+        public static RainWorldInstallation? CurrentInstallation 
+        {
+            get => currentInstallation;
+            set
+            {
+                currentInstallation = value;
+                SetActiveInstallation(currentInstallation);
+            }
+        }
 
         public static readonly List<RWMod> Mods = new();
 
@@ -38,6 +50,8 @@ namespace Cornifer
         static Regex ModInfoNameRegex = new(@"""name"":[ \t]+""(.+?)""", RegexOptions.Compiled);
         static Regex ModInfoVersionRegex = new(@"""version"":[ \t]+""(.+?)""", RegexOptions.Compiled);
 
+        private static RainWorldInstallation? currentInstallation;
+
         const string OptionsListSplitter = "&lt;optC&gt;";
         const string OptionsKeyValueSplitter = "&lt;optD&gt;";
 
@@ -45,64 +59,217 @@ namespace Cornifer
 
         public static void Load()
         {
-            SaveFolder = Environment.ExpandEnvironmentVariables("%appdata%/../LocalLow/Videocult/Rain World");
-            if (!Directory.Exists(SaveFolder))
-                SaveFolder = null;
+            LoadInstallations();
+            TryFindSteamInstallation();
 
-            if (SaveFolder is not null)
+            void AddCustomInstallation(string path)
             {
-                string optionsPath = Path.Combine(SaveFolder, "options");
-
-                if (File.Exists(optionsPath))
-                {
-                    string options = File.ReadAllText(optionsPath);
-
-                    Match enabledMods = EnabledModsRegex.Match(options);
-                    if (enabledMods.Success)
-                        EnabledMods = new(enabledMods.Groups[1].Value.Split(OptionsListSplitter));
-
-                    Match modLoadOrder = ModLoadOrderRegex.Match(options);
-                    if (modLoadOrder.Success)
-                    {
-                        ModLoadOrder = new();
-
-                        foreach (string kvp in modLoadOrder.Groups[1].Value.Split(OptionsListSplitter))
-                        {
-                            string[] kvpSplit = kvp.Split(OptionsKeyValueSplitter);
-                            if (kvpSplit.Length != 2 || !int.TryParse(kvpSplit[1], out int order))
-                                continue;
-
-                            ModLoadOrder[kvpSplit[0]] = order;
-                        }
-                    }
-                }
+                RainWorldInstallation install = CreateInstallation(path);
+                install.Name = "Custom installation";
+                Installations.Add(install);
+                SaveInstallations();
             }
 
             if (File.Exists(OldPathFile))
             {
                 string path = File.ReadAllText(OldPathFile);
                 if (Directory.Exists(path))
-                    SetRainWorldPath(path);
-                Profile.Current.RainWorldPath = path;
-                Profile.Save();
-                File.Delete(OldPathFile);
+                {
+                    AddCustomInstallation(path);
+                    File.Delete(OldPathFile);
+                }
             }
 
-            else if (Profile.Current.RainWorldPath is not null)
+            else if (Profile.Current.OldRainWorldPath is not null && Directory.Exists(Profile.Current.OldRainWorldPath))
             {
-                if (Directory.Exists(Profile.Current.RainWorldPath))
-                    SetRainWorldPath(Profile.Current.RainWorldPath);
+                AddCustomInstallation(Profile.Current.OldRainWorldPath);
+                Profile.Current.OldRainWorldPath = null;
             }
 
-            if (RainWorldRoot is null && SearchRainWorld())
+            RainWorldInstallation? loadInstallation = null;
+            if (Profile.Current.CurrentInstall is null && Installations.Count > 0)
             {
-                Profile.Current.RainWorldPath = RainWorldRoot;
-                Profile.Save();
+                loadInstallation = Installations.First();
             }
+
+            else if (Profile.Current.CurrentInstall is not null)
+            {
+                RainWorldInstallation? install = Installations.FirstOrDefault(i => i.Id == Profile.Current.CurrentInstall);
+                if (install is null)
+                {
+                    Profile.Current.CurrentInstall = null;
+                    Profile.Save();
+                }
+                else 
+                {
+                    loadInstallation = install;
+                }
+            }
+
+            if (loadInstallation is not null)
+                SetActiveInstallation(loadInstallation);
         }
 
-        static bool SearchRainWorld()
+        public static RainWorldInstallation CreateInstallation(string path)
         {
+            RainWorldInstallation install = new(Path.GetFullPath(path), Random.Shared.Next().ToString("x"), "Unnamed", RainWorldFeatures.None);
+
+            if (Directory.Exists(Path.Combine(path, "RainWorld_Data/StreamingAssets/mods")))
+                install.Features |= RainWorldFeatures.Remix;
+
+            // TODO: install type detecion logic
+
+            return install;
+        }
+
+        public static void SetActiveInstallation(RainWorldInstallation? installation)
+        {
+            currentInstallation = installation;
+            if (Profile.Current.CurrentInstall != installation?.Id)
+            {
+                Profile.Current.CurrentInstall = installation?.Id;
+                Profile.Save();
+            }
+
+            RainWorldRoot = installation?.Path;
+
+            Mods.Clear();
+            EnabledMods = null;
+            ModLoadOrder = null;
+            if (installation is null)
+                return;
+
+            if (installation.IsRemix)
+            {
+                SaveFolder = Environment.ExpandEnvironmentVariables("%appdata%/../LocalLow/Videocult/Rain World");
+                if (!Directory.Exists(SaveFolder))
+                    SaveFolder = null;
+
+                if (SaveFolder is not null)
+                {
+                    string optionsPath = Path.Combine(SaveFolder, "options");
+
+                    if (File.Exists(optionsPath))
+                    {
+                        string options = File.ReadAllText(optionsPath);
+
+                        Match enabledMods = EnabledModsRegex.Match(options);
+                        if (enabledMods.Success)
+                            EnabledMods = new(enabledMods.Groups[1].Value.Split(OptionsListSplitter));
+
+                        Match modLoadOrder = ModLoadOrderRegex.Match(options);
+                        if (modLoadOrder.Success)
+                        {
+                            ModLoadOrder = new();
+
+                            foreach (string kvp in modLoadOrder.Groups[1].Value.Split(OptionsListSplitter))
+                            {
+                                string[] kvpSplit = kvp.Split(OptionsKeyValueSplitter);
+                                if (kvpSplit.Length != 2 || !int.TryParse(kvpSplit[1], out int order))
+                                    continue;
+
+                                ModLoadOrder[kvpSplit[0]] = order;
+                            }
+                        }
+                    }
+                }
+
+                string assets = Path.Combine(installation.Path, $"RainWorld_Data/StreamingAssets");
+                if (Directory.Exists(assets))
+                {
+                    string rwVersionPath = Path.Combine(assets, "GameVersion.txt");
+                    string? rwVersion = null;
+
+                    if (File.Exists(rwVersionPath))
+                        rwVersion = File.ReadAllText(rwVersionPath).TrimStart('v');
+
+                    InsertMod(new("rainworld", "Rain World", assets, int.MaxValue, true)
+                    {
+                        Version = rwVersion
+                    });
+                    SetAssetsPath(assets);
+                }
+
+                if (installation.IsSteam)
+                {
+                    string workshop = Path.Combine(installation.Path, "../../workshop/content/312520");
+                    if (Directory.Exists(workshop))
+                        LoadModsFolder(workshop);
+                }
+
+                foreach (RWMod mod in Mods)
+                    if (mod.Enabled)
+                        LoadMod(mod);
+            }
+        }
+        
+        public static async void ShowDialogs()
+        {
+            if (RainWorldRoot is not null)
+                return;
+
+            // TODO: !!!!!!!!!!!!!!!!!!!
+
+            //if (await MessageBox.Show("Could not find Rain World installation.", new[] { ("Set Rain World path", 1), ("Cancel", 0) }) == 1)
+            //{
+            //    string? rainWorld = await Platform.OpenFileDialog("Select Rain World executable", "Windows Executable|*.exe");
+            //    if (rainWorld is not null)
+            //    {
+            //        string root = Path.GetDirectoryName(rainWorld)!;
+            //        Profile.Current.RainWorldPath = root;
+            //        Profile.Save();
+            //        SetRainWorldPath(root);
+            //    }
+            //}
+        }
+
+        public static void SetAssetsPath(string? path)
+        {
+            RainWorldAssets = path;
+
+            if (path is null)
+                return;
+
+            string mergedmods = Path.Combine(path, "mergedmods");
+            if (Directory.Exists(mergedmods))
+                InsertMod(new("mergedmods", "Rain World", mergedmods, int.MinValue, true));
+
+            string mods = Path.Combine(path, "mods");
+            if (Directory.Exists(mods))
+                LoadModsFolder(mods);
+        }
+
+        public static void LoadInstallations()
+        {
+            if (Profile.Current.Installations is null)
+                return;
+
+            Installations.RemoveAll(i => i.CanSave);
+            Installations.AddRange(Profile.Current.Installations);
+        }
+
+        public static void SaveInstallations()
+        {
+            Profile.Current.Installations ??= new();
+            Profile.Current.Installations.Clear();
+            Profile.Current.Installations.AddRange(Installations.Where(i => i.CanSave));
+            Profile.Save();
+        }
+
+        static bool TryFindSteamInstallation()
+        {
+            void AddSteamInstall(string path)
+            {
+                RainWorldInstallation install = CreateInstallation(path);
+
+                install.Name = "Steam installation";
+                install.Id = "steam";
+                install.Features |= RainWorldFeatures.Steam;
+                install.CanSave = false;
+
+                Installations.Add(install);
+            }
+
             object? steampathobj =
                     Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Valve\\Steam", "InstallPath", null) ??
                     Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Valve\\Steam", "InstallPath", null);
@@ -115,7 +282,7 @@ namespace Cornifer
                 string rainworld = Path.Combine(steampath, "steamapps/common/Rain World");
                 if (Directory.Exists(rainworld))
                 {
-                    SetRainWorldPath(rainworld);
+                    AddSteamInstall(rainworld);
                     return true;
                 }
                 return false;
@@ -138,79 +305,12 @@ namespace Cornifer
                 string rainworld = Path.Combine(libpath, $"steamapps/common/{appdir}");
                 if (Directory.Exists(rainworld))
                 {
-                    SetRainWorldPath(rainworld);
+                    AddSteamInstall(rainworld);
                     return true;
                 }
             }
 
             return false;
-        }
-
-        public static async void ShowDialogs()
-        {
-            if (RainWorldRoot is not null)
-                return;
-
-            if (await MessageBox.Show("Could not find Rain World installation.", new[] { ("Set Rain World path", 1), ("Cancel", 0) }) == 1)
-            {
-                string? rainWorld = await Platform.OpenFileDialog("Select Rain World executable", "Windows Executable|*.exe");
-                if (rainWorld is not null)
-                {
-                    string root = Path.GetDirectoryName(rainWorld)!;
-                    Profile.Current.RainWorldPath = root;
-                    Profile.Save();
-                    SetRainWorldPath(root);
-                }
-            }
-        }
-
-        public static void SetRainWorldPath(string? path)
-        {
-            RainWorldRoot = path is null ? null : Path.GetFullPath(path);
-
-            Mods.Clear();
-            if (path is null)
-                return;
-
-            string assets = Path.Combine(path, $"RainWorld_Data/StreamingAssets");
-            if (Directory.Exists(assets))
-            {
-                string rwVersionPath = Path.Combine(assets, "GameVersion.txt");
-                string? rwVersion = null;
-
-                if (File.Exists(rwVersionPath))
-                    rwVersion = File.ReadAllText(rwVersionPath).TrimStart('v');
-
-                InsertMod(new("rainworld", "Rain World", assets, int.MaxValue, true) 
-                {
-                    Version = rwVersion
-                });
-                SetAssetsPath(assets);
-            }
-
-            string workshop = Path.Combine(path, "../../workshop/content/312520");
-            if (Directory.Exists(workshop))
-                LoadModsFolder(workshop);
-
-            foreach (RWMod mod in Mods)
-                if (mod.Enabled)
-                    LoadMod(mod);
-        }
-
-        public static void SetAssetsPath(string? path)
-        {
-            RainWorldAssets = path;
-
-            if (path is null)
-                return;
-
-            string mergedmods = Path.Combine(path, "mergedmods");
-            if (Directory.Exists(mergedmods))
-                InsertMod(new("mergedmods", "Rain World", mergedmods, int.MinValue, true));
-
-            string mods = Path.Combine(path, "mods");
-            if (Directory.Exists(mods))
-                LoadModsFolder(mods);
         }
 
         static void LoadModsFolder(string path)
@@ -252,7 +352,6 @@ namespace Cornifer
                 }
             }
         }
-
         static void InsertMod(RWMod mod)
         {
             if (Mods.Count == 0)
@@ -272,7 +371,6 @@ namespace Cornifer
             }
             Mods.Insert(index, mod);
         }
-
         static void LoadMod(RWMod mod)
         {
             string slugbaseDir = Path.Combine(mod.Path, "slugbase");
@@ -362,7 +460,6 @@ namespace Cornifer
             }
             return null;
         }
-
         public static string? ResolveSlugcatFile(string path)
         {
             if (Main.SelectedSlugcat is null)
@@ -376,7 +473,6 @@ namespace Cornifer
 
             return ResolveFile(path);
         }
-
         public static IEnumerable<(string path, RWMod mod)> EnumerateDirectories(string path)
         {
             HashSet<string> enumerated = new();
@@ -401,7 +497,6 @@ namespace Cornifer
                 }
             }
         }
-
         public static string? GetRegionDisplayName(string regionId, Slugcat? slugcat)
         {
             string? displayname = null;
@@ -413,7 +508,6 @@ namespace Cornifer
 
             return displayname is null ? null : File.ReadAllText(displayname);
         }
-
         public static IEnumerable<RegionInfo> FindRegions(Slugcat? slugcat = null)
         {
             string? worldSlugcat = slugcat?.WorldStateSlugcat;

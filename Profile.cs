@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using Cornifer.Structures;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -11,10 +12,16 @@ namespace Cornifer
         public static Profile Current { get; private set; } = null!;
 
         [JsonPropertyName("rwpath")]
-        public string? RainWorldPath { get; set; }
+        public string? OldRainWorldPath { get; set; }
 
         [JsonPropertyName("keybinds")]
         public List<Keybind>? Keybinds { get; set; }
+
+        [JsonPropertyName("installations")]
+        public List<RainWorldInstallation>? Installations { get; set; }
+
+        [JsonPropertyName("currentInstall")]
+        public string? CurrentInstall { get; set; }
 
         public static void Load()
         {
@@ -38,7 +45,11 @@ namespace Cornifer
         {
             string filename = Path.Combine(Main.MainDir, Filename);
             using FileStream fs = File.Create(filename);
-            JsonSerializer.Serialize(fs, Current);
+            JsonSerializer.Serialize(fs, Current, new JsonSerializerOptions 
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                WriteIndented = true,
+            });
         }
 
         public class Keybind 
