@@ -26,11 +26,7 @@ namespace Cornifer
         public static RainWorldInstallation? CurrentInstallation 
         {
             get => currentInstallation;
-            set
-            {
-                currentInstallation = value;
-                SetActiveInstallation(currentInstallation);
-            }
+            private set => currentInstallation = value;
         }
 
         public static readonly List<RWMod> Mods = new();
@@ -124,7 +120,15 @@ namespace Cornifer
 
         public static void SetActiveInstallation(RainWorldInstallation? installation)
         {
-            currentInstallation = installation;
+            if (installation is not null && !Directory.Exists(installation.Path))
+            {
+                MessageBox.Show(
+                    $"Cannot select installation \"{installation.Name}\".\n" +
+                    $"Folder does not exist.", MessageBox.ButtonsOk).ConfigureAwait(false);
+                return;
+            }
+
+            CurrentInstallation = installation;
             if (Profile.Current.CurrentInstall != installation?.Id)
             {
                 Profile.Current.CurrentInstall = installation?.Id;
@@ -230,19 +234,15 @@ namespace Cornifer
             if (RainWorldRoot is not null)
                 return;
 
-            // TODO: !!!!!!!!!!!!!!!!!!!
-
-            //if (await MessageBox.Show("Could not find Rain World installation.", new[] { ("Set Rain World path", 1), ("Cancel", 0) }) == 1)
-            //{
-            //    string? rainWorld = await Platform.OpenFileDialog("Select Rain World executable", "Windows Executable|*.exe");
-            //    if (rainWorld is not null)
-            //    {
-            //        string root = Path.GetDirectoryName(rainWorld)!;
-            //        Profile.Current.RainWorldPath = root;
-            //        Profile.Save();
-            //        SetRainWorldPath(root);
-            //    }
-            //}
+            if (await MessageBox.Show("Could not find Rain World installation.", new[] { ("Select installation", 1), ("Cancel", 0) }) == 1)
+            {
+                RainWorldInstallation? install = await InstallationSelection.ShowDialog();
+                if (install is not null)
+                {
+                    RWAssets.AddInstallation(install);
+                    RWAssets.SetActiveInstallation(install);
+                }
+            }
         }
 
         public static void SetAssetsPath(string? path)
