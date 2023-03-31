@@ -814,7 +814,8 @@ namespace Cornifer
                 {
                     MessageBox.Show(
                         $"Cannot load this save state on current installation!\n" +
-                        $"This installation is missing features: {RainWorldInstallation.GetFeaturesString(missingFeatures)}", MessageBox.ButtonsOk).ConfigureAwait(false);
+                        $"This installation is missing features: {RainWorldInstallation.GetFeaturesString(missingFeatures)}\n" +
+                        $"Please select the correct installation.", MessageBox.ButtonsOk).ConfigureAwait(false);
                     return false;
                 }
             }
