@@ -16,6 +16,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Cornifer
 {
@@ -100,6 +101,7 @@ namespace Cornifer
 #if !DEBUG
             DebugModeEnforcement = File.Exists(Path.Combine(MainDir, "debugmode.txt"));
 #endif
+            StaticData.Init();
             Profile.Load();
             GithubInfo.Load();
             RWAssets.Load();
@@ -802,11 +804,31 @@ namespace Cornifer
             WorldCamera.Position = obj.WorldPosition + obj.VisualOffset + obj.VisualSize / 2 - WorldCamera.Size / (2 * WorldCamera.Scale);
         }
 
+        public static bool TestJsonState(JsonNode node)
+        {
+            if (node.TryGet("installFeatures", out int featuresInt))
+            {
+                RainWorldFeatures features = (RainWorldFeatures)featuresInt;
+                RainWorldFeatures missingFeatures = RWAssets.CurrentInstallation is null ? features : ~RWAssets.CurrentInstallation.Features & features;
+
+                if (missingFeatures != RainWorldFeatures.None)
+                {
+                    MessageBox.Show(
+                        $"Cannot load this save state on current installation!\n" +
+                        $"This installation is missing features: {RainWorldInstallation.GetFeaturesString(missingFeatures)}", MessageBox.ButtonsOk).ConfigureAwait(false);
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public static JsonObject SaveJson()
         {
             return new()
             {
                 ["slugcat"] = SelectedSlugcat?.Id,
+                ["installFeatures"] = (int?)(RWAssets.CurrentInstallation?.Features & RainWorldInstallation.StateEssentialFeatures),
                 ["region"] = Region?.SaveJson(),
                 ["connections"] = Region?.Connections?.SaveJson(),
                 ["objects"] = new JsonArray(WorldObjectLists.Enumerate().Select(o => o.SaveJson()).OfType<JsonNode>().ToArray()),
@@ -816,6 +838,9 @@ namespace Cornifer
         }
         public static void LoadJson(JsonNode node, bool shallow)
         {
+            if (!TestJsonState(node))
+                return;
+
             if (Region is not null)
             {
                 Region.UnbindRooms();
@@ -868,7 +893,7 @@ namespace Cornifer
                 using FileStream fs = File.OpenRead(fileName);
 
                 JsonNode? node = JsonSerializer.Deserialize<JsonNode>(fs);
-                if (node is not null)
+                if (node is not null && TestJsonState(node))
                 {
                     int choice = await MessageBox.Show(
                         "Select state loading mode\n" +

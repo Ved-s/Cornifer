@@ -137,6 +137,9 @@ namespace Cornifer
             Mods.Clear();
             EnabledMods = null;
             ModLoadOrder = null;
+
+            StaticData.Init();
+
             if (installation is null)
                 return;
 

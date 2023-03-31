@@ -68,19 +68,7 @@ namespace Cornifer
             ["Red_stomach"] = new(1f, 1f, 1f),
         };
 
-        public static List<Slugcat> Slugcats = new()
-        {
-            new("Yellow",    "Monk",        true,  new(255, 255, 115), Color.Black, "SU_C04"),
-            new("White",     "Survivor",    true,  new(255, 255, 255), Color.Black, "SU_C04"),
-            new("Red",       "Hunter",      true,  new(255, 115, 115), Color.Black, "LF_H01"),
-            new("Night",     "Nightcat",    false, new(25,  15,  48),  Color.White, null),
-            new("Gourmand",  "Gourmand",    true,  new(240, 193, 151), Color.Black, "SH_GOR02"),
-            new("Artificer", "Artificer",   true,  new(112, 35,  60) , Color.White, "GW_A24"),
-            new("Rivulet",   "Rivulet",     true,  new(145, 204, 240), Color.Black, "DS_RIVSTART"),
-            new("Spear",     "Spearmaster", true,  new(79,  46,  105), Color.White, "GATE_OE_SU"),
-            new("Saint",     "Saint",       true,  new(170, 241, 86),  Color.Black, "SI_SAINTINTRO"),
-            new("Inv",       "Inv",         false, new(0,   19,  58),  Color.White, "SH_E01"),
-        };
+        public static List<Slugcat> Slugcats = new();
 
         public static List<string> PlacedObjectTypes = new()
         {
@@ -162,6 +150,27 @@ namespace Cornifer
             ["Gourmand"] = new() { "SU", "HI", "DS", "CC", "GW", "SH", "VS", "SL", "SI", "LF", "UW", "SS", "SB", "OE" },
             [""] = new() { "SU", "HI", "DS", "CC", "GW", "SH", "VS", "SL", "SI", "LF", "UW", "SS", "SB" },
         };
+
+        public static void Init()
+        {
+            Slugcats = new()
+            {
+                new("Yellow",    "Monk",        true,  new(255, 255, 115), Color.Black, "SU_C04"),
+                new("White",     "Survivor",    true,  new(255, 255, 255), Color.Black, "SU_C04"),
+                new("Red",       "Hunter",      true,  new(255, 115, 115), Color.Black, "LF_H01"),
+                new("Night",     "Nightcat",    false, new(25,  15,  48),  Color.White, null),
+            };
+
+            if (RWAssets.CurrentInstallation?.IsDownpour is true)
+            {
+                Slugcats.Add(new("Gourmand", "Gourmand", true, new(240, 193, 151), Color.Black, "SH_GOR02"));
+                Slugcats.Add(new("Artificer", "Artificer", true, new(112, 35, 60), Color.White, "GW_A24"));
+                Slugcats.Add(new("Rivulet", "Rivulet", true, new(145, 204, 240), Color.Black, "DS_RIVSTART"));
+                Slugcats.Add(new("Spear", "Spearmaster", true, new(79, 46, 105), Color.White, "GATE_OE_SU"));
+                Slugcats.Add(new("Saint", "Saint", true, new(170, 241, 86), Color.Black, "SI_SAINTINTRO"));
+                Slugcats.Add(new("Inv", "Inv", false, new(0, 19, 58), Color.White, "SH_E01"));
+            }
+        }
 
         [return: NotNullIfNotNull(nameof(acronym))]
         public static string? GetProperRegionAcronym(string? acronym, Slugcat? slugcat)

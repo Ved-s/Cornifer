@@ -29,6 +29,11 @@ namespace Cornifer.Structures
         [JsonIgnore]
         public bool IsSteam => (Features & RainWorldFeatures.Steam) != RainWorldFeatures.None;
 
+        [JsonIgnore]
+        public bool IsDownpour => (Features & RainWorldFeatures.Downpour) != RainWorldFeatures.None;
+
+        public static RainWorldFeatures StateEssentialFeatures => RainWorldFeatures.Legacy | RainWorldFeatures.Remix | RainWorldFeatures.Downpour;
+
         public RainWorldInstallation() { }
 
         public RainWorldInstallation(string path, string id, string name, RainWorldFeatures features, bool canSave = true)
@@ -40,26 +45,28 @@ namespace Cornifer.Structures
             CanSave = canSave;
         }
 
-        public string GetFeaturesString()
+        public string GetFeaturesString() => GetFeaturesString(Features);
+
+        public static string GetFeaturesString(RainWorldFeatures features)
         {
-            if (Features == RainWorldFeatures.None)
+            if (features == RainWorldFeatures.None)
                 return "No features";
 
-            List<RainWorldFeatures> features = new();
+            List<RainWorldFeatures> featureList = new();
 
             for (int i = 0; i < 32; i++)
             {
                 if ((int)RainWorldFeatures.All >> i == 0)
                     break;
 
-                int mask = 1 << i;
-                if (((int)RainWorldFeatures.All & mask) == 0)
+                int imask = 1 << i;
+                if (((int)RainWorldFeatures.All & imask) == 0)
                     continue;
 
-                RainWorldFeatures feature = (RainWorldFeatures)mask;
+                RainWorldFeatures feature = (RainWorldFeatures)imask;
 
-                if ((Features & feature) != 0)
-                    features.Add(feature);
+                if ((features & feature) != 0)
+                    featureList.Add(feature);
             }
 
             return string.Join(", ", features);
