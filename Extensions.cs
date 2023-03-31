@@ -11,7 +11,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Cornifer
@@ -360,6 +362,13 @@ namespace Cornifer
             right = new(rightSpan);
 
             return true;
+        }
+
+        public static JsonSerializerOptions AddDebugIndent(this JsonSerializerOptions options)
+        {
+            if (Main.DebugMode)
+                options.WriteIndented = true;
+            return options;
         }
     }
 }

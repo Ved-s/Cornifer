@@ -48,8 +48,7 @@ namespace Cornifer
             JsonSerializer.Serialize(fs, Current, new JsonSerializerOptions 
             {
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-                WriteIndented = true,
-            });
+            }.AddDebugIndent());
         }
 
         public class Keybind 

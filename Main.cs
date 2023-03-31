@@ -529,7 +529,6 @@ namespace Cornifer
             ms.CopyTo(fs);
             fs.Flush();
 
-
             Platform.Stop();
         }
 
