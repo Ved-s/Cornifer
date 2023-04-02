@@ -2,6 +2,7 @@
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.Windows.Forms;
 
@@ -13,6 +14,9 @@ namespace Cornifer.UI.Elements
         public Vec2 TextAlign = new(0, .5f);
         public string HeaderText = "";
 
+        [Obsolete("Use Content instead", error: true)]
+        public new ElementCollection Elements => base.Elements;
+
         public UICollapsedPanel()
         {
             Height = HeaderHeight;
@@ -20,9 +24,10 @@ namespace Cornifer.UI.Elements
 
         public bool Collapsed
         {
-            get => !Content?.Visible ?? false;
+            get => collapsed;
             set
             {
+                collapsed = value;
                 if (Content is null)
                     return;
 
@@ -31,19 +36,21 @@ namespace Cornifer.UI.Elements
             }
         }
 
-        [Required]
         public UIElement? Content
         {
             get => content;
             set
             {
                 if (content is not null)
-                    Elements.Remove(content);
+                    base.Elements.Remove(content);
 
                 content = value;
 
                 if (content is not null)
-                    Elements.Add(content);
+                {
+                    content.Visible = !collapsed;
+                    base.Elements.Add(content);
+                }
 
                 if (Root is not null)
                     PerformLayout();
@@ -64,6 +71,7 @@ namespace Cornifer.UI.Elements
         }
 
         private UIElement? content;
+        private bool collapsed;
         private bool PerformingLayout;
 
         public void LayoutChild(UIElement child, ref Rect screenRect)
@@ -121,7 +129,6 @@ namespace Cornifer.UI.Elements
         {
             PerformLayout();
         }
-
 
         void PerformLayout()
         {

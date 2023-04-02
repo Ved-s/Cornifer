@@ -3,8 +3,8 @@ using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
-using System.ComponentModel;
 using System.Linq;
+using System.Xml.Linq;
 
 namespace Cornifer.UI.Elements
 {
@@ -14,16 +14,18 @@ namespace Cornifer.UI.Elements
 
         public UIScrollBar ScrollBar = new()
         {
-            Width = 15,
-            Height = new(0, 1),
-
-            Left = new(0, 1),
+            //Width = 15,
+            //Height = new(0, 1),
+            //
+            //Left = new(0, 1),
             BarPadding = new(3),
 
             BackColor = Color.White * 0.1f,
             ScrollDistance = 20
         };
 
+        public float ScrollbarWidth = 15;
+        public float ScrollbarSpacing = 2;
         public float ElementSpacing = 0f;
         public bool AutoSize = false;
 
@@ -31,15 +33,15 @@ namespace Cornifer.UI.Elements
         float OldScroll;
         float CurrentLayoutElementY;
 
-        public override Rect ChildrenRect 
+        public override Rect ChildrenRect
         {
-            get 
+            get
             {
                 if (AutoSize || !ScrollBar.Visible)
                     return ScreenRect;
 
                 Rect rect = ScreenRect;
-                rect.Width -= ScrollBar.ScreenRect.Width;
+                rect.Width -= 15 + ScrollbarSpacing;
                 return rect;
             }
         }
@@ -68,7 +70,7 @@ namespace Cornifer.UI.Elements
             rect.Height -= Padding.Vertical;
 
             if (!AutoSize && ScrollBar.Visible)
-                rect.Width -= ScrollBar.ScreenRect.Width;
+                rect.Width -= ScrollBar.ScreenRect.Width + ScrollbarSpacing;
 
             if (AutoSize)
             {
@@ -116,18 +118,59 @@ namespace Cornifer.UI.Elements
         public void LayoutChild(UIElement child, ref Rect screenRect)
         {
             if (child == ScrollBar)
-                return;
-
-            if (!PerformingLayout)
             {
-                PerformLayout();
+                screenRect.Y = ScreenRect.Top + Padding.Top;
+                screenRect.X = ScreenRect.Right - Padding.Right - ScrollbarWidth;
+                screenRect.Height = screenRect.Height - Padding.Vertical;
+                screenRect.Width = ScrollbarWidth;
+                return;
             }
-            else
+
+            if (PerformingLayout)
             {
                 screenRect.Top = CurrentLayoutElementY + child.Margin.Top;
                 screenRect.Left = ScreenRect.X + Padding.Left + child.Margin.Left;
-                screenRect.Width = ScreenRect.Width - child.Margin.Horizontal - Padding.Horizontal - (!AutoSize && ScrollBar.Visible ? ScrollBar.ScreenRect.Width : 0);
+                screenRect.Width = ScreenRect.Width - child.Margin.Horizontal - Padding.Horizontal - (!AutoSize && ScrollBar.Visible ? ScrollBar.ScreenRect.Width + ScrollbarSpacing : 0);
+                return;
             }
+
+            UpdateScrollbar();
+            int index = Elements.IndexOf(child);
+            if (index < 0)
+                return;
+
+            PerformingLayout = true;
+
+            float y = ScreenRect.Y + Padding.Top - ScrollBar.ScrollPosition;
+
+            for (int i = 0; i < index; i++)
+            {
+                UIElement element = Elements[i];
+                if (element == ScrollBar || !element.Visible)
+                    continue;
+
+                CurrentLayoutElementY = y;
+                element.Recalculate();
+                y += element.ScreenRect.Height + element.Margin.Vertical + ElementSpacing;
+            }
+
+            screenRect.Top = y + child.Margin.Top;
+            screenRect.Left = ScreenRect.X + Padding.Left + child.Margin.Left;
+            screenRect.Width = ScreenRect.Width - child.Margin.Horizontal - Padding.Horizontal - (!AutoSize && ScrollBar.Visible ? ScrollBar.ScreenRect.Width + ScrollbarSpacing : 0);
+            y += child.ScreenRect.Height + child.Margin.Vertical + ElementSpacing;
+
+            for (int i = index + 1; i < Elements.Count; i++)
+            {
+                UIElement element = Elements[i];
+                if (element == ScrollBar || !element.Visible)
+                    continue;
+
+                CurrentLayoutElementY = y;
+                element.Recalculate();
+                y += element.ScreenRect.Height + element.Margin.Vertical + ElementSpacing;
+            }
+
+            PerformingLayout = false;
         }
 
         float GetContentHeight()
@@ -141,23 +184,7 @@ namespace Cornifer.UI.Elements
         void PerformLayout()
         {
             PerformingLayout = true;
-
-            if (!AutoSize)
-            {
-                if (Elements.Count == 0 || Elements[0] != ScrollBar)
-                    Elements.Insert(0, ScrollBar);
-
-                ScrollBar.ScrollMax = Math.Max(0, GetContentHeight() - ScreenRect.Height - Padding.Vertical);
-                ScrollBar.ScrollPosition = Math.Min(ScrollBar.ScrollPosition, ScrollBar.ScrollMax);
-                ScrollBar.BarSize = ScreenRect.Height - Padding.Vertical;
-
-                if (ScrollBar.Visible != ScrollBar.ScrollMax > 0)
-                {
-                    ScrollBar.Visible = ScrollBar.ScrollMax > 0;
-                    if (ScrollBar.Visible)
-                        ScrollBar.Recalculate();
-                }
-            }
+            UpdateScrollbar();
 
             float startPos = ScreenRect.Y + Padding.Top - ScrollBar.ScrollPosition;
 
@@ -172,6 +199,26 @@ namespace Cornifer.UI.Elements
             }
             OldScroll = ScrollBar.ScrollPosition;
             PerformingLayout = false;
+        }
+
+        private void UpdateScrollbar()
+        {
+            if (!AutoSize)
+            {
+                if (Elements.Count == 0 || Elements[0] != ScrollBar)
+                    Elements.Insert(0, ScrollBar);
+
+                ScrollBar.ScrollMax = Math.Max(0, GetContentHeight() - ScreenRect.Height);
+                ScrollBar.ScrollPosition = Math.Min(ScrollBar.ScrollPosition, ScrollBar.ScrollMax);
+                ScrollBar.BarSize = ScreenRect.Height - Padding.Vertical;
+
+                if (ScrollBar.Visible != ScrollBar.ScrollMax > 0)
+                {
+                    ScrollBar.Visible = ScrollBar.ScrollMax > 0;
+                    if (ScrollBar.Visible)
+                        ScrollBar.Recalculate();
+                }
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Cornifer
 {
@@ -48,8 +49,6 @@ namespace Cornifer
         static List<Func<UIModal>>? ModalCreators;
         static Queue<TaskCompletionSource> ModalWaitTasks = new();
         internal static UIModal? CurrentModal;
-
-        static int RecalculateHack = 0;
 
         public static MapObject? ConfigurableObject
         {
@@ -584,169 +583,155 @@ namespace Cornifer
                                 }
                             },
 
-                            new UIResizeablePanel
+                            new UICollapsedPanel
                             {
-                                BorderColor = new(100, 100, 100),
-                                Padding = 4,
-                                Height = 100,
+                                HeaderText = "Map objects",
+                                Collapsed = true,
 
-                                CanGrabLeft = false,
-                                CanGrabRight = false,
-                                CanGrabTop = false,
-
-                                MinHeight = 30,
-
-                                Elements =
+                                Content = new UIResizeablePanel
                                 {
-                                    new UILabel
-                                    {
-                                        Height = 15,
-                                        Text = "Map objects",
-                                        WordWrap = false,
-                                        TextAlign = new(.5f)
-                                    },
-                                    new UIPanel
-                                    {
-                                        BackColor = new(40, 40, 40),
+                                    CanGrabLeft = false,
+                                    CanGrabRight = false,
+                                    CanGrabTop = false,
 
-                                        Top = 18,
-                                        Height = new(-18, 1),
-                                        Padding = 4,
-                                        Elements =
+                                    BackColor = Color.Transparent,
+                                    BorderColor = Color.Transparent,
+
+                                    Height = 100,
+                                    Padding = 3,
+
+                                    Elements =
+                                    {
+                                        new UIList
                                         {
-                                            new UIList
+                                            ElementSpacing = 4
+                                        }.Assign(out MapObjectVisibilityList)
+                                    }
+                                },
+                            },
+
+                            new UICollapsedPanel
+                            {
+                                HeaderText = "Room objects",
+                                Collapsed = true,
+
+                                Content = new UIResizeablePanel
+                                {
+                                    Height = 150,
+
+                                    BackColor = Color.Transparent,
+                                    BorderColor = Color.Transparent,
+
+                                    Padding = 4,
+                                    CanGrabTop = false,
+                                    CanGrabLeft = false,
+                                    CanGrabRight = false,
+                                    CanGrabBottom = true,
+
+                                    Elements = 
+                                    {
+                                        new UIList
+                                        {
+                                            ElementSpacing = 4
+                                        }.Execute((list) =>
+                                        {
+                                            VisibilityPlacedObjects.Clear();
+
+                                            foreach (string objectName in StaticData.PlacedObjectTypes.OrderBy(s => s))
                                             {
-                                                ElementSpacing = 4
-                                            }.Assign(out MapObjectVisibilityList)
-                                        }
+                                                if (!PlacedObject.CheckValidType(objectName))
+                                                    continue;
+
+                                                UIButton btn = new()
+                                                {
+                                                    Text = objectName,
+                                                    Height = 20,
+                                                    TextAlign = new(.5f),
+
+                                                    Selectable = true,
+                                                    Selected = !PlacedObject.HideObjectTypes.Contains(objectName),
+
+                                                    SelectedBackColor = Color.White,
+                                                    SelectedTextColor = Color.Black
+                                                };
+                                                btn.OnEvent(UIElement.ClickEvent, (btn, _) =>
+                                                {
+                                                    if (btn.Selected)
+                                                        PlacedObject.HideObjectTypes.Remove(objectName);
+                                                    else
+                                                        PlacedObject.HideObjectTypes.Add(objectName);
+                                                });
+
+                                                VisibilityPlacedObjects[objectName] = btn;
+                                                list.Elements.Add(btn);
+                                            }
+                                        })
                                     }
                                 }
                             },
 
-                            new UIResizeablePanel
+                            new UICollapsedPanel
                             {
-                                Height = 150,
+                                HeaderText = "Map layers",
+                                Collapsed = true,
 
-                                Padding = 4,
-
-                                CanGrabTop = false,
-                                CanGrabLeft = false,
-                                CanGrabRight = false,
-                                CanGrabBottom = true,
-
-                                Elements =
+                                Content = new UIResizeablePanel
                                 {
-                                    new UILabel
-                                    {
-                                        Text = "Room objects",
-                                        Height = 15,
-                                        TextAlign = new(.5f)
-                                    },
-                                    new UIList
-                                    {
-                                        Top = 20,
-                                        Height = new(-20, 1),
-                                        ElementSpacing = 4
-                                    }.Execute((list) =>
-                                    {
-                                        VisibilityPlacedObjects.Clear();
+                                    Height = 120,
 
-                                        foreach (string objectName in StaticData.PlacedObjectTypes.OrderBy(s => s))
+                                    Padding = 4,
+
+                                    CanGrabTop = false,
+                                    CanGrabLeft = false,
+                                    CanGrabRight = false,
+                                    CanGrabBottom = true,
+
+                                    Elements =
+                                    {
+                                        new UIList
                                         {
-                                            if (!PlacedObject.CheckValidType(objectName))
-                                                continue;
-
-                                            UIButton btn = new()
-                                            {
-                                                Text = objectName,
-                                                Height = 20,
-                                                TextAlign = new(.5f),
-
-                                                Selectable = true,
-                                                Selected = !PlacedObject.HideObjectTypes.Contains(objectName),
-
-                                                SelectedBackColor = Color.White,
-                                                SelectedTextColor = Color.Black
-                                            };
-                                            btn.OnEvent(UIElement.ClickEvent, (btn, _) =>
-                                            {
-                                                if (btn.Selected)
-                                                    PlacedObject.HideObjectTypes.Remove(objectName);
-                                                else
-                                                    PlacedObject.HideObjectTypes.Add(objectName);
-                                            });
-
-                                            VisibilityPlacedObjects[objectName] = btn;
-                                            list.Elements.Add(btn);
-                                        }
-                                    })
-                                }
-                            },
-
-                            new UIResizeablePanel
-                            {
-                                Height = 120,
-
-                                Padding = 4,
-
-                                CanGrabTop = false,
-                                CanGrabLeft = false,
-                                CanGrabRight = false,
-                                CanGrabBottom = true,
-
-                                Elements =
-                                {
-                                    new UILabel
-                                    {
-                                        Text = "Map layers",
-                                        Height = 15,
-                                        TextAlign = new(.5f)
-                                    },
-                                    new UIList
-                                    {
-                                        Top = 20,
-                                        Height = new(-20, 1),
-                                        ElementSpacing = 4
-                                    }.Execute((list) =>
-                                    {
-                                        VisibilityRenderLayers.Clear();
-
-                                        int all = (int)RenderLayers.All;
-                                        for (int i = 0; i < 32; i++)
+                                            ElementSpacing = 4
+                                        }.Execute((list) =>
                                         {
-                                            if ((all >> i) == 0)
-                                                break;
+                                            VisibilityRenderLayers.Clear();
 
-                                            int layerInt = 1 << i;
-                                            if ((layerInt & all) == 0)
-                                                continue;
-
-                                            RenderLayers layer = (RenderLayers)layerInt;
-
-                                            UIButton btn = new()
+                                            int all = (int)RenderLayers.All;
+                                            for (int i = 0; i < 32; i++)
                                             {
-                                                Text = layer.ToString(),
-                                                Height = 20,
-                                                TextAlign = new(.5f),
+                                                if ((all >> i) == 0)
+                                                    break;
 
-                                                Selectable = true,
-                                                Selected = Main.ActiveRenderLayers.HasFlag(layer),
+                                                int layerInt = 1 << i;
+                                                if ((layerInt & all) == 0)
+                                                    continue;
 
-                                                SelectedBackColor = Color.White,
-                                                SelectedTextColor = Color.Black
-                                            };
-                                            btn.OnEvent(UIElement.ClickEvent, (btn, _) =>
-                                            {
-                                                if (btn.Selected)
-                                                    Main.ActiveRenderLayers |= layer;
-                                                else
-                                                    Main.ActiveRenderLayers &= ~layer;
-                                            });
+                                                RenderLayers layer = (RenderLayers)layerInt;
 
-                                            VisibilityRenderLayers[layer] = btn;
-                                            list.Elements.Add(btn);
-                                        }
-                                    })
+                                                UIButton btn = new()
+                                                {
+                                                    Text = layer.ToString(),
+                                                    Height = 20,
+                                                    TextAlign = new(.5f),
+
+                                                    Selectable = true,
+                                                    Selected = Main.ActiveRenderLayers.HasFlag(layer),
+
+                                                    SelectedBackColor = Color.White,
+                                                    SelectedTextColor = Color.Black
+                                                };
+                                                btn.OnEvent(UIElement.ClickEvent, (btn, _) =>
+                                                {
+                                                    if (btn.Selected)
+                                                        Main.ActiveRenderLayers |= layer;
+                                                    else
+                                                        Main.ActiveRenderLayers &= ~layer;
+                                                });
+
+                                                VisibilityRenderLayers[layer] = btn;
+                                                list.Elements.Add(btn);
+                                            }
+                                        })
+                                    }
                                 }
                             }
                         }
@@ -1233,6 +1218,8 @@ namespace Cornifer
                         Padding = 2,
                         Height = 22,
 
+                        BackColor = new(48, 48, 48),
+
                         Elements =
                         {
                             new UILabel
@@ -1319,12 +1306,6 @@ namespace Cornifer
 
         public static void Update()
         {
-            if (RecalculateHack >= 30)
-            {
-                Root?.Recalculate();
-                RecalculateHack = 0;
-            }
-            RecalculateHack++;
             Root?.Update();
 
             if (InputHandler.ReinitUI.JustPressed)
