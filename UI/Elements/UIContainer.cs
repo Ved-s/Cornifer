@@ -13,6 +13,8 @@ namespace Cornifer.UI.Elements
     {
         public ElementCollection Elements { get; protected set; }
 
+        public virtual Rect ChildrenRect => ScreenRect;
+
         public Offset4 Padding;
 
         private List<UIElement> UpdateList = new();

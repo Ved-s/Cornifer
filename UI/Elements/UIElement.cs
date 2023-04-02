@@ -91,6 +91,8 @@ namespace Cornifer.UI.Elements
         private bool hovered;
         private bool active;
 
+        protected bool SkipContainerLayout = false;
+
         protected readonly ElementEventManager Events;
 
         public UIElement()
@@ -138,17 +140,20 @@ namespace Cornifer.UI.Elements
             if (!Events.PreCall(RecalculateEvent, default))
                 return;
 
-            float? parentWidth = Parent?.ScreenRect.Width - Margin.Horizontal - Parent?.Padding.Horizontal;
-            float? parentHeight = Parent?.ScreenRect.Height - Margin.Vertical - Parent?.Padding.Vertical;
+            Rect? parentChildrenRect = Parent?.ChildrenRect;
+
+            float? parentWidth = parentChildrenRect?.Width - Margin.Horizontal - Parent?.Padding.Horizontal;
+            float? parentHeight = parentChildrenRect?.Height - Margin.Vertical - Parent?.Padding.Vertical;
 
             ScreenRect.Width = CalculateSize(Width, MinWidth, MaxWidth, parentWidth, out MinSize.X, out MaxSize.X);
             ScreenRect.Height = CalculateSize(Height, MinHeight, MaxHeight, parentHeight, out MinSize.Y, out MaxSize.Y);
 
-            ScreenRect.X = (Parent?.ScreenRect.X ?? 0) + (Parent?.Padding.Left ?? 0) + Margin.Left + Left.Calculate(parentWidth ?? 0, ScreenRect.Width);
-            ScreenRect.Y = (Parent?.ScreenRect.Y ?? 0) + (Parent?.Padding.Top ?? 0) + Margin.Top + Top.Calculate(parentHeight ?? 0, ScreenRect.Height);
+            ScreenRect.X = (parentChildrenRect?.X ?? 0) + (Parent?.Padding.Left ?? 0) + Margin.Left + Left.Calculate(parentWidth ?? 0, ScreenRect.Width);
+            ScreenRect.Y = (parentChildrenRect?.Y ?? 0) + (Parent?.Padding.Top ?? 0) + Margin.Top + Top.Calculate(parentHeight ?? 0, ScreenRect.Height);
 
-            if (Parent is ILayoutContainer layout)
+            if (!SkipContainerLayout && Parent is ILayoutContainer layout)
                 layout.LayoutChild(this, ref ScreenRect);
+            SkipContainerLayout = false;
 
             Events.PostCall(RecalculateEvent, default);
         }

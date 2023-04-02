@@ -49,6 +49,8 @@ namespace Cornifer
         static Queue<TaskCompletionSource> ModalWaitTasks = new();
         internal static UIModal? CurrentModal;
 
+        static int RecalculateHack = 0;
+
         public static MapObject? ConfigurableObject
         {
             get => configurableObject;
@@ -452,120 +454,135 @@ namespace Cornifer
 
                         Elements =
                         {
-                            new UIButton
+                            new UICollapsedPanel
                             {
-                                Height = 20,
-                                Text = "Slugcat icons",
+                                HeaderText = "General",
 
-                                Selectable = true,
+                                Content = new UIList
+                                {
+                                    ElementSpacing = 2,
+                                    AutoSize = true,
+                                    Padding = 3,
 
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
+                                    Elements = 
+                                    {
+                                        new UIButton
+                                        {
+                                            Height = 20,
+                                            Text = "Slugcat icons",
 
-                                TextAlign = new(.5f)
-                            }.BindConfig(InterfaceState.DrawSlugcatIcons)
-                            .Assign(out SlugcatIcons),
+                                            Selectable = true,
 
-                            new UIButton
-                            {
-                                Height = 20,
-                                Text = "Diamond icons",
+                                            SelectedBackColor = Color.White,
+                                            SelectedTextColor = Color.Black,
 
-                                HoverText = "Draw diamonds instead of\nslugcat icons",
+                                            TextAlign = new(.5f)
+                                        }.BindConfig(InterfaceState.DrawSlugcatIcons)
+                                        .Assign(out SlugcatIcons),
 
-                                Selectable = true,
+                                        new UIButton
+                                        {
+                                            Height = 20,
+                                            Text = "Diamond icons",
 
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
+                                            HoverText = "Draw diamonds instead of\nslugcat icons",
 
-                                TextAlign = new(.5f)
-                            }.BindConfig(InterfaceState.DrawSlugcatDiamond),
+                                            Selectable = true,
 
-                            new UIButton
-                            {
-                                Height = 20,
-                                Text = "Room objects",
+                                            SelectedBackColor = Color.White,
+                                            SelectedTextColor = Color.Black,
 
-                                Selectable = true,
+                                            TextAlign = new(.5f)
+                                        }.BindConfig(InterfaceState.DrawSlugcatDiamond),
 
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
+                                        new UIButton
+                                        {
+                                            Height = 20,
+                                            Text = "Room objects",
 
-                                TextAlign = new(.5f)
-                            }.BindConfig(InterfaceState.DrawPlacedObjects),
+                                            Selectable = true,
 
-                            new UIButton
-                            {
-                                Height = 20,
-                                Text = "Room pickups",
+                                            SelectedBackColor = Color.White,
+                                            SelectedTextColor = Color.Black,
 
-                                HoverText = "Draw placed items",
+                                            TextAlign = new(.5f)
+                                        }.BindConfig(InterfaceState.DrawPlacedObjects),
 
-                                Selectable = true,
+                                        new UIButton
+                                        {
+                                            Height = 20,
+                                            Text = "Room pickups",
 
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
+                                            HoverText = "Draw placed items",
 
-                                TextAlign = new(.5f)
-                            }.BindConfig(InterfaceState.DrawPlacedPickups),
+                                            Selectable = true,
 
-                            new UIButton
-                            {
-                                Height = 20,
+                                            SelectedBackColor = Color.White,
+                                            SelectedTextColor = Color.Black,
 
-                                Selectable = true,
-                                Text = "Tile walls",
+                                            TextAlign = new(.5f)
+                                        }.BindConfig(InterfaceState.DrawPlacedPickups),
 
-                                HoverText = "Render room tiles with walls",
+                                        new UIButton
+                                        {
+                                            Height = 20,
 
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
+                                            Selectable = true,
+                                            Text = "Tile walls",
 
-                                TextAlign = new(.5f)
+                                            HoverText = "Render room tiles with walls",
 
-                            }.BindConfig(InterfaceState.DrawTileWalls),
+                                            SelectedBackColor = Color.White,
+                                            SelectedTextColor = Color.Black,
 
-                            new UIButton
-                            {
-                                Height = 20,
+                                            TextAlign = new(.5f)
 
-                                Selectable = true,
-                                Text = "Shortcuts",
+                                        }.BindConfig(InterfaceState.DrawTileWalls),
 
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
+                                        new UIButton
+                                        {
+                                            Height = 20,
 
-                                TextAlign = new(.5f)
+                                            Selectable = true,
+                                            Text = "Shortcuts",
 
-                            }.BindConfig(InterfaceState.MarkShortcuts),
+                                            SelectedBackColor = Color.White,
+                                            SelectedTextColor = Color.Black,
 
-                            new UIButton
-                            {
-                                Height = 20,
+                                            TextAlign = new(.5f)
 
-                                Selectable = true,
-                                Text = "Only exit shortcuts",
+                                        }.BindConfig(InterfaceState.MarkShortcuts),
 
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
+                                        new UIButton
+                                        {
+                                            Height = 20,
 
-                                TextAlign = new(.5f)
+                                            Selectable = true,
+                                            Text = "Only exit shortcuts",
 
-                            }.BindConfig(InterfaceState.MarkExitsOnly),
+                                            SelectedBackColor = Color.White,
+                                            SelectedTextColor = Color.Black,
 
-                            new UIButton
-                            {
-                                Height = 20,
+                                            TextAlign = new(.5f)
 
-                                Selectable = true,
-                                Text = "Borders",
+                                        }.BindConfig(InterfaceState.MarkExitsOnly),
 
-                                SelectedBackColor = Color.White,
-                                SelectedTextColor = Color.Black,
+                                        new UIButton
+                                        {
+                                            Height = 20,
 
-                                TextAlign = new(.5f)
+                                            Selectable = true,
+                                            Text = "Borders",
 
-                            }.BindConfig(InterfaceState.DrawBorders),
+                                            SelectedBackColor = Color.White,
+                                            SelectedTextColor = Color.Black,
+
+                                            TextAlign = new(.5f)
+
+                                        }.BindConfig(InterfaceState.DrawBorders),
+                                    }
+                                }
+                            },
 
                             new UIResizeablePanel
                             {
@@ -1302,6 +1319,12 @@ namespace Cornifer
 
         public static void Update()
         {
+            if (RecalculateHack >= 30)
+            {
+                Root?.Recalculate();
+                RecalculateHack = 0;
+            }
+            RecalculateHack++;
             Root?.Update();
 
             if (InputHandler.ReinitUI.JustPressed)
