@@ -233,6 +233,30 @@ namespace Cornifer
 
                             }.BindConfig(InterfaceState.DisableRoomCropping),
 
+                            new UIButton
+                            {
+                                Height = 20,
+
+                                Text = "Disable better cutouts",
+
+                                HoverText = "Sets \"Better tile cutouts\" to False for all rooms",
+
+                                TextAlign = new(.5f)
+
+                            }.OnEvent(UIElement.ClickEvent, (_, _) => 
+                            {
+                                if (Main.Region is null)
+                                    return;
+
+                                foreach (Room r in Main.Region.Rooms)
+                                {
+                                    r.UseBetterTileCutout.Value = false;
+                                    r.CutOutsDirty = true;
+                                    r.TileMapDirty = true;
+                                    r.ShadeTextureDirty = true;
+                                }
+                            }),
+
                             new UIPanel
                             {
                                 Height = 40,
