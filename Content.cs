@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Media;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,7 +15,7 @@ namespace Cornifer
 {
     public static class Content
     {
-        static readonly HashSet<Type> ContentTypes = new() { typeof(Texture2D), typeof(SpriteFont) };
+        static readonly HashSet<Type> ContentTypes = new() { typeof(Texture2D), typeof(SpriteFont), typeof(SoundEffect) };
 
 #nullable disable
         [ManualSpriteFont]
@@ -25,6 +27,7 @@ namespace Cornifer
         public static Texture2D SlugcatIcons;
         public static Texture2D SlugcatIconTemplate;
         public static Texture2D MiscSprites;
+        public static SoundEffect Idle;
 
         public static ReadOnlyDictionary<string, SpriteFont> Fonts;
         public static ReadOnlyDictionary<string, Texture2D> Textures;

@@ -68,3 +68,9 @@
 /processorParam:TextureFormat=Color
 /build:SlugcatIconTemplate.png
 
+#begin Idle.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Idle.wav
+

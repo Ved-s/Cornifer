@@ -7,6 +7,7 @@ using Cornifer.UI.Modals;
 using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Media;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Png;
 using System;
@@ -872,33 +873,54 @@ namespace Cornifer
 
                 Elements =
                 {
-                    new UIButton
+                    new UIList 
                     {
-                        Text = "Test diamond placement",
-                        Height = 20,
-                        TextAlign = new(.5f),
-                    }.OnEvent(UIElement.ClickEvent, (_, _) =>
-                    {
-                        Vector2 pos = Main.WorldCamera.InverseTransformVector(Main.WorldCamera.Size / 2);
+                        ElementSpacing = 4,
 
-                        foreach (DiamondPlacement placement in DiamondPlacement.Placements)
+                        Elements = 
                         {
-                            pos.X += placement.Size.X / 2;
-
-                            for (int i = 0; i < placement.Positions.Length; i++)
+                            new UIButton
                             {
-                                SimpleIcon icon = new(
-                                    $"Debug_DiamondPlacement_{Random.Shared.Next():x}",
-                                    SpriteAtlases.Sprites[$"SlugcatDiamond_{StaticData.Slugcats[i].Id}"]);
-                                icon.BorderSize.OriginalValue = 1;
-                                icon.WorldPosition = pos + placement.Positions[i];
+                                Text = "Test diamond placement",
+                                Height = 20,
+                                TextAlign = new(.5f),
+                            }.OnEvent(UIElement.ClickEvent, (_, _) =>
+                            {
+                                Vector2 pos = Main.WorldCamera.InverseTransformVector(Main.WorldCamera.Size / 2);
 
-                                Main.WorldObjects.Add(icon);
-                            }
+                                foreach (DiamondPlacement placement in DiamondPlacement.Placements)
+                                {
+                                    pos.X += placement.Size.X / 2;
 
-                            pos.X += placement.Size.X / 2 + 5;
+                                    for (int i = 0; i < placement.Positions.Length; i++)
+                                    {
+                                        SimpleIcon icon = new(
+                                            $"Debug_DiamondPlacement_{Random.Shared.Next():x}",
+                                            SpriteAtlases.Sprites[$"SlugcatDiamond_{StaticData.Slugcats[i].Id}"]);
+                                        icon.BorderSize.OriginalValue = 1;
+                                        icon.WorldPosition = pos + placement.Positions[i];
+
+                                        Main.WorldObjects.Add(icon);
+                                    }
+
+                                    pos.X += placement.Size.X / 2 + 5;
+                                }
+                            }),
+
+                            new UIButton
+                            {
+                                Text = "Test Idle",
+                                Height = 20,
+                                TextAlign = new(.5f),
+                            }.OnEvent(UIElement.ClickEvent, (_, _) =>
+                            {
+                                Content.Idle.Play(.5f, 0, 0);
+                            }).OnEvent(UIElement.UpdateEvent, (b, _) => 
+                            {
+                                b.Text = $"Test Idle ({(Main.Idlesound?"S":"")}{Main.Idle})";
+                            })
                         }
-                    })
+                    }
                 }
             };
         }

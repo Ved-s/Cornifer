@@ -73,6 +73,9 @@ namespace Cornifer
         internal static bool Selecting;
         internal static bool Dragging;
 
+        internal static bool Idlesound;
+        internal static ulong Idle;
+
         static bool OldActive;
         static string? CurrentStatePath;
 
@@ -203,9 +206,26 @@ namespace Cornifer
 
             InputHandler.Update();
 
-            OldActive = IsActive;
+            if (IsActive && (InputHandler.AllKeys.Any(k => InputHandler.KeyboardState[k] == Microsoft.Xna.Framework.Input.KeyState.Down)
+                || InputHandler.AllMouseKeys.Any(k => InputHandler.MouseState.IsKeyDown(k))))
+            {
+                Idlesound = false;
+                Idle = 0;
+            }
+            else 
+            {
+                Idle++;
+
+                if (!Idlesound && Idle > 3600 && Random.Shared.Next(512) == 0)
+                {
+                    Idlesound = true;
+                    Cornifer.Content.Idle.Play(Random.Shared.NextSingle() * .2f + .2f, 0, 0);
+                }
+            }
+
 
             bool active = OldActive && IsActive;
+            OldActive = IsActive;
 
             bool betweenRoomConnections = ActiveRenderLayers.HasFlag(RenderLayers.Connections);
             bool inRoomConnections = ActiveRenderLayers.HasFlag(RenderLayers.InRoomShortcuts);
