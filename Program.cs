@@ -28,6 +28,6 @@ catch (Exception ex)
     Platform.Stop();
     Environment.Exit(1);
 }
+#endif
 Platform.Stop();
 Environment.Exit(0);
-#endif
