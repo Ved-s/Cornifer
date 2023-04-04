@@ -22,6 +22,9 @@ namespace Cornifer
         {
             get
             {
+                if (DetachedWindow)
+                    return null;
+
                 nint handle = Process.GetCurrentProcess().MainWindowHandle;
                 if (handle == 0)
                     return null;
@@ -35,6 +38,7 @@ namespace Cornifer
 
         private static Task<Stream>? StartupStateStream;
         private static string? StartupStatePath;
+        private static bool DetachedWindow = false;
 
         const int RegistryDataVersion = 1;
         const string OpenWebMapProtocol = "cornifer://openweb/";
@@ -230,6 +234,11 @@ namespace Cornifer
             });
         }
 
+        public static void DetachWindow()
+        {
+            gameWindow = null;
+            DetachedWindow = true;
+        }
         public static void Stop()
         {
             Sheduler.Dispose();

@@ -103,7 +103,20 @@ namespace Cornifer
 
 #if !DEBUG
             DebugModeEnforcement = File.Exists(Path.Combine(MainDir, "debugmode.txt"));
+
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                string text = e.IsTerminating ? "Critical exception" : "Unhandled exception!";
+                text += "\nAfter clicking Ok you will be prompted to save map state.\n" +
+                "Don't overwrite your existing state as it may be corrupted.\n";
+
+                text += (e.ExceptionObject is Exception ex) ? $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}" : e.ExceptionObject.ToString() ?? "No data";
+
+                Platform.MessageBox(text, "Unhandled exception!").Wait();
+                SaveStateAs().Wait();
+            };
 #endif
+
             StaticData.Init();
             Profile.Load();
             GithubInfo.Load();
@@ -548,8 +561,6 @@ namespace Cornifer
             ms.Position = 0;
             ms.CopyTo(fs);
             fs.Flush();
-
-            Platform.Stop();
         }
 
         private void DrawOverlayImage()

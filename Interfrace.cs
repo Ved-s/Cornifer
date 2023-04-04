@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
@@ -942,6 +943,52 @@ namespace Cornifer
                             }).OnEvent(UIElement.UpdateEvent, (b, _) => 
                             {
                                 b.Text = $"Test Idle ({(Main.Idlesound?"S":"")}{Main.Idle})";
+                            }),
+
+                            new UIButton
+                            {
+                                Text = "UI Exception",
+                                Height = 20,
+                                TextAlign = new(.5f),
+                            }.OnEvent(UIElement.ClickEvent, (_, _) =>
+                            {
+                                throw new Exception("UI exception");
+                            }),
+
+                            new UIButton
+                            {
+                                Text = "Thread Exception",
+                                Height = 20,
+                                TextAlign = new(.5f),
+                            }.OnEvent(UIElement.ClickEvent, (_, _) =>
+                            {
+                                new Thread(() => throw new Exception("Thread exception")).Start();
+                            }),
+
+                            new UIButton
+                            {
+                                Text = "Task Exception",
+                                Height = 20,
+                                TextAlign = new(.5f),
+                            }.OnEvent(UIElement.ClickEvent, (_, _) =>
+                            {
+                                Task.Run(async () => { await Task.Delay(100); throw new Exception("Task exception"); });
+                            }),
+
+                            new UIButton
+                            {
+                                Text = "Async Void Exception",
+                                Height = 20,
+                                TextAlign = new(.5f),
+                            }.OnEvent(UIElement.ClickEvent, (_, _) =>
+                            {
+                                async void TestException()
+                                {
+                                    await Task.Delay(100);
+                                    throw new Exception("Async void exception");
+                                }
+
+                                TestException();
                             })
                         }
                     }
