@@ -535,11 +535,11 @@ namespace Cornifer
             string? worldSlugcat = slugcat?.WorldStateSlugcat;
             foreach (var (dir, mod) in RWAssets.EnumerateDirectories("world"))
             {
-                string properties = Path.Combine(dir, "properties.txt");
-                if (!File.Exists(properties))
-                    continue;
-
                 string id = Path.GetFileName(dir)!.ToUpper();
+
+                string? properties = RWAssets.ResolveFile($"world/{id}/properties.txt");
+                if (properties is null)
+                    continue;
 
                 string? displayname = RWAssets.ResolveFile($"world/{id}/displayname.txt");
                 if (displayname is null)
