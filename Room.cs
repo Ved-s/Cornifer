@@ -631,6 +631,9 @@ namespace Cornifer
                         if (solid)
                             gray = 0;
 
+                        else if (InterfaceState.RegionBGShortcuts.Value && tile.Terrain == Tile.TerrainType.ShortcutEntrance)
+                            gray = 1;
+
                         else if (tile.Terrain == Tile.TerrainType.Floor)
                             gray = 0.35f;
 

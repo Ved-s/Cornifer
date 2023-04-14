@@ -238,6 +238,20 @@ namespace Cornifer
                             {
                                 Height = 20,
 
+                                Selectable = true,
+                                Text = "Use BG for shortcuts",
+
+                                SelectedBackColor = Color.White,
+                                SelectedTextColor = Color.Black,
+
+                                TextAlign = new(.5f)
+
+                            }.BindConfig(InterfaceState.RegionBGShortcuts),
+
+                            new UIButton
+                            {
+                                Height = 20,
+
                                 Text = "Disable better cutouts",
 
                                 HoverText = "Sets \"Better tile cutouts\" to False for all rooms",

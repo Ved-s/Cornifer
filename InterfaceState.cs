@@ -23,6 +23,7 @@ namespace Cornifer
         public static Switch DrawBorders = new("borders", true);
 
         public static Switch MarkShortcuts = new("markShortcuts", true);
+        public static Switch RegionBGShortcuts = new("regionBGShortcuts", true);
         public static Switch MarkExitsOnly = new("markExitsOnly", true);
 
         public static Switch DisableRoomCropping = new("disableRoomCropping", false);
@@ -41,6 +42,7 @@ namespace Cornifer
             DrawTileWalls.OnChanged = UpdateRoomTilemaps;
             WaterTransparency.OnChanged = UpdateRoomTilemaps;
             MarkShortcuts.OnChanged = UpdateRoomTilemaps;
+            RegionBGShortcuts.OnChanged = UpdateRoomTilemaps;
             MarkExitsOnly.OnChanged = UpdateRoomTilemaps;
             DisableRoomCropping.OnChanged = UpdateRoomTilemaps;
 
