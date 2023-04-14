@@ -631,9 +631,6 @@ namespace Cornifer
                         if (solid)
                             gray = 0;
 
-                        else if (InterfaceState.RegionBGShortcuts.Value && tile.Terrain == Tile.TerrainType.ShortcutEntrance)
-                            gray = 1;
-
                         else if (tile.Terrain == Tile.TerrainType.Floor)
                             gray = 0.35f;
 
@@ -643,7 +640,10 @@ namespace Cornifer
                         else if (InterfaceState.DrawTileWalls.Value && tile.Attributes.HasFlag(Tile.TileAttributes.WallBehind))
                             gray = 0.75f;
 
-                        if (tile.Attributes.HasFlag(Tile.TileAttributes.VerticalBeam) || tile.Attributes.HasFlag(Tile.TileAttributes.HorizontalBeam))
+                        if (InterfaceState.RegionBGShortcuts.Value && tile.Terrain == Tile.TerrainType.ShortcutEntrance)
+                            gray = 1;
+
+                        else if (tile.Attributes.HasFlag(Tile.TileAttributes.VerticalBeam) || tile.Attributes.HasFlag(Tile.TileAttributes.HorizontalBeam))
                             gray = 0.35f;
 
                         Color color = Color.Lerp(Color.Black, subregion.BackgroundColor.Color, gray);
