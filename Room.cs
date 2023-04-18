@@ -272,7 +272,7 @@ namespace Cornifer
                 }
                 if (swArray.TryGet(1, out string waterLevelStr) && int.TryParse(waterLevelStr, out int waterLevel))
                 {
-                    WaterLevel.OriginalValue = waterLevel;
+                    WaterLevel.OriginalValue = waterLevel < 0 ? -1 : waterLevel + 1;
                 }
                 if (swArray.TryGet(2, out string waterInFrontStr))
                 {
