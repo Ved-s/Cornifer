@@ -550,7 +550,7 @@ namespace Cornifer
                 GateRegionText.Offset = new(0, MathF.Floor(-Size.Y / 2 - GateSymbols.Size.Y - 19 - Main.DefaultBigMapFont.LineSpacing/2));
             }
 
-            if (VistaRooms.TryGetValue(Name!, out Vector2 vistaPoint))
+            if (!Region.LegacyFormat && VistaRooms.TryGetValue(Name!, out Vector2 vistaPoint))
             {
                 Vector2 rel = (vistaPoint / 20) / Size;
 

@@ -91,15 +91,18 @@ namespace Cornifer.MapObjects
                 switch (objName)
                 {
                     case "GreenToken":
-                        Slugcat slugcat = StaticData.Slugcats.FirstOrDefault(s => s.Name == subname || s.Id == subname);
+                        Slugcat? slugcat = StaticData.Slugcats.FirstOrDefault(s => s.Name == subname || s.Id == subname);
 
-                        obj.Children.Add(new SlugcatIcon("GreenTokenSlugcat", slugcat)
+                        if (slugcat is not null)
                         {
-                            ParentPosition = new(0, 8),
-                            Parent = obj,
-                            ForceSlugcatIcon = true,
-                            LineColor = Microsoft.Xna.Framework.Color.Lime
-                        });
+                            obj.Children.Add(new SlugcatIcon("GreenTokenSlugcat", slugcat)
+                            {
+                                ParentPosition = new(0, 8),
+                                Parent = obj,
+                                ForceSlugcatIcon = true,
+                                LineColor = Microsoft.Xna.Framework.Color.Lime
+                            });
+                        }
                         
                         break;
 
@@ -139,6 +142,7 @@ namespace Cornifer.MapObjects
             {
                 if (subsplit.TryGet(4, out string type))
                 {
+                    type = FixDataPearlType(type);
                     obj.DebugDisplay = $"Pearl id: {type}";
 
                     obj.Color.OriginalValue.Color = StaticData.GetPearlColor(type);
@@ -197,6 +201,11 @@ namespace Cornifer.MapObjects
         public void AddAvailabilityIcons()
         {
             if (Type == "DevToken" || SlugcatAvailability.Count == 0)
+                return;
+
+            HashSet<string> cats = new(StaticData.Slugcats.Where(s => s.Playable).Select(s => s.Id));
+            cats.SymmetricExceptWith(SlugcatAvailability);
+            if (cats.Count == 0) // SlugcatAvailability contains all playable slugcats
                 return;
 
             float iconAngle = 0.5f;
@@ -358,6 +367,36 @@ namespace Cornifer.MapObjects
                 slugcats.Remove(name);
 
             return slugcats;
+        }
+
+        static string FixDataPearlType(string type)
+        {
+            if (int.TryParse(type, out int t))
+                return t switch
+                {
+                    0 => "Misc",
+                    1 => "Misc2",
+                    2 => "CC",
+                    3 => "SI_west",
+                    4 => "SI_top",
+                    5 => "LF_west",
+                    6 => "LF_bottom",
+                    7 => "HI",
+                    8 => "SH",
+                    9 => "DS",
+                    10 => "SB_filtration",
+                    11 => "SB_ravine",
+                    12 => "GW",
+                    13 => "SL_bridge",
+                    14 => "SL_moon",
+                    15 => "SU",
+                    16 => "UW",
+                    17 => "PebblesPearl",
+                    18 => "SL_chimney",
+                    19 => "Red_stomach",
+                    _ => type
+                };
+            return type;
         }
     }
 }

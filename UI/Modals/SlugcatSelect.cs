@@ -5,6 +5,9 @@ namespace Cornifer.UI.Modals
 {
     public class SlugcatSelect : Modal<SlugcatSelect, SlugcatSelect.Result?>
     {
+        UILabel Label;
+        UIButton Close;
+
         public SlugcatSelect()
         {
             Width = 200;
@@ -21,7 +24,7 @@ namespace Cornifer.UI.Modals
                     Height = 20,
                     Text = "Select slugcat",
                     TextAlign = new(.5f)
-                },
+                }.Assign(out Label),
                 new UIButton
                 {
                     Top = new(-20, 1),
@@ -31,7 +34,15 @@ namespace Cornifer.UI.Modals
                     Text = "Close",
                     TextAlign = new(.5f)
                 }.OnEvent(ClickEvent, (_, _) => ReturnResult(null))
+                .Assign(out Close)
             };
+        }
+
+        protected override void Shown()
+        {
+            Elements.Clear();
+            Elements.Add(Label);
+            Elements.Add(Close);
 
             float y = 50;
 
@@ -92,6 +103,7 @@ namespace Cornifer.UI.Modals
             y += 25;
 
             Height = y + 40;
+            Recalculate();
         }
 
         public struct Result

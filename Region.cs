@@ -7,11 +7,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.ObjectiveC;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Cornifer
 {
@@ -30,24 +28,27 @@ namespace Cornifer
         string? PropertiesString;
         string? GateLockString;
 
+        public bool LegacyFormat = false;
+
         string[]? SubregionOrder;
 
         public CompoundEnumerable<MapObject> ObjectLists = new();
         public List<MapObject> Objects = new();
 
-        public Region() 
+        public Region()
         {
             ObjectLists.Add(Rooms);
             ObjectLists.Add(Objects);
         }
 
-        public Region(string id, string worldFilePath, string mapFilePath, string? defaultPropertiesPath, string? slugcatPropertiesPath) : this()
+        public Region(Structures.RegionInfo info, string worldFilePath, string mapFilePath, string? defaultPropertiesPath, string? slugcatPropertiesPath) : this()
         {
-            using TaskProgress progress = new($"Loading region {id}", 6);
+            using TaskProgress progress = new($"Loading region {info.Id}", 6);
 
             string? mainPropertiesPath = slugcatPropertiesPath ?? defaultPropertiesPath;
 
-            Id = id.ToUpper();
+            LegacyFormat = RWAssets.CurrentInstallation?.IsLegacy is true;
+            Id = info.Id.ToUpper();
             WorldString = File.ReadAllText(worldFilePath);
             PropertiesString = mainPropertiesPath is null ? null : File.ReadAllText(mainPropertiesPath);
             MapString = File.ReadAllText(mapFilePath);
@@ -72,7 +73,7 @@ namespace Cornifer
                 for (int i = 0; i < Rooms.Count; i++)
                 {
                     Room r = Rooms[i];
-                    string roomPath = r.IsGate ? $"world/gates/{r.Name}" : $"world/{id}-rooms/{r.Name}";
+                    string roomPath = r.IsGate ? $"world/gates/{r.Name}" : $"{info.RoomsPath}/{r.Name}";
 
                     string? settings = RWAssets.ResolveSlugcatFile(roomPath + "_settings.txt");
                     string? data = RWAssets.ResolveFile(roomPath + ".txt");
@@ -354,7 +355,7 @@ namespace Cornifer
                         foreach (string roomName in split[2].Split(',', StringSplitOptions.TrimEntries))
                             if (TryGetRoom(roomName, out Room? room))
                             {
-                                room.BrokenForSlugcats.Add(split[1]);
+                                room.BrokenForSlugcats.Add(FixSlugcatId(split[1]));
                             }
                     }
                     else if (split[0] == "Subregion" && split.Length > 1)
@@ -389,7 +390,7 @@ namespace Cornifer
                     continue;
                 }
 
-                string[] data = split[1].Split("><", StringSplitOptions.TrimEntries);
+                string[] data = split[1].Split(LegacyFormat ? "," : "><", StringSplitOptions.TrimEntries);
 
                 if (data.Length > 3)
                 {
@@ -409,15 +410,22 @@ namespace Cornifer
                 }
                 if (data.TryGet(5, out string subregion))
                 {
-                    Subregion? subreg = subregions.FirstOrDefault(s => s.Name == subregion || s.AltName == subregion);
-
-                    if (subreg is null)
+                    if (int.TryParse(subregion, out int subr) && subregions.Count > subr)
                     {
-                        subreg = new(this, subregion);
-                        subregions.Add(subreg);
+                        room.Subregion.OriginalValue = subregions[subr];
                     }
+                    else
+                    {
+                        Subregion? subreg = subregions.FirstOrDefault(s => s.Name == subregion || s.AltName == subregion);
 
-                    room.Subregion.OriginalValue = subreg;
+                        if (subreg is null)
+                        {
+                            subreg = new(this, subregion);
+                            subregions.Add(subreg);
+                        }
+
+                        room.Subregion.OriginalValue = subreg;
+                    }
                 }
 
                 room.Positioned = true;
@@ -522,7 +530,7 @@ namespace Cornifer
 
             foreach (var (room, slugcats) in slugcatStartingRooms)
             {
-                string text = 
+                string text =
                     $"{string.Join("", slugcats.Select(s => $"[ic:Slugcat_{s.Id}]"))}\n" +
                     $"{string.Join("/", slugcats.Select(s => $"[c:{s.Color.ToHexString()}]{s.Name}[/c]"))} spawn";
 
@@ -581,7 +589,7 @@ namespace Cornifer
                         string[] slugcats = roomSlugcats.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
                         if (exclude == slugcats.Any(s => Main.SelectedSlugcat.Id.Equals(s, StringComparison.InvariantCultureIgnoreCase)))
                             continue;
-                     }
+                    }
                 }
 
                 if (!TryGetRoom(roomName, out Room? room))
@@ -684,7 +692,7 @@ namespace Cornifer
                                         icon.SkipTextureSave = true;
                                         obj = icon;
                                     }
-                                    else 
+                                    else
                                     {
                                         Main.LoadErrors.Add($"[roomobjects.txt:{lineNumber}] No sprite named {data}");
                                     }
@@ -759,6 +767,7 @@ namespace Cornifer
             return new()
             {
                 ["id"] = Id,
+                ["legacy"] = LegacyFormat,
                 ["world"] = WorldString,
                 ["properties"] = PropertiesString,
                 ["map"] = MapString,
@@ -781,6 +790,9 @@ namespace Cornifer
 
         public void LoadJson(JsonNode node)
         {
+            if (node.TryGet("legacy", out bool legacy))
+                LegacyFormat = legacy;
+
             if (node.TryGet("id", out string? id))
                 Id = id.ToUpper();
 
@@ -850,6 +862,20 @@ namespace Cornifer
 
             LoadConnections();
             MarkRoomTilemapsDirty();
+        }
+
+        static string FixSlugcatId(string id)
+        {
+            if (int.TryParse(id, out int legacyId))
+                return legacyId switch
+                {
+                    1 => "Yellow",
+                    2 => "Red",
+                    3 => "Night",
+                    _ => "White",
+                };
+
+            return id;
         }
     }
 

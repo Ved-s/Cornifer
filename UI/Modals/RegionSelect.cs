@@ -96,6 +96,18 @@ namespace Cornifer.UI.Modals
 
             RegionList.Elements.Clear();
 
+            if (RWAssets.CurrentInstallation is null)
+            {
+                RegionList.Elements.Add(new UILabel
+                {
+                    Text = "Installation not selected",
+                    TextAlign = new(.5f, 1f),
+                    Height = 20,
+                });
+
+                return;
+            }
+
             HashSet<string> foundMods = new();
 
             string? slugcatWorldName = Slugcat?.WorldStateSlugcat;

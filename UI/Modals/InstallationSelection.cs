@@ -101,7 +101,7 @@ namespace Cornifer.UI.Modals
                 return null;
             
             Instance ??= new();
-            Instance.Installation = RWAssets.CreateInstallation(Path.GetDirectoryName(rainWorld)!);
+            Instance.Installation = RainWorldInstallation.CreateFromPath(Path.GetDirectoryName(rainWorld)!);
             Instance.Installation.Name = "Custom";
 
             return await Modal<InstallationSelection, RainWorldInstallation?>.ShowDialog();

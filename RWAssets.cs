@@ -6,24 +6,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace Cornifer
 {
     public static class RWAssets
     {
-        public static string? RainWorldRoot { get; private set; }
-        public static string? RainWorldAssets { get; private set; }
-
         public static string? SaveFolder;
 
         public static List<RainWorldInstallation> Installations = new();
-        public static RainWorldInstallation? CurrentInstallation 
+        public static RainWorldInstallation? CurrentInstallation
         {
             get => currentInstallation;
             private set => currentInstallation = value;
@@ -60,7 +54,7 @@ namespace Cornifer
 
             void AddCustomInstallation(string path)
             {
-                RainWorldInstallation install = CreateInstallation(path);
+                RainWorldInstallation install = RainWorldInstallation.CreateFromPath(path);
                 install.Name = "Custom installation";
                 AddInstallation(install);
             }
@@ -95,7 +89,7 @@ namespace Cornifer
                     Profile.Current.CurrentInstall = null;
                     Profile.Save();
                 }
-                else 
+                else
                 {
                     loadInstallation = install;
                 }
@@ -103,19 +97,6 @@ namespace Cornifer
 
             if (loadInstallation is not null)
                 SetActiveInstallation(loadInstallation);
-        }
-
-        public static RainWorldInstallation CreateInstallation(string path)
-        {
-            RainWorldInstallation install = new(Path.GetFullPath(path), Random.Shared.Next().ToString("x"), "Unnamed", RainWorldFeatures.None);
-
-            if (Directory.Exists(Path.Combine(path, "RainWorld_Data/StreamingAssets/mods")))
-                install.Features |= RainWorldFeatures.Remix;
-
-            if (Directory.Exists(Path.Combine(path, "RainWorld_Data/StreamingAssets/mods")))
-                install.Features |= RainWorldFeatures.Downpour;
-
-            return install;
         }
 
         public static void SetActiveInstallation(RainWorldInstallation? installation)
@@ -136,7 +117,6 @@ namespace Cornifer
             }
 
             Interface.ActiveInstallChanged();
-            RainWorldRoot = installation?.Path;
 
             Mods.Clear();
             EnabledMods = null;
@@ -181,22 +161,31 @@ namespace Cornifer
                         }
                     }
                 }
+            }
 
-                string assets = Path.Combine(installation.Path, $"RainWorld_Data/StreamingAssets");
-                if (Directory.Exists(assets))
+            if (Directory.Exists(installation.AssetsPath))
+            {
+                string rwVersionPath = Path.Combine(installation.AssetsPath, "GameVersion.txt");
+                string? rwVersion = null;
+
+                if (File.Exists(rwVersionPath))
+                    rwVersion = File.ReadAllText(rwVersionPath).TrimStart('v');
+
+                InsertMod(new("rainworld", "Rain World", installation.AssetsPath, int.MaxValue, true)
                 {
-                    string rwVersionPath = Path.Combine(assets, "GameVersion.txt");
-                    string? rwVersion = null;
+                    Version = rwVersion
+                });
+            }
 
-                    if (File.Exists(rwVersionPath))
-                        rwVersion = File.ReadAllText(rwVersionPath).TrimStart('v');
+            if (installation.IsRemix)
+            {
+                string mergedmods = Path.Combine(installation.AssetsPath, "mergedmods");
+                if (Directory.Exists(mergedmods))
+                    InsertMod(new("mergedmods", "Rain World", mergedmods, int.MinValue, true));
 
-                    InsertMod(new("rainworld", "Rain World", assets, int.MaxValue, true)
-                    {
-                        Version = rwVersion
-                    });
-                    SetAssetsPath(assets);
-                }
+                string mods = Path.Combine(installation.AssetsPath, "mods");
+                if (Directory.Exists(mods))
+                    LoadModsFolder(mods);
 
                 if (installation.IsSteam)
                 {
@@ -204,11 +193,11 @@ namespace Cornifer
                     if (Directory.Exists(workshop))
                         LoadModsFolder(workshop);
                 }
-
-                foreach (RWMod mod in Mods)
-                    if (mod.Enabled)
-                        LoadMod(mod);
             }
+
+            foreach (RWMod mod in Mods)
+                if (mod.Enabled)
+                    LoadMod(mod);
         }
 
         public static void AddInstallation(RainWorldInstallation installation, bool save = true)
@@ -231,7 +220,7 @@ namespace Cornifer
 
         public static async void ShowDialogs()
         {
-            if (RainWorldRoot is not null)
+            if (CurrentInstallation is not null)
                 return;
 
             if (await MessageBox.Show("Could not find Rain World installation.", new[] { ("Select installation", 1), ("Cancel", 0) }) == 1)
@@ -243,22 +232,6 @@ namespace Cornifer
                     RWAssets.SetActiveInstallation(install);
                 }
             }
-        }
-
-        public static void SetAssetsPath(string? path)
-        {
-            RainWorldAssets = path;
-
-            if (path is null)
-                return;
-
-            string mergedmods = Path.Combine(path, "mergedmods");
-            if (Directory.Exists(mergedmods))
-                InsertMod(new("mergedmods", "Rain World", mergedmods, int.MinValue, true));
-
-            string mods = Path.Combine(path, "mods");
-            if (Directory.Exists(mods))
-                LoadModsFolder(mods);
         }
 
         public static void LoadInstallations()
@@ -282,7 +255,7 @@ namespace Cornifer
         {
             void AddSteamInstall(string path)
             {
-                RainWorldInstallation install = CreateInstallation(path);
+                RainWorldInstallation install = RainWorldInstallation.CreateFromPath(path);
 
                 install.Name = "Steam installation";
                 install.Id = "steam";
@@ -346,7 +319,7 @@ namespace Cornifer
                 try
                 {
                     string modinfo = File.ReadAllText(modinfoPath);
-                    
+
                     Match idMatch = ModInfoIdRegex.Match(modinfo);
 
                     if (!idMatch.Success)
@@ -519,8 +492,71 @@ namespace Cornifer
                 }
             }
         }
+
+        public static IEnumerable<RegionInfo> FindRegions(Slugcat? slugcat = null)
+        {
+            if (CurrentInstallation is null)
+                yield break;
+
+            if (CurrentInstallation.IsLegacy)
+            {
+                foreach (var (dir, mod) in EnumerateDirectories("world/regions"))
+                {
+                    string id = System.IO.Path.GetFileName(dir)!.ToUpper();
+
+                    string? properties = ResolveFile($"world/regions/{id}/properties.txt");
+                    if (properties is null)
+                        continue;
+
+                    string displayname = File.ReadLines(properties)
+                        .FirstOrDefault(l => l.StartsWith("Subregion: "))?
+                        .Substring(11) ?? id;
+
+                    yield return new RegionInfo($"world/regions/{id}", $"world/regions/{id}/rooms", id, displayname, mod);
+                }
+                yield break;
+            }
+
+            string? worldSlugcat = slugcat?.WorldStateSlugcat;
+            foreach (var (dir, mod) in EnumerateDirectories("world"))
+            {
+                string id = System.IO.Path.GetFileName(dir)!.ToUpper();
+
+                string? properties = ResolveFile($"world/{id}/properties.txt");
+                if (properties is null)
+                    continue;
+
+                string? displayname = ResolveFile($"world/{id}/displayname.txt");
+                if (displayname is null)
+                    continue;
+
+                if (slugcat is not null)
+                {
+                    string? slugcatDisplayName = ResolveFile($"world/{id}/displayname-{worldSlugcat}.txt");
+                    if (slugcatDisplayName is not null)
+                        displayname = slugcatDisplayName;
+                }
+
+                yield return new RegionInfo($"world/{id}", $"world/{id}-rooms", id, File.ReadAllText(displayname), mod);
+            }
+        }
+
         public static string? GetRegionDisplayName(string regionId, Slugcat? slugcat)
         {
+            if (CurrentInstallation is null)
+                return null;
+
+            if (CurrentInstallation.IsLegacy)
+            {
+                string? properties = ResolveFile($"world/regions/{regionId}/properties.txt");
+                if (properties is null)
+                    return null;
+
+                return File.ReadLines(properties)
+                    .FirstOrDefault(l => l.StartsWith("Subregion: "))?
+                    .Substring(11);
+            }
+
             string? displayname = null;
             if (slugcat is not null)
                 displayname = ResolveFile($"world/{regionId}/displayname-{slugcat.WorldStateSlugcat}.txt");
@@ -529,31 +565,6 @@ namespace Cornifer
                 displayname = ResolveFile($"world/{regionId}/displayname.txt");
 
             return displayname is null ? null : File.ReadAllText(displayname);
-        }
-        public static IEnumerable<RegionInfo> FindRegions(Slugcat? slugcat = null)
-        {
-            string? worldSlugcat = slugcat?.WorldStateSlugcat;
-            foreach (var (dir, mod) in RWAssets.EnumerateDirectories("world"))
-            {
-                string id = Path.GetFileName(dir)!.ToUpper();
-
-                string? properties = RWAssets.ResolveFile($"world/{id}/properties.txt");
-                if (properties is null)
-                    continue;
-
-                string? displayname = RWAssets.ResolveFile($"world/{id}/displayname.txt");
-                if (displayname is null)
-                    continue;
-
-                if (slugcat is not null)
-                {
-                    string? slugcatDisplayName = RWAssets.ResolveFile($"world/{id}/displayname-{worldSlugcat}.txt");
-                    if (slugcatDisplayName is not null)
-                        displayname = slugcatDisplayName;
-                }
-
-                yield return new RegionInfo(id, File.ReadAllText(displayname), mod);
-            }
         }
     }
 }

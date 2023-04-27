@@ -370,5 +370,11 @@ namespace Cornifer
                 options.WriteIndented = true;
             return options;
         }
+
+        public static IEnumerable<T?> AsNullable<T>(this IEnumerable<T> ienum) where T : struct 
+        {
+            foreach (T t in ienum)
+                yield return t;
+        }
     }
 }

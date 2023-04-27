@@ -745,12 +745,13 @@ namespace Cornifer
             SpriteBatch.End();
         }
 
-        public static Task LoadRegion(string id)
+        public static Task LoadRegion(RegionInfo info)
         {
-            string? worldFile = RWAssets.ResolveSlugcatFile($"world/{id}/world_{id}.txt");
-            string? mapFile = RWAssets.ResolveSlugcatFile($"world/{id}/map_{id}.txt");
-            string? propertiesFile = RWAssets.ResolveFile($"world/{id}/properties.txt");
-            string? slugcatPropertiesFile = SelectedSlugcat is null ? null : RWAssets.ResolveFile($"world/{id}/properties-{SelectedSlugcat.WorldStateSlugcat}.txt");
+            string? worldFile = RWAssets.ResolveSlugcatFile($"{info.Path}/world_{info.Id}.txt");
+            string? mapFile = RWAssets.ResolveSlugcatFile($"{info.Path}/map_{info.Id}.txt");
+            string? propertiesFile = RWAssets.ResolveFile($"{info.Path}/properties.txt");
+            string? slugcatPropertiesFile = SelectedSlugcat is null || RWAssets.CurrentInstallation?.IsLegacy is true ? null 
+                : RWAssets.ResolveFile($"{info.Path}/properties-{SelectedSlugcat.WorldStateSlugcat}.txt");
 
             if (worldFile is null)
             {
@@ -769,7 +770,7 @@ namespace Cornifer
             {
                 try
                 {
-                    Region region = new(id, worldFile, mapFile, propertiesFile, slugcatPropertiesFile);
+                    Region region = new(info, worldFile, mapFile, propertiesFile, slugcatPropertiesFile);
 
                     MainThreadQueue.Enqueue(() =>
                     {
@@ -942,16 +943,22 @@ namespace Cornifer
                     if (choice == 1)
                     {
                         string? region = (node["region"]?["id"] as JsonValue)?.TryGetValue(out string? s) is true ? s : null;
-                        string? slugcat = (node["slugcat"] as JsonValue)?.TryGetValue(out s) is true ? s : null;
+                        string? slugcatId = (node["slugcat"] as JsonValue)?.TryGetValue(out s) is true ? s : null;
 
-                        if (region is null)
+                        Slugcat? slugcat = slugcatId is null ? null :
+                            StaticData.Slugcats.FirstOrDefault(s => s.Id.Equals(slugcatId, StringComparison.InvariantCultureIgnoreCase));
+
+                        RegionInfo? regionInfo = region is null ? null : RWAssets.FindRegions(slugcat)
+                            .AsNullable().FirstOrDefault(i => i!.Value.Id.Equals(region, StringComparison.InvariantCultureIgnoreCase));
+
+                        if (regionInfo is null)
                         {
                             await Interface.SelectRegionClicked();
                         }
                         else 
                         {
-                            SelectedSlugcat = StaticData.Slugcats.FirstOrDefault(s => s.Id.Equals(slugcat, StringComparison.InvariantCultureIgnoreCase));
-                            await LoadRegion(region);
+                            SelectedSlugcat = slugcat;
+                            await LoadRegion(regionInfo.Value);
                         }
                     }
 

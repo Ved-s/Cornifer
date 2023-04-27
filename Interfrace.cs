@@ -1111,7 +1111,7 @@ namespace Cornifer
             Main.SelectedSlugcat = slugcat.Value.Slugcat;
             InterfaceState.DrawSlugcatIcons.Value = slugcat.Value.Slugcat is null;
             RWAssets.EnableMods = !region.Value.ExcludeMods;
-            await Main.LoadRegion(region.Value.Region.Id);
+            await Main.LoadRegion(region.Value.Region);
             return true;
         }
 

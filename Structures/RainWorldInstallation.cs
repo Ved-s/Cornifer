@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -21,16 +23,25 @@ namespace Cornifer.Structures
         public RainWorldFeatures Features { get; set; }
 
         [JsonIgnore]
+        public string AssetsPath { get => assetsPath ?? Path; set => assetsPath = value; }
+
+        [JsonIgnore]
         public bool CanSave = true;
 
         [JsonIgnore]
-        public bool IsRemix => (Features & RainWorldFeatures.Remix) != RainWorldFeatures.None;
+        private string? assetsPath;
 
         [JsonIgnore]
-        public bool IsSteam => (Features & RainWorldFeatures.Steam) != RainWorldFeatures.None;
+        public bool IsRemix => HasFeature(RainWorldFeatures.Remix);
 
         [JsonIgnore]
-        public bool IsDownpour => (Features & RainWorldFeatures.Downpour) != RainWorldFeatures.None;
+        public bool IsLegacy => HasFeature(RainWorldFeatures.Legacy);
+
+        [JsonIgnore]
+        public bool IsSteam => HasFeature(RainWorldFeatures.Steam);
+
+        [JsonIgnore]
+        public bool IsDownpour => HasFeature(RainWorldFeatures.Downpour);
 
         public static RainWorldFeatures StateEssentialFeatures => RainWorldFeatures.Legacy | RainWorldFeatures.Remix | RainWorldFeatures.Downpour;
 
@@ -45,7 +56,29 @@ namespace Cornifer.Structures
             CanSave = canSave;
         }
 
+        public bool HasFeature(RainWorldFeatures feature) =>
+            (Features & feature) != RainWorldFeatures.None;
+
         public string GetFeaturesString() => GetFeaturesString(Features);
+
+        public static RainWorldInstallation CreateFromPath(string path)
+        {
+            RainWorldInstallation install = new(System.IO.Path.GetFullPath(path), Random.Shared.Next().ToString("x"), "Unnamed", RainWorldFeatures.None);
+
+            if (Directory.Exists(System.IO.Path.Combine(path, "RainWorld_Data/StreamingAssets/mods")))
+            {
+                install.AssetsPath = System.IO.Path.Combine(path, "RainWorld_Data/StreamingAssets");
+                install.Features |= RainWorldFeatures.Remix;
+
+                if (Directory.Exists(System.IO.Path.Combine(path, "RainWorld_Data/StreamingAssets/mods/moreslugcats")))
+                    install.Features |= RainWorldFeatures.Downpour;
+            }
+            else if (Directory.Exists(System.IO.Path.Combine(path, "World")) && Directory.Exists(System.IO.Path.Combine(path, "Assets")))
+            {
+                install.Features |= RainWorldFeatures.Legacy;
+            }
+            return install;
+        }
 
         public static string GetFeaturesString(RainWorldFeatures features)
         {
@@ -71,5 +104,7 @@ namespace Cornifer.Structures
 
             return string.Join(", ", features);
         }
+
+        
     }
 }
