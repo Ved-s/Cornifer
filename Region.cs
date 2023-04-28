@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Timers;
 
 namespace Cornifer
 {
@@ -41,21 +42,21 @@ namespace Cornifer
             ObjectLists.Add(Objects);
         }
 
-        public Region(Structures.RegionInfo info, string worldFilePath, string mapFilePath, string? defaultPropertiesPath, string? slugcatPropertiesPath) : this()
+        public Region(Structures.RegionInfo info, string worldFile, string mapFile, string? defaultProperties, string? slugcatProperties) : this()
         {
             using TaskProgress progress = new($"Loading region {info.Id}", 6);
 
-            string? mainPropertiesPath = slugcatPropertiesPath ?? defaultPropertiesPath;
+            string? mainProperties = slugcatProperties ?? defaultProperties;
 
             LegacyFormat = RWAssets.CurrentInstallation?.IsLegacy is true;
             Id = info.Id.ToUpper();
-            WorldString = File.ReadAllText(worldFilePath);
-            PropertiesString = mainPropertiesPath is null ? null : File.ReadAllText(mainPropertiesPath);
-            MapString = File.ReadAllText(mapFilePath);
+            WorldString = worldFile;
+            PropertiesString = mainProperties;
+            MapString = mapFile;
 
-            if (defaultPropertiesPath is not null)
+            if (defaultProperties is not null)
             {
-                SubregionOrder = File.ReadLines(defaultPropertiesPath)
+                SubregionOrder = defaultProperties.Split('\n', StringSplitOptions.TrimEntries)
                     .Where(line => line.StartsWith("Subregion: "))
                     .Select(line => line.Substring(11))
                     .ToArray();
@@ -226,10 +227,60 @@ namespace Cornifer
 
                     if (split.Length >= 1)
                     {
-                        Room room = new(this, split[0]);
+                        string roomname = split[0];
+
+                        if (roomname.StartsWith("("))
+                        {
+                            int endIndex = roomname.IndexOf(')');
+                            if (endIndex > 0)
+                            {
+                                string slugcats = roomname.Substring(1, endIndex - 1);
+                                roomname = roomname.Substring(endIndex + 1);
+
+                                if (Main.SelectedSlugcat is not null && slugcats
+                                    .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                                    .Select(s => FixSlugcatId(s))
+                                    .All(s => !Main.SelectedSlugcat.Id.Equals(s, StringComparison.InvariantCultureIgnoreCase)))
+                                {
+                                    continue;
+                                }
+                            }
+                        }
+
+                        if (!TryGetRoom(roomname, out Room? room))
+                        {
+                            room = new(this, roomname);
+                            Rooms.Add(room);
+                        }
 
                         if (split.Length >= 2)
-                            connections[room.Name!] = split[1].Split(',', StringSplitOptions.TrimEntries);
+                        {
+                            if (connections.TryGetValue(room.Name!, out string[]? connects))
+                            {
+                                string[] newconnects = split[1].Split(',', StringSplitOptions.TrimEntries);
+                                if (connects.Length < newconnects.Length)
+                                {
+                                    Array.Resize(ref connects, newconnects.Length);     
+                                }
+
+                                for (int i = 0; i < newconnects.Length; i++)
+                                {
+                                    if (connects[i] is null or "DISCONNECTED")
+                                        connects[i] = newconnects[i];
+
+                                    if (newconnects[i] is "DISCONNECTED")
+                                        continue;
+
+                                    connects[i] = newconnects[i];
+                                }
+
+                                connections[room.Name!] = connects;
+                            }
+                            else
+                            {
+                                connections[room.Name!] = split[1].Split(',', StringSplitOptions.TrimEntries);
+                            }
+                        }
 
                         if (split.Length >= 3)
                             switch (split[2])
@@ -240,8 +291,6 @@ namespace Cornifer
                                 case "SCAVOUTPOST": room.IsScavengerOutpost = true; break;
                                 case "SCAVTRADER": room.IsScavengerTrader = true; break;
                             }
-
-                        Rooms.Add(room);
                     }
                 }
                 else if (readingConditionalLinks)

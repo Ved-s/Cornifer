@@ -10,8 +10,10 @@ using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -747,11 +749,11 @@ namespace Cornifer
 
         public static Task LoadRegion(RegionInfo info)
         {
-            string? worldFile = RWAssets.ResolveSlugcatFile($"{info.Path}/world_{info.Id}.txt");
-            string? mapFile = RWAssets.ResolveSlugcatFile($"{info.Path}/map_{info.Id}.txt");
-            string? propertiesFile = RWAssets.ResolveFile($"{info.Path}/properties.txt");
-            string? slugcatPropertiesFile = SelectedSlugcat is null || RWAssets.CurrentInstallation?.IsLegacy is true ? null 
-                : RWAssets.ResolveFile($"{info.Path}/properties-{SelectedSlugcat.WorldStateSlugcat}.txt");
+            List<string>? worldFile = RWAssets.ResolveUnmergedSlugcatFiles($"{info.Path}/world_{info.Id}.txt");
+            List<string>? mapFile = RWAssets.ResolveUnmergedSlugcatFiles($"{info.Path}/map_{info.Id}.txt");
+            List<string>? propertiesFile = RWAssets.ResolveUnmergedFiles($"{info.Path}/properties.txt");
+            List<string>? slugcatPropertiesFile = SelectedSlugcat is null || RWAssets.CurrentInstallation?.IsLegacy is true ? null 
+                : RWAssets.ResolveUnmergedFiles($"{info.Path}/properties-{SelectedSlugcat.WorldStateSlugcat}.txt");
 
             if (worldFile is null)
             {
@@ -768,9 +770,34 @@ namespace Cornifer
             TaskCompletionSource completion = new();
             ThreadPool.QueueUserWorkItem((_) =>
             {
+                [return: NotNullIfNotNull(nameof(paths))]
+                static string? MergeFiles(List<string>? paths) 
+                {
+                    if (paths is null)
+                        return null;
+
+                    if (paths.Count == 0)
+                        return "";
+
+                    if (paths.Count == 1)
+                        return File.ReadAllText(paths[0]);
+
+                    StringBuilder builder = new();
+
+                    foreach (string path in paths) 
+                    {
+                        if (builder.Length > 0 && builder[^1] != '\n')
+                            builder.Append('\n');
+
+                        builder.Append(File.ReadAllText(path));
+                    }
+
+                    return builder.ToString();
+                }
+
                 try
                 {
-                    Region region = new(info, worldFile, mapFile, propertiesFile, slugcatPropertiesFile);
+                    Region region = new(info, MergeFiles(worldFile), MergeFiles(mapFile), MergeFiles(propertiesFile), MergeFiles(slugcatPropertiesFile));
 
                     MainThreadQueue.Enqueue(() =>
                     {

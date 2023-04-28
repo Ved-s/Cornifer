@@ -40,6 +40,12 @@ namespace Cornifer
         static Regex ModInfoNameRegex = new(@"""name"":[ \t]+""(.+?)""", RegexOptions.Compiled);
         static Regex ModInfoVersionRegex = new(@"""version"":[ \t]+""(.+?)""", RegexOptions.Compiled);
 
+        static Regex CRPackInfoNameRegex = new(@"""regionPackName"":[ \t]+""(.+?)""", RegexOptions.Compiled);
+        static Regex CRPackInfoActivatedTrueRegex = new(@"""activated"":[ \t]+true", RegexOptions.Compiled);
+        static Regex CRPackInfoLoadOrderRegex = new(@"""loadOrder"":[ \t]+(\d+)", RegexOptions.Compiled);
+
+        static Regex NotLetterOrDigit = new(@"[^- 0-9a-zA-Z]", RegexOptions.Compiled);
+
         private static RainWorldInstallation? currentInstallation;
 
         const string OptionsListSplitter = "&lt;optC&gt;";
@@ -195,6 +201,11 @@ namespace Cornifer
                 }
             }
 
+            if (installation.IsLegacy && installation.HasCRS)
+            {
+                LoadLegacyCRSFolder(Path.Combine(installation.Path, "Mods/CustomResources"));
+            }
+
             foreach (RWMod mod in Mods)
                 if (mod.Enabled)
                     LoadMod(mod);
@@ -308,8 +319,55 @@ namespace Cornifer
             return false;
         }
 
+        static void LoadLegacyCRSFolder(string path)
+        {
+            if (!Directory.Exists(path))
+                return;
+
+            foreach (string modDir in Directory.EnumerateDirectories(path))
+            {
+                string packinfoPath = Path.Combine(modDir, "packinfo.json");
+                if (!File.Exists(packinfoPath))
+                    continue;
+
+                try
+                {
+                    string packinfo = File.ReadAllText(packinfoPath);
+
+                    Match nameMatch = CRPackInfoNameRegex.Match(packinfo);
+
+                    if (!nameMatch.Success)
+                        continue;
+
+                    string name = nameMatch.Groups[1].Value;
+                    string id = "crs." + NotLetterOrDigit.Replace(name.Replace(' ', '-'), "").ToLower();
+
+                    Match versionMatch = ModInfoVersionRegex.Match(packinfo);
+                    Match loadOrderMatch = CRPackInfoLoadOrderRegex.Match(packinfo);
+                    Match activatedMatch = CRPackInfoActivatedTrueRegex.Match(packinfo);
+
+                    string? version = versionMatch.Success ? versionMatch.Groups[1].Value : null;
+                    int loadOrder = loadOrderMatch.Success && int.TryParse(loadOrderMatch.Groups[1].Value, out int lo) ? -lo : 0;
+                    bool enabled = activatedMatch.Success;
+
+
+                    InsertMod(new(id, name, modDir, loadOrder, enabled)
+                    {
+                        Version = version,
+                        NeedsManualMerging = true,
+                    });
+                }
+                catch (Exception e)
+                {
+                    Main.LoadErrors.Add($"Could not load CRS pack {Path.GetFileName(modDir)}: {e.Message}");
+                }
+            }
+        }
         static void LoadModsFolder(string path)
         {
+            if (!Directory.Exists(path))
+                return;
+
             foreach (string modDir in Directory.EnumerateDirectories(path))
             {
                 string modinfoPath = Path.Combine(modDir, "modinfo.json");
@@ -335,10 +393,11 @@ namespace Cornifer
 
                     int loadOrder = ModLoadOrder is null ? 0 : ModLoadOrder.GetValueOrDefault(id, 0);
                     bool enabled = EnabledMods is null || EnabledMods.Contains(id);
+                    string? version = versionMatch.Success ? versionMatch.Groups[1].Value : null;
 
                     InsertMod(new(id, name, modDir, loadOrder, enabled)
                     {
-                        Version = versionMatch.Success ? versionMatch.Groups[1].Value : null,
+                        Version = version,
                     });
                 }
                 catch (Exception e)
@@ -442,6 +501,41 @@ namespace Cornifer
             }
         }
 
+        public static List<string>? ResolveUnmergedFiles(string path)
+        {
+            List<string> paths = new();
+            foreach (var mod in Mods)
+            {
+                if (!mod.Active || mod.NeedsManualMerging)
+                    continue;
+
+                string modfile = Path.Combine(mod.Path, path);
+                if (File.Exists(modfile))
+                {
+                    paths.Add(modfile);
+                    break;
+                }
+            }
+
+            for (int i = Mods.Count - 1; i >= 0; i--)
+            {
+                RWMod? mod = Mods[i];
+                if (!mod.Active || !mod.NeedsManualMerging)
+                    continue;
+
+                string modfile = Path.Combine(mod.Path, path);
+                if (File.Exists(modfile))
+                {
+                    paths.Add(modfile);
+                }
+            }
+
+            if (paths.Count == 0)
+                return null;
+
+            return paths;
+        }
+
         public static string? ResolveFile(string path)
         {
             foreach (var mod in Mods)
@@ -455,6 +549,7 @@ namespace Cornifer
             }
             return null;
         }
+
         public static string? ResolveSlugcatFile(string path)
         {
             if (Main.SelectedSlugcat is null)
@@ -468,6 +563,21 @@ namespace Cornifer
 
             return ResolveFile(path);
         }
+
+        public static List<string>? ResolveUnmergedSlugcatFiles(string path)
+        {
+            if (Main.SelectedSlugcat is null)
+                return ResolveUnmergedFiles(path);
+
+            string slugcatPath = Path.Combine(Path.GetDirectoryName(path)!, $"{Path.GetFileNameWithoutExtension(path)}-{Main.SelectedSlugcat.WorldStateSlugcat}{Path.GetExtension(path)}");
+            List<string>? resolved = ResolveUnmergedFiles(slugcatPath);
+
+            if (resolved is not null)
+                return resolved;
+
+            return ResolveUnmergedFiles(path);
+        }
+
         public static IEnumerable<(string path, RWMod mod)> EnumerateDirectories(string path)
         {
             HashSet<string> enumerated = new();

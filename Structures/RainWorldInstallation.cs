@@ -43,6 +43,9 @@ namespace Cornifer.Structures
         [JsonIgnore]
         public bool IsDownpour => HasFeature(RainWorldFeatures.Downpour);
 
+        [JsonIgnore]
+        public bool HasCRS => HasFeature(RainWorldFeatures.CRS);
+
         public static RainWorldFeatures StateEssentialFeatures => RainWorldFeatures.Legacy | RainWorldFeatures.Remix | RainWorldFeatures.Downpour;
 
         public RainWorldInstallation() { }
@@ -76,6 +79,11 @@ namespace Cornifer.Structures
             else if (Directory.Exists(System.IO.Path.Combine(path, "World")) && Directory.Exists(System.IO.Path.Combine(path, "Assets")))
             {
                 install.Features |= RainWorldFeatures.Legacy;
+
+                if (Directory.Exists(System.IO.Path.Combine(path, "Mods/CustomResources")))
+                {
+                    install.Features |= RainWorldFeatures.CRS;
+                }
             }
             return install;
         }

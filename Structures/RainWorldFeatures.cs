@@ -11,7 +11,8 @@ namespace Cornifer.Structures
         Downpour = 4,
 
         Steam = 8,
+        CRS = 16,
 
-        All = Legacy | Remix | Downpour | Steam,
+        All = Legacy | Remix | Downpour | Steam | CRS,
     }
 }

@@ -12,6 +12,8 @@
         public bool Active => Enabled && (RWAssets.EnableMods || Id == "rainworld");
         public bool Enabled;
 
+        public bool NeedsManualMerging = false;
+
         public RWMod(string id, string name, string path, int loadOrder, bool enabled)
         {
             Id = id;
