@@ -7,6 +7,7 @@ using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace Cornifer
 {
@@ -65,6 +66,8 @@ namespace Cornifer
             Directory.CreateDirectory(dirPath);
             CaptureRenderer renderer = CreateRenderer();
 
+            int layerOrder = 1;
+
             int all = (int)RenderLayers.All;
             for (int i = 0; i < 32; i++)
             {
@@ -77,15 +80,32 @@ namespace Cornifer
 
                 RenderLayers layer = (RenderLayers)layerInt;
 
-                CaptureMapLayer(renderer, layer, true, dirPath);
-                CaptureMapLayer(renderer, layer, false, dirPath);
+                CaptureMapLayer(layerOrder, renderer, layer, true, dirPath);
+                layerOrder++;
+            }
+
+            for (int i = 0; i < 32; i++)
+            {
+                if ((all >> i) == 0)
+                    break;
+
+                int layerInt = 1 << i;
+                if ((layerInt & all) == 0)
+                    continue;
+
+                RenderLayers layer = (RenderLayers)layerInt;
+
+                CaptureMapLayer(layerOrder, renderer, layer, false, dirPath);
+                layerOrder++;
             }
 
             renderer.Dispose();
         }
 
-        static void CaptureMapLayer(CaptureRenderer renderer, RenderLayers layer, bool shadow, string dir)
+        static void CaptureMapLayer(int order, CaptureRenderer renderer, RenderLayers layer, bool shadow, string dir)
         {
+            //data = new byte[renderer.Image.Height * renderer.Image.Width * 4];
+
             for (int j = 0; j < renderer.Image.Height; j++)
             {
                 Span<Rgba32> row = renderer.Image.DangerousGetPixelRowMemory(j).Span;
@@ -96,7 +116,15 @@ namespace Cornifer
 
             Main.DrawMap(renderer, layer, shadow);
 
-            string filePath = Path.Combine(dir, $"{Main.Region?.Id}_{layer}{(shadow ? "Border" : "")}.png");
+            //for (int j = 0; j < renderer.Image.Height; j++)
+            //{
+            //    Span<Rgba32> src = renderer.Image.DangerousGetPixelRowMemory(j).Span;
+            //    Span<byte> dst = data.AsSpan(j * (renderer.Image.Width * 4), renderer.Image.Width * 4);
+            //
+            //    src.CopyTo(MemoryMarshal.Cast<byte, Rgba32>(dst));
+            //}
+
+            string filePath = Path.Combine(dir, $"{Main.Region?.Id}_{order}_{layer}{(shadow ? "Border" : "")}.png");
             renderer.Image.SaveAsPng(filePath);
         }
     }

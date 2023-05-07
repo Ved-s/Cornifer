@@ -75,6 +75,7 @@ namespace Cornifer
         internal static bool Selecting;
         internal static bool Dragging;
 
+        internal static bool NoIdle = false;
         internal static bool Idlesound;
         internal static ulong Idle;
 
@@ -101,6 +102,8 @@ namespace Cornifer
 
         protected override void Initialize()
         {
+            NoIdle = File.Exists(Path.Combine(MainDir, "NoIdle.txt"));
+
             base.Initialize();
 
 #if !DEBUG
@@ -221,23 +224,25 @@ namespace Cornifer
 
             InputHandler.Update();
 
-            if (IsActive && (InputHandler.AllKeys.Any(k => InputHandler.KeyboardState[k] == Microsoft.Xna.Framework.Input.KeyState.Down)
-                || InputHandler.AllMouseKeys.Any(k => InputHandler.MouseState.IsKeyDown(k))))
+            if (!NoIdle)
             {
-                Idlesound = false;
-                Idle = 0;
-            }
-            else 
-            {
-                Idle++;
-
-                if (!Idlesound && Idle > 3600 && Random.Shared.Next(512) == 0)
+                if (IsActive && (InputHandler.AllKeys.Any(k => InputHandler.KeyboardState[k] == Microsoft.Xna.Framework.Input.KeyState.Down)
+                    || InputHandler.AllMouseKeys.Any(k => InputHandler.MouseState.IsKeyDown(k))))
                 {
-                    Idlesound = true;
-                    Cornifer.Content.Idle.Play(Random.Shared.NextSingle() * .2f + .2f, 0, 0);
+                    Idlesound = false;
+                    Idle = 0;
+                }
+                else
+                {
+                    Idle++;
+
+                    if (!Idlesound && Idle > 3600 && Random.Shared.Next(512) == 0)
+                    {
+                        Idlesound = true;
+                        Cornifer.Content.Idle.Play(Random.Shared.NextSingle() * .2f + .2f, 0, 0);
+                    }
                 }
             }
-
 
             bool active = OldActive && IsActive;
             OldActive = IsActive;
