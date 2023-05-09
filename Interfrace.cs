@@ -215,7 +215,7 @@ namespace Cornifer
                     new UIList()
                     {
                         Top = 35,
-                        Height = new(-100, 1),
+                        Height = new(-70, 1),
                         ElementSpacing = 2,
 
                         Elements =
@@ -456,23 +456,23 @@ namespace Cornifer
 
                     new UIButton
                     {
-                        Top = new(-55, 1),
+                        Top = new(-25, 1),
 
                         Height = 25,
                         Text = "Capture map",
 
                         TextAlign = new(.5f)
-                    }.OnEvent(UIElement.ClickEvent, CaptureClicked),
+                    }.OnEvent(UIElement.ClickEvent, async (_, _) => await CaptureSave.Show()),
 
-                    new UIButton
-                    {
-                        Top = new(-25, 1),
-
-                        Height = 25,
-                        Text = "Capture map (Layered)",
-
-                        TextAlign = new(.5f)
-                    }.OnEvent(UIElement.ClickEvent, CaptureLayeredClicked),
+                    //new UIButton
+                    //{
+                    //    Top = new(-25, 1),
+                    //
+                    //    Height = 25,
+                    //    Text = "Capture map (Layered)",
+                    //
+                    //    TextAlign = new(.5f)
+                    //}.OnEvent(UIElement.ClickEvent, CaptureLayeredClicked),
                 }
             };
         }
@@ -1066,37 +1066,6 @@ namespace Cornifer
                 return;
 
             Main.TryCatchReleaseException(() => Main.OverlayImage = Texture2D.FromFile(Main.Instance.GraphicsDevice, filename), "Could not load overlay image");
-        }
-        static async void CaptureClicked(UIButton btn, Empty _)
-        {
-            string? renderFile = await Platform.SaveFileDialog("Select render save file", "PNG Image|*.png");
-            if (renderFile is null)
-                return;
-
-            Main.MainThreadQueue.Enqueue(() =>
-            {
-                var capResult = Capture.CaptureMap();
-                IImageEncoder encoder = new PngEncoder();
-                using FileStream fs = File.Create(renderFile);
-                capResult.Save(fs, encoder);
-                capResult.Dispose();
-                GC.Collect();
-            });
-        }
-        static async void CaptureLayeredClicked(UIButton btn, Empty _)
-        {
-            if (Main.Region is null)
-                return;
-
-            string? renderDir = await Platform.FolderBrowserDialog("Select render save folder");
-            if (renderDir is null)
-                return;
-
-            Main.MainThreadQueue.Enqueue(() =>
-            {
-                Capture.CaptureMapLayered(renderDir);
-                GC.Collect();
-            });
         }
         internal static async Task<bool> SelectRegionClicked()
         {

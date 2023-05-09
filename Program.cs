@@ -1,7 +1,38 @@
 ﻿using Cornifer;
 using System;
-using System.Windows.Forms;
+using System.IO;
 
+//PSDFile psd = new()
+//{
+//    Height = 1,
+//    Width = 4,
+//    Layers =
+//    {
+//        new()
+//        {
+//            Data = new byte[] 
+//            {
+//                0xFF, 0xFF, 0xFF, 0xFF,
+//                0x00, 0x00, 0x00, 0x00,
+//                0xff, 0x00, 0x00, 0xff,
+//                0x00, 0xff, 0x00, 0xff
+//            },
+//            Name = "layername1",
+//            Opacity = 128,
+//            Visible = true,
+//        },
+//        //new()
+//        //{
+//        //    Data = new byte[] { 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0xFF },
+//        //    Name = "layername2",
+//        //    Opacity = 255,
+//        //    Visible = false,
+//        //}
+//    }
+//};
+//using var fs = System.IO.File.Create("test.psd");
+//psd.Write(fs);
+//return;
 
 Platform.Start(args);
 var game = new Main();

@@ -21,3 +21,5 @@ Dynamically position diamonds
 Fix hack with "To Region" by making a property to manually load/save position data
 Room settings templates
 Discord RPC
+
+Reorganize classes in root folder
