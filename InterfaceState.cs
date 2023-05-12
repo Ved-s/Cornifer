@@ -82,14 +82,14 @@ namespace Cornifer
                     PlacedObject.HideObjectTypes.Add(type);
                 }
 
-                foreach (var (objType, button) in Interface.VisibilityPlacedObjects)
+                foreach (var (objType, button) in UI.Pages.Visibility.PlacedObjects)
                     button.Selected = !PlacedObject.HideObjectTypes.Contains(objType);
             }
             if (node.TryGet("hideRenderLayers", out int hideRenderLayers))
             {
                 Main.ActiveRenderLayers = RenderLayers.All & ~(RenderLayers)hideRenderLayers;
 
-                foreach (var (layer, button) in Interface.VisibilityRenderLayers)
+                foreach (var (layer, button) in UI.Pages.Visibility.RenderLayerButtons)
                     button.Selected = Main.ActiveRenderLayers.HasFlag(layer);
             }
         }
@@ -155,7 +155,7 @@ namespace Cornifer
                 if (value is null)
                     return;
 
-                Value = JsonValueConverter<T>.LoadValue(value);
+                Value = JsonValueConverter<T>.LoadValue!(value);
             }
 
             public abstract void BindElement();

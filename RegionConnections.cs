@@ -843,7 +843,7 @@ namespace Cornifer
                 .SaveProperty(NoShadow);
             }
 
-            public new void LoadJson(JsonNode node)
+            public void LoadJson(JsonNode node)
             {
                 ParentPosition = JsonTypes.LoadVector2(node);
                 SkipPixelBefore.LoadFromJson(node);

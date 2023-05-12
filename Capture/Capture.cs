@@ -1,4 +1,5 @@
-﻿using Cornifer.MapObjects;
+﻿using Cornifer.Capture.PSD;
+using Cornifer.MapObjects;
 using Cornifer.Renderers;
 using Cornifer.Structures;
 using Microsoft.Xna.Framework;

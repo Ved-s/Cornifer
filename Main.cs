@@ -985,7 +985,7 @@ namespace Cornifer
 
                         if (regionInfo is null)
                         {
-                            await Interface.SelectRegionClicked();
+                            await UI.Pages.General.SelectRegionClicked();
                         }
                         else 
                         {

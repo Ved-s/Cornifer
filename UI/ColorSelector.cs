@@ -161,7 +161,7 @@ namespace Cornifer.UI
                     TextAlign = new(.5f)
                 }.OnEvent(ClickEvent, async (_, _) => 
                 {
-                    ColorRefSelector.Show();
+                    await ColorRefSelector.Show();
                     ColorRef? cref = await ColorRefSelector.Task;
                     if (cref is not null)
                         SetNewReference(cref);

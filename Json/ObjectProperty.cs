@@ -111,7 +111,7 @@ namespace Cornifer.Json
             if (value is TJsonValue nodeValue)
                 jsonValue = nodeValue;
             else
-                jsonValue = JsonValueConverter<TJsonValue>.LoadValue(value);
+                jsonValue = JsonValueConverter<TJsonValue>.LoadValue!(value);
 
             UserValue = LoadValue(jsonValue);
             UserValueSet = true;

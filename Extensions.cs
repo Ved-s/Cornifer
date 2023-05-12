@@ -380,5 +380,8 @@ namespace Cornifer
 
         public static Span<byte> AsSpan(this MemoryStream ms) 
             => ms.GetBuffer().AsSpan().Slice(0, (int)ms.Length);
+
+        public static T CreateInstance<T>(this Type type)
+            => (T)Activator.CreateInstance(type)!;
     }
 }

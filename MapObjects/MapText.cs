@@ -149,7 +149,7 @@ namespace Cornifer
             {
                 Text = "View formatting guide",
                 Height = 20
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => TextFormatting.Show()));
+            }.OnEvent(UIElement.ClickEvent, async (btn, _) => await TextFormatting.Show()));
             list.Elements.Add(new UIElement { Height = 10 });
             list.Elements.Add(new UIButton
             {

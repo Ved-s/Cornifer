@@ -1,7 +1,7 @@
 ﻿using System.Buffers;
 using System.IO;
 
-namespace Cornifer
+namespace Cornifer.Capture.PSD
 {
     public class BigEndianWriter
     {

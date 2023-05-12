@@ -122,7 +122,7 @@ namespace Cornifer
                 Profile.Save();
             }
 
-            Interface.ActiveInstallChanged();
+            UI.Pages.Installations.ActiveInstallChanged();
 
             Mods.Clear();
             EnabledMods = null;
@@ -216,7 +216,7 @@ namespace Cornifer
             Installations.Add(installation);
             if (save)
                 SaveInstallations();
-            Interface.PopulateInstallations();
+            UI.Pages.Installations.PopulateInstallations();
         }
 
         public static void RemoveInstallation(RainWorldInstallation installation)
@@ -226,7 +226,7 @@ namespace Cornifer
 
             Installations.Remove(installation);
             SaveInstallations();
-            Interface.PopulateInstallations();
+            UI.Pages.Installations.PopulateInstallations();
         }
 
         public static async void ShowDialogs()
