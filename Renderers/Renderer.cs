@@ -28,8 +28,5 @@ namespace Cornifer.Renderers
         }
 
         public abstract void DrawTexture(Texture2D texture, Vector2 worldPos, Rectangle? source = null, Vector2? worldSize = null, Color? color = null, Vector2? scaleOverride = null);
-
-        public abstract void DrawRect(Vector2 worldPos, Vector2 size, Color? fill, Color? border = null, float thickness = 1);
-        public abstract void DrawLine(Vector2 worldPosA, Vector2 worldPosB, Color color, float thickness = 1);
     }
 }

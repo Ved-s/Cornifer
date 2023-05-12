@@ -8,9 +8,11 @@ using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 
-namespace Cornifer
+namespace Cornifer.Capture
 {
     public static class Capture
     {
@@ -90,7 +92,7 @@ namespace Cornifer
                 for (int j = 0; j < renderer.Image.Height; j++)
                 {
                     Span<Rgba32> src = renderer.Image.DangerousGetPixelRowMemory(j).Span;
-                    Span<byte> dst = data.AsSpan(j * (renderer.Image.Width * 4), renderer.Image.Width * 4);
+                    Span<byte> dst = data.AsSpan(j * renderer.Image.Width * 4, renderer.Image.Width * 4);
 
                     src.CopyTo(MemoryMarshal.Cast<byte, Rgba32>(dst));
                 }
@@ -113,12 +115,22 @@ namespace Cornifer
             });
         }
 
+        public static void CaptureImageMap(string jsonPath) 
+        {
+            using ImageMapRenderer renderer = new();
+
+            Main.DrawMap(renderer, Main.ActiveRenderLayers, null);
+
+            using (FileStream fs = File.Create(jsonPath))
+                JsonSerializer.Serialize(fs, renderer.Finish());
+        }
+
         static void CaptureMapLayered(CaptureRenderer renderer, Action<CapturedLayerInfo> layerHandler)
         {
             int all = (int)RenderLayers.All;
             for (int i = 0; i < 32; i++)
             {
-                if ((all >> i) == 0)
+                if (all >> i == 0)
                     break;
 
                 int layerInt = 1 << i;
@@ -133,7 +145,7 @@ namespace Cornifer
 
             for (int i = 0; i < 32; i++)
             {
-                if ((all >> i) == 0)
+                if (all >> i == 0)
                     break;
 
                 int layerInt = 1 << i;

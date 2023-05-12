@@ -35,15 +35,5 @@ namespace Cornifer.Renderers
         {
             DrawTexture(texture, worldPos, source, worldSize, color, Vector2.Zero, 0f, scaleOverride);
         }
-
-        public override void DrawRect(Vector2 worldPos, Vector2 size, Color? fill, Color? border = null, float thickness = 1)
-        {
-            SpriteBatch.DrawRect(TransformVector(worldPos), size * Scale, fill, border, thickness);
-        }
-
-        public override void DrawLine(Vector2 worldPosA, Vector2 worldPosB, Color color, float thickness = 1)
-        {
-            SpriteBatch.DrawLine(TransformVector(worldPosA), TransformVector(worldPosB), color, thickness);
-        }
     }
 }

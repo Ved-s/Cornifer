@@ -102,36 +102,6 @@ namespace Cornifer.Renderers
             Main.SpriteBatch.Begin(prevState);
         }
 
-        public override void DrawRect(Vector2 worldPos, Vector2 size, Color? fill, Color? border = null, float thickness = 1)
-        {
-            worldPos = TransformVector(worldPos);
-            size *= Scale;
-
-            if (border.HasValue)
-            {
-                SLColor color = new(new Rgba32() { PackedValue = border.Value.PackedValue });
-                Image.Mutate(f => f.Draw(color, thickness, new RectangleF(worldPos.X, worldPos.Y, size.X, size.Y)));
-            }
-            if (fill.HasValue)
-            {
-                SLColor color = new(new Rgba32() { PackedValue = fill.Value.PackedValue });
-                Image.Mutate(f => f.Fill(color, new RectangleF(worldPos.X, worldPos.Y, size.X, size.Y)));
-            }
-        }
-
-        public override void DrawLine(Vector2 worldPosA, Vector2 worldPosB, Color color, float thickness = 1)
-        {
-            SLColor slcolor = new(new Rgba32() { PackedValue = color.PackedValue });
-
-            worldPosA = TransformVector(worldPosA);
-            worldPosB = TransformVector(worldPosB);
-
-            LinePoints[0] = new(worldPosA.X, worldPosA.Y);
-            LinePoints[1] = new(worldPosB.X, worldPosB.Y);
-
-            Image.Mutate(f => f.DrawLines(slcolor, thickness, LinePoints));
-        }
-
         public void Dispose()
         {
             RenderTarget?.Dispose();

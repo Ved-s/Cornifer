@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace Cornifer
+namespace Cornifer.Capture
 {
     class RleStream : Stream
     {
@@ -85,7 +85,7 @@ namespace Cornifer
             {
                 int write = Math.Min(RunLength, 128);
 
-                byte b = (byte)((write - 2) ^ 0xff);
+                byte b = (byte)(write - 2 ^ 0xff);
                 Stream.WriteByte(b);
                 Stream.WriteByte(RunningByte);
                 RunLength -= write;

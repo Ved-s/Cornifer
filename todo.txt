@@ -23,3 +23,5 @@ Room settings templates
 Discord RPC
 
 Reorganize classes in root folder
+
+Rewrite renderer apis

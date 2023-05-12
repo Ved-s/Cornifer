@@ -87,7 +87,15 @@ namespace Cornifer.MapObjects
                 EnsureCorrectShadeTexture();
 
                 if (ShadeSize > 0 && ShadeTexture is not null)
+                {
+                    if (renderer is ImageMapRenderer imgrs)
+                        imgrs.StartObjectCapture(this, true);
+
                     renderer.DrawTexture(ShadeTexture, WorldPosition - new Vector2(ShadeSize));
+
+                    if (renderer is ImageMapRenderer imgre)
+                        imgre.EndObjectCapture();
+                }
             }
 
             foreach (MapObject child in Children)
@@ -100,7 +108,15 @@ namespace Cornifer.MapObjects
                 return;
 
             if (renderLayers.HasFlag(RenderLayer))
+            {
+                if (renderer is ImageMapRenderer imgrs)
+                    imgrs.StartObjectCapture(this, false);
+
                 DrawSelf(renderer);
+
+                if (renderer is ImageMapRenderer imgre)
+                    imgre.EndObjectCapture();
+            }
 
             foreach (MapObject child in Children)
                 child.Draw(renderer, renderLayers);

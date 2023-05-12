@@ -8,6 +8,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -376,5 +377,8 @@ namespace Cornifer
             foreach (T t in ienum)
                 yield return t;
         }
+
+        public static Span<byte> AsSpan(this MemoryStream ms) 
+            => ms.GetBuffer().AsSpan().Slice(0, (int)ms.Length);
     }
 }

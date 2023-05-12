@@ -51,7 +51,7 @@ namespace Cornifer.UI.Modals
 
                             Main.MainThreadQueue.Enqueue(() =>
                             {
-                                var capResult = Capture.CaptureMap();
+                                var capResult = Capture.Capture.CaptureMap();
                                 IImageEncoder encoder = new PngEncoder();
                                 using FileStream fs = File.Create(renderFile);
                                 capResult.Save(fs, encoder);
@@ -77,7 +77,7 @@ namespace Cornifer.UI.Modals
 
                             Main.MainThreadQueue.Enqueue(() =>
                             {
-                                Capture.CaptureMapToLayerImages(renderDir);
+                                Capture.Capture.CaptureMapToLayerImages(renderDir);
                                 GC.Collect();
                             });
                         }),
@@ -96,7 +96,25 @@ namespace Cornifer.UI.Modals
 
                             Main.MainThreadQueue.Enqueue(() =>
                             {
-                                Capture.CaptureMapToPSD(renderFile);
+                                Capture.Capture.CaptureMapToPSD(renderFile);
+                            });
+                        }),
+                        new UIButton
+                        {
+                            Height = 20,
+                            Text = "Serialize to image map",
+                            TextAlign = new(.5f)
+                        }.OnEvent(ClickEvent, async (_, _) =>
+                        {
+                            string? renderFile = await Platform.SaveFileDialog("Select json file", "JSON file|*.json");
+                            if (renderFile is null)
+                                return;
+
+                            ReturnResult(new());
+
+                            Main.MainThreadQueue.Enqueue(() =>
+                            {
+                                Capture.Capture.CaptureImageMap(renderFile);
                             });
                         }),
                     }
