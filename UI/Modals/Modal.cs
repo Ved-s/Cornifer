@@ -56,9 +56,12 @@ namespace Cornifer.UI.Modals
             }
         }
 
-        public static UIModal CreateUIElement()
+        public static UIModal CreateUIElement(bool cached)
         {
-            Instance = new();
+            if (cached)
+                Instance ??= new();
+            else
+                Instance = new();
             if (Instance.Visible)
                 ModalInstance?.Shown();
             return Instance;

@@ -48,7 +48,9 @@ namespace Cornifer
         static UIElement? ConfigElement;
         static MapObject? configurableObject;
 
-        static List<Func<UIModal>>? ModalCreators;
+        delegate UIModal CreateModalDelegate(bool cached);
+
+        static List<CreateModalDelegate>? ModalCreators;
         static Queue<TaskCompletionSource> ModalWaitTasks = new();
         internal static UIModal? CurrentModal;
 
@@ -1086,26 +1088,29 @@ namespace Cornifer
 
         static void CreateModals()
         {
+            bool useCachedModals = false;
             if (ModalCreators is null)
             {
+                useCachedModals = true; // If modals were created before init
                 Type modalType = typeof(Modal<,>);
                 ModalCreators = new();
+                Type[] args = new[] { typeof(bool) };
                 foreach (Type type in Assembly.GetExecutingAssembly().GetExportedTypes())
                 {
                     if (type.BaseType is null || !type.BaseType.IsGenericType || type.BaseType.GetGenericTypeDefinition() != modalType)
                         continue;
 
-                    MethodInfo? creatorMethod = type.BaseType.GetMethod("CreateUIElement", BindingFlags.Public | BindingFlags.Static, Array.Empty<Type>());
+                    MethodInfo? creatorMethod = type.BaseType.GetMethod("CreateUIElement", BindingFlags.Public | BindingFlags.Static, args);
                     if (creatorMethod is null || creatorMethod.ReturnType != typeof(UIModal))
                         continue;
 
-                    Func<UIModal> creator = creatorMethod.CreateDelegate<Func<UIModal>>();
+                    CreateModalDelegate creator = creatorMethod.CreateDelegate<CreateModalDelegate>();
                     ModalCreators.Add(creator);
                 }
             }
             if (Root is not null)
-                foreach (Func<UIModal> creator in ModalCreators)
-                    Root.Elements.Add(creator());
+                foreach (CreateModalDelegate creator in ModalCreators)
+                    Root.Elements.Add(creator(useCachedModals));
         }
         internal static void ModalClosed()
         {

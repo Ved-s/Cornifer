@@ -72,12 +72,12 @@ namespace Cornifer.UI.Modals
             float spacing = 4;
             float width = Instance.Buttons.Elements.Sum(e => e.ScreenRect.Width) + (Instance.Buttons.Elements.Count - 1) * spacing;
 
-            float x = (Instance.Buttons.ScreenRect.Width - width) / 2;
+            float x = width / -2;
 
             foreach (var element in Instance.Buttons.Elements) 
             {
                 element.Top = 0;
-                element.Left = x;
+                element.Left = new(x, .5f);
 
                 x += element.ScreenRect.Width + spacing;
             }

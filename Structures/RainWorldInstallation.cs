@@ -112,7 +112,5 @@ namespace Cornifer.Structures
 
             return string.Join(", ", features);
         }
-
-        
     }
 }
