@@ -110,7 +110,7 @@ namespace Cornifer.MapObjects
             if (renderLayers.HasFlag(RenderLayer))
             {
                 if (renderer is ICapturingRenderer caps)
-                    caps.BeginObjectCapture(this, true);
+                    caps.BeginObjectCapture(this, false);
 
                 DrawSelf(renderer);
 
