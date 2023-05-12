@@ -371,11 +371,9 @@ namespace Cornifer
             Main.SpriteBatch.Begin(state);
         }
 
-        static Vector2 PrevCapturePos;
-        static Point PrevCaptureSize;
         static void BeginConnectionCapture(Renderer renderer, Connection connection)
         {
-            if (renderer is not CaptureRenderer capture)
+            if (renderer is not ICapturingRenderer capture)
                 return;
 
             Vector2 tl = new(float.MaxValue);
@@ -403,21 +401,15 @@ namespace Cornifer
             int width = (int)Math.Ceiling(br.X - tl.X);
             int height = (int)Math.Ceiling(br.Y - tl.Y);
 
-            capture.BeginCapture(width, height);
-            PrevCaptureSize = new(width, height);
-            PrevCapturePos = capture.Position;
-            capture.Position = tl;
+            capture.BeginCapture(tl, new(width, height));
         }
 
         static void EndConnectionCapture(Renderer renderer)
         {
-            if (renderer is not CaptureRenderer capture)
+            if (renderer is not ICapturingRenderer capture)
                 return;
 
-            Vector2 pos = capture.Position;
-
-            capture.Position = PrevCapturePos;
-            capture.EndCapture(pos, PrevCaptureSize.X, PrevCaptureSize.Y);
+            capture.EndCapture();
         }
 
         public void DrawGuideLines(Renderer renderer, bool betweenRooms, bool inRooms)

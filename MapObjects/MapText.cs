@@ -78,7 +78,6 @@ namespace Cornifer
 
         public override void DrawIcon(Renderer renderer)
         {
-            Vector2 capturePos = Vector2.Zero;
             SpriteBatchState spriteBatchState = default;
 
             if (TextShadeTextureDirty && Shade.Value)
@@ -87,13 +86,11 @@ namespace Cornifer
                 TextShadeTextureDirty = false;
             }
 
-            if (renderer is CaptureRenderer capture)
+            if (renderer is ICapturingRenderer capture)
             {
-                capturePos = capture.Position;
-                capture.Position = WorldPosition;
                 spriteBatchState = Main.SpriteBatch.GetState();
                 Main.SpriteBatch.End();
-                capture.BeginCapture((int)Size.X, (int)Size.Y);
+                capture.BeginCapture(WorldPosition, Size);
                 Main.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
             }
 
@@ -111,11 +108,10 @@ namespace Cornifer
                 Color = Color.Value.Color,
             });
 
-            if (renderer is CaptureRenderer captureEnd)
+            if (renderer is ICapturingRenderer captureEnd)
             {
-                captureEnd.Position = capturePos;
                 Main.SpriteBatch.End();
-                captureEnd.EndCapture(WorldPosition, (int)Size.X, (int)Size.Y);
+                captureEnd.EndCapture();
                 Main.SpriteBatch.Begin(spriteBatchState);
             }
         }

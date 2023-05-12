@@ -23,13 +23,16 @@ using Point = Microsoft.Xna.Framework.Point;
 
 namespace Cornifer.Renderers
 {
-    public class ImageMapRenderer : Renderer, IDisposable
+    public class ImageMapRenderer : Renderer, IDisposable, ICapturingRenderer
     {
         RenderTarget2D? RenderTarget = null;
 
         Rgba32[] Colors = Array.Empty<Rgba32>();
         byte[] Bytes = Array.Empty<byte>();
 
+        Vector2 BeforeCapturePos;
+        Vector2 CapturePos;
+        Vector2 CaptureSize;
         bool Capturing = false;
 
         public override Matrix Projection => Matrix.CreateOrthographicOffCenter(0, RenderTarget!.Width, RenderTarget!.Height, 0, 0, 1);
@@ -48,20 +51,28 @@ namespace Cornifer.Renderers
         Point BottomRight;
 
 
-        public void BeginCapture(int width, int height)
+        public void BeginCapture(Vector2 pos, Vector2 size)
         {
-            EnsureRenderSize(width, height);
+            EnsureRenderSize((int)size.X, (int)size.Y);
 
             Main.Instance.GraphicsDevice.SetRenderTarget(RenderTarget);
             Main.Instance.GraphicsDevice.Clear(Color.Transparent);
+            CapturePos = pos;
+            CaptureSize = size;
+            BeforeCapturePos = Position;
+            Position = pos;
             Capturing = true;
         }
 
-        public void EndCapture(Vector2 worldPos, int width, int height)
+        public void EndCapture()
         {
+            Position = BeforeCapturePos;
             Main.Instance.GraphicsDevice.SetRenderTarget(null);
 
             RenderTarget!.GetData(Colors, 0, RenderTarget.Width * RenderTarget.Height);
+
+            int width = (int)CaptureSize.X;
+            int height = (int)CaptureSize.Y;
 
             Image<Rgba32> image = new(width, height);
 
@@ -71,7 +82,7 @@ namespace Cornifer.Renderers
                     .CopyTo(image.DangerousGetPixelRowMemory(j).Span);
             }
 
-            Point point = worldPos.ToPoint();
+            Point point = CapturePos.ToPoint();
 
             if (CurrentObject is null)
             {
@@ -117,15 +128,15 @@ namespace Cornifer.Renderers
 
             var prevState = Main.SpriteBatch.GetState();
             Main.SpriteBatch.End();
-            BeginCapture(captureWidth, captureHeight);
+            BeginCapture(worldPos, new(captureWidth, captureHeight));
             Main.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
             Main.SpriteBatch.Draw(texture, Vector2.Zero, source, color ?? Color.White, 0f, Vector2.Zero, scaleOverride ?? scale * Scale, SpriteEffects.None, 0);
             Main.SpriteBatch.End();
-            EndCapture(worldPos, captureWidth, captureHeight);
+            EndCapture();
             Main.SpriteBatch.Begin(prevState);
         }
 
-        public void StartObjectCapture(MapObject obj, bool shade)
+        public void BeginObjectCapture(MapObject obj, bool shade)
         {
             CurrentObject = obj;
             CurrentObjectShade = shade;

@@ -1,4 +1,5 @@
-﻿using Cornifer.UI;
+﻿using Cornifer.MapObjects;
+using Cornifer.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SixLabors.ImageSharp;
@@ -13,7 +14,7 @@ using SLColor = SixLabors.ImageSharp.Color;
 
 namespace Cornifer.Renderers
 {
-    public class CaptureRenderer : Renderer, IDisposable
+    public class CaptureRenderer : Renderer, IDisposable, ICapturingRenderer
     {
         RenderTarget2D? RenderTarget = null;
         Rgba32[] Colors = Array.Empty<Rgba32>();
@@ -21,6 +22,10 @@ namespace Cornifer.Renderers
 
         public Image<Rgba32> Image;
         PointF[] LinePoints = new PointF[2];
+
+        Vector2 BeforeCapturePos;
+        Vector2 CapturePos;
+        Vector2 CaptureSize;
         bool Capturing = false;
 
         public override Matrix Projection => Matrix.CreateOrthographicOffCenter(0, RenderTarget!.Width, RenderTarget!.Height, 0, 0, 1);
@@ -30,27 +35,35 @@ namespace Cornifer.Renderers
             Image = image;
         }
 
-        public void BeginCapture(int width, int height)
+        public void BeginCapture(Vector2 pos, Vector2 size)
         {
-            EnsureRenderSize(width, height);
+            EnsureRenderSize((int)size.X, (int)size.Y);
 
             Main.Instance.GraphicsDevice.SetRenderTarget(RenderTarget);
             Main.Instance.GraphicsDevice.Clear(Color.Transparent);
+            CapturePos = pos;
+            CaptureSize = size;
+            BeforeCapturePos = Position;
+            Position = pos;
             Capturing = true;
         }
 
-        public void EndCapture(Vector2 worldPos, int width, int height)
+        public void EndCapture()
         {
+            Position = BeforeCapturePos;
             Main.Instance.GraphicsDevice.SetRenderTarget(null);
 
             RenderTarget!.GetData(Colors, 0, RenderTarget.Width * RenderTarget.Height);
+
+            int width = (int)CaptureSize.X;
+            int height = (int)CaptureSize.Y;
 
             for (int j = 0; j < height; j++)
             {
                 Colors.AsSpan(j * RenderTarget.Width, width)
                     .CopyTo(ScreenImage.DangerousGetPixelRowMemory(j).Span);
             }
-            Vector2 drawPos = TransformVector(worldPos);
+            Vector2 drawPos = TransformVector(CapturePos);
             Image.Mutate(f => f.DrawImage(ScreenImage, new SixLabors.ImageSharp.Point((int)drawPos.X, (int)drawPos.Y), 1));
             Capturing = false;
         }
@@ -94,11 +107,11 @@ namespace Cornifer.Renderers
 
             var prevState = Main.SpriteBatch.GetState();
             Main.SpriteBatch.End();
-            BeginCapture(captureWidth, captureHeight);
+            BeginCapture(worldPos, new(captureWidth, captureHeight));
             Main.SpriteBatch.Begin(samplerState: SamplerState.PointClamp);
             Main.SpriteBatch.Draw(texture, Vector2.Zero, source, color ?? Color.White, 0f, Vector2.Zero, scaleOverride ?? scale * Scale, SpriteEffects.None, 0);
             Main.SpriteBatch.End();
-            EndCapture(worldPos, captureWidth, captureHeight);
+            EndCapture();
             Main.SpriteBatch.Begin(prevState);
         }
 
@@ -107,6 +120,10 @@ namespace Cornifer.Renderers
             RenderTarget?.Dispose();
             ScreenImage?.Dispose();
         }
+
+        public void BeginObjectCapture(MapObject obj, bool shade) { }
+
+        public void EndObjectCapture() { }
     }
 
 }
