@@ -9,6 +9,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -384,5 +385,11 @@ namespace Cornifer
 
         public static T CreateInstance<T>(this Type type)
             => (T)Activator.CreateInstance(type)!;
+
+        public static T OnClick<T>(this T element, Action<T> handler) where T : UIElement 
+        {
+            element.AddPostEventCallback(UIElement.ClickEvent, (el, _) => handler((T)el));
+            return element;
+        }
     }
 }

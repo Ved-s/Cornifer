@@ -117,7 +117,7 @@ namespace Cornifer.UI.Elements
 
             UpdateSelf();
 
-            if (Hovered && Root is not null && Root.MouseLeftKey == KeybindState.JustPressed)
+            if (Enabled && Hovered && Root is not null && Root.MouseLeftKey == KeybindState.JustPressed)
                 Events.PostCall(ClickEvent, default);
 
             Events.PostCall(UpdateEvent, default);

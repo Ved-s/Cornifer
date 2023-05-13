@@ -54,6 +54,21 @@ namespace Cornifer
 
         public static Slugcat? SelectedSlugcat;
 
+        public static Layer RoomsLayer             = new("rooms", "Rooms", true);
+        public static Layer ConnectionsLayer       = new("connections", "Connections", true);
+        public static Layer InRoomConnectionsLayer = new("inroomconnections", "In-Room Connections", true);
+        public static Layer IconsLayer             = new("icons", "Icons", true);
+        public static Layer TextsLayer             = new("texts", "Texts", true);
+
+        public static List<Layer> Layers = new()
+        {
+            RoomsLayer,
+            ConnectionsLayer,
+            InRoomConnectionsLayer,
+            IconsLayer,
+            TextsLayer,
+        };
+
         public static List<string> LoadErrors = new();
 
         public static SpriteFont DefaultSmallMapFont => Cornifer.Content.RodondoExt20M;

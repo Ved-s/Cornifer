@@ -45,7 +45,13 @@ namespace Cornifer.UI
 
         private void GroupButtonClicked(UIButton? button, object? tag)
         {
-            Events.Call(TabSelectedEvent, tag as Tab);
+            if (tag is not Tab tab)
+                return;
+
+            foreach (Tab t in Tabs)
+                t.Selected = t == tab;
+
+            Events.Call(TabSelectedEvent, tab);
         }
 
         void ITabController<Tab>.AddTab(Tab tab)
@@ -62,7 +68,9 @@ namespace Cornifer.UI
                 SelectedTextColor = new(.1f, .1f, .1f),
                 SelectedBackColor = Color.White,
             };
-            btn.Selected = tab.Selected || !CanDeselectTabs && !Elements.Any(e => e is UIButton);
+
+            tab.Selected = !CanDeselectTabs && !Elements.Any(e => e is UIButton);
+            btn.Selected = tab.Selected;
             ModifyingElements = true;
             Elements.Add(btn);
             ModifyingElements = false;

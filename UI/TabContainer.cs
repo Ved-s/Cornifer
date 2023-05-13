@@ -1,6 +1,7 @@
 ﻿using Cornifer.UI.Elements;
 using Cornifer.UI.Helpers;
 using Cornifer.UI.Structures;
+using System.Linq;
 
 namespace Cornifer.UI
 {
@@ -13,6 +14,23 @@ namespace Cornifer.UI
         public bool CanDeselectTabs { get => TabSelector.CanDeselectTabs; set => TabSelector.CanDeselectTabs = value; }
 
         public TabCollection<Tab> Tabs { get; }
+
+        public Tab? SelectedTab 
+        {
+            get => Tabs.FirstOrDefault(t => t.Selected);
+            set 
+            {
+                foreach (var t in Tabs) 
+                {
+                    t.Selected = false;
+                }
+
+                TabSelected(value);
+
+                if (value is not null)
+                    value.Selected = true;
+            }
+        }
 
         public TabContainer()
         {

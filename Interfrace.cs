@@ -38,6 +38,7 @@ namespace Cornifer
         static List<CreateModalDelegate>? ModalCreators;
         static Queue<TaskCompletionSource> ModalWaitTasks = new();
         internal static UIModal? CurrentModal;
+        internal static TabContainer? Tabs;
 
         public static void Init()
         {
@@ -74,6 +75,7 @@ namespace Cornifer
                         {
                             new TabContainer()
                                 .Execute(Page.CreatePages)
+                                .Assign(out Tabs)
                         }
                     }.Assign(out SidePanel),
 
@@ -152,7 +154,19 @@ namespace Cornifer
             Root?.Update();
 
             if (InputHandler.ReinitUI.JustPressed)
+            {
+                string? selectedTabName = Tabs?.Tabs.FirstOrDefault(t => t.Selected)?.Name;
                 Init();
+
+                if (selectedTabName is not null)
+                {
+                    TabContainer.Tab? tab = Tabs?.Tabs.FirstOrDefault(t => t.Name == selectedTabName);
+                    if (tab is not null)
+                    {
+                        Tabs!.SelectedTab = tab;
+                    }
+                }
+            }
         }
         public static void Draw()
         {

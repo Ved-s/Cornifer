@@ -26,11 +26,13 @@ namespace Cornifer.UI.Elements
         public Vec2 TextAlign;
 
         public Color TextColor = Color.White;
+        public Color DisabledTextColor = Color.Gray;
         public Color HoverTextColor = Color.White;
         public Color SelectedTextColor = Color.White;
         public Color ClickedTextColor = Color.White;
 
         public Color BackColor = new(48, 48, 48);
+        public Color DisabledBackColor = new(36, 36, 36);
         public Color HoverBackColor = new(64, 64, 64);
         public Color SelectedBackColor = new(72, 72, 72);
         public Color ClickedBackColor = new(96, 96, 96);
@@ -103,7 +105,7 @@ namespace Cornifer.UI.Elements
 
         protected override void UpdateSelf()
         {
-            if (Hovered && Root.MouseLeftKey == KeybindState.JustPressed && (RadioGroup is not null || Selectable))
+            if (Enabled && Hovered && Root.MouseLeftKey == KeybindState.JustPressed && (RadioGroup is not null || Selectable))
             {
                 if (!Selected || CanDeselect)
                     Selected = !Selected;
@@ -114,7 +116,12 @@ namespace Cornifer.UI.Elements
         {
             Color textColor;
 
-            if (Hovered && Root.MouseState.LeftButton == ButtonState.Pressed)
+            if (!Enabled)
+            {
+                spriteBatch.FillRectangle(ScreenRect, DisabledBackColor);
+                textColor = DisabledTextColor;
+            }
+            else if (Hovered && Root.MouseState.LeftButton == ButtonState.Pressed)
             {
                 spriteBatch.FillRectangle(ScreenRect, ClickedBackColor);
                 textColor = ClickedTextColor;
