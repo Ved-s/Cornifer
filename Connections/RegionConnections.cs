@@ -1,23 +1,20 @@
-﻿using Cornifer.Input;
-using Cornifer.Json;
+﻿using Cornifer;
+using Cornifer.Helpers;
+using Cornifer.Input;
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
-using Cornifer.Structures;
 using Cornifer.UI;
-using Cornifer.UI.Elements;
 using Cornifer.UI.Structures;
 using Cornifer.UndoActions;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace Cornifer
+namespace Cornifer.Connections
 {
     public class RegionConnections
     {
@@ -105,9 +102,9 @@ namespace Cornifer
 
                 float lineBoundsOff = .5f * Main.WorldCamera.Scale;
 
-                if (HoveredConnection is not null 
-                 && HoveredConnectionLine <= HoveredConnection.Points.Count 
-                 && HoveredConnection.Active 
+                if (HoveredConnection is not null
+                 && HoveredConnectionLine <= HoveredConnection.Points.Count
+                 && HoveredConnection.Active
                  && (HoveredConnection.IsInRoomShortcut ? inRooms : betweenRooms))
                 {
                     (Vec2 start, Vec2 end) = GetLinePoints(Main.WorldCamera, HoveredConnection, HoveredConnectionLine);
@@ -454,7 +451,7 @@ namespace Cornifer
                     if (visible)
                         Main.SpriteBatch.DrawLine(start, end, Color.Black, 3);
                     else
-                        Main.SpriteBatch.DrawDashLine(start, end, Color.Black, null, dashSize + shadeThickness, dashSize - shadeThickness, shadeThickness, -shadeThickness*.5f);
+                        Main.SpriteBatch.DrawDashLine(start, end, Color.Black, null, dashSize + shadeThickness, dashSize - shadeThickness, shadeThickness, -shadeThickness * .5f);
 
                     if (smallStartPoint)
                         Main.SpriteBatch.DrawRect(start - new Vector2(3), new(5), Color.Black);
@@ -631,273 +628,6 @@ namespace Cornifer
                         continue;
                 }
                 connection.LoadJson(con);
-            }
-        }
-
-        public class Connection
-        {
-            static List<Point> ShortcutTracingCache = new();
-
-            public Room Source;
-            public Room Destination;
-
-            public Point SourcePoint;
-            public Point DestinationPoint;
-
-            public bool Invalid;
-            public bool IsInRoomShortcut = false;
-
-            public bool Active => Source.Active && Destination.Active && (!IsInRoomShortcut || Source.DrawInRoomShortcuts.Value);
-            public Color Color => IsInRoomShortcut ? Color.Lerp(Color.White, Source.Subregion.Value.BackgroundColor.Color, .5f) : Color.White;
-            public string JsonKey => IsInRoomShortcut ? $"#{Source.Name}~{SourcePoint.X}~{SourcePoint.Y}" : $"{Source.Name}~{Destination.Name}";
-
-            public Color GuideColor => Color.White;
-
-            public ObjectProperty<bool> AllowWhiteToRedPixel = new("whiteToRed", true);
-
-            public List<ConnectionPoint> Points = new();
-
-            public Connection(Room room, Room.Shortcut shortcut)
-            {
-                Source = Destination = room;
-                IsInRoomShortcut = true;
-
-                SourcePoint = shortcut.Entrance;
-                DestinationPoint = shortcut.Target;
-
-                ShortcutTracingCache.Clear();
-
-                room.TraceShotrcut(SourcePoint, ShortcutTracingCache);
-
-                foreach (Point point in ShortcutTracingCache)
-                {
-                    Points.Add(new(this)
-                    {
-                        Parent = Source,
-                        ParentPosition = point.ToVector2()
-                    });
-                }
-            }
-
-            public Connection(Room source, Room.Connection connection)
-            {
-                Invalid = true;
-                if (source is null || connection.Target is null)
-                {
-                    Main.LoadErrors.Add($"Tried mapping connection from {source?.Name ?? "NONE"} to {connection.Target?.Name ?? "NONE"}");
-                }
-                else if (connection.Exit < 0 || connection.Exit >= source.Exits.Length)
-                {
-                    //if (source.Active)
-                        Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.Exit} in {source?.Name ?? "NONE"}");
-                }
-                else if (connection.TargetExit < 0 || connection.TargetExit >= connection.Target.Exits.Length)
-                {
-                    //if (connection.Target.Active)
-                        Main.LoadErrors.Add($"Tried mapping connection from nonexistent shortcut {connection.TargetExit} in {connection.Target?.Name ?? "NONE"}");
-                }
-                else
-                {
-                    Invalid = false;
-                }
-
-                if (Invalid)
-                {
-                    Source = null!;
-                    Destination = null!;
-                    return;
-                }
-
-                Source = source!;
-                Destination = connection.Target!;
-
-                SourcePoint = source!.Exits[connection.Exit];
-                DestinationPoint = connection.Target!.Exits[connection.TargetExit];
-            }
-
-            internal void BuildConfig(UIList list)
-            {
-                list.Elements.Add(new UILabel
-                {
-                    Text = "Connection config",
-                    Height = 20,
-                    TextAlign = new(.5f)
-                });
-
-                list.Elements.Add(new UIButton
-                {
-                    Text = "Allow white-red ending",
-                    Height = 20,
-
-                    Selectable = true,
-                    Selected = AllowWhiteToRedPixel.Value,
-
-                    SelectedTextColor = Color.Black,
-                    SelectedBackColor = Color.White,
-
-                }.OnEvent(UIElement.ClickEvent, (btn, _) => AllowWhiteToRedPixel.Value = btn.Selected));
-            }
-
-            public void LoadJson(JsonNode node)
-            {
-                if (node is JsonValue value)
-                {
-                    int pointCount = value.Deserialize<int>();
-                    if (pointCount == 0)
-                        return;
-
-                    Vector2 start = Source.WorldPosition + SourcePoint.ToVector2();
-                    Vector2 end = Destination.WorldPosition + DestinationPoint.ToVector2();
-
-                    Points.Clear();
-                    float tpp = 1 / (pointCount + 1);
-                    float t = tpp;
-                    for (int i = 0; i < pointCount; i++)
-                    {
-                        ConnectionPoint newPoint = new(this)
-                        {
-                            ParentPosition = Vector2.Lerp(start, end, t),
-                        };
-                        Points.Add(newPoint);
-                        t += tpp;
-                    }
-                }
-                else if (node is JsonArray pointsArray)
-                    LoadPointArray(pointsArray);
-                else if (node is JsonObject obj)
-                {
-                    if (obj.TryGet("points", out JsonArray? points))
-                        LoadPointArray(points);
-                    AllowWhiteToRedPixel.LoadFromJson(obj);
-                }
-            }
-
-            public JsonNode SaveJson()
-            {
-                return new JsonObject
-                {
-                    ["points"] = new JsonArray(Points.Select(p => p.SaveJson()).ToArray())
-                }.SaveProperty(AllowWhiteToRedPixel);
-            }
-
-            void LoadPointArray(JsonArray points)
-            {
-                Points.Clear();
-                foreach (JsonNode? pointNode in points)
-                {
-                    if (pointNode is null)
-                        continue;
-
-                    ConnectionPoint newPoint = new(this);
-                    newPoint.LoadJson(pointNode);
-                    Points.Add(newPoint);
-
-                    if (IsInRoomShortcut)
-                        newPoint.Parent = Source;
-                }
-            }
-
-            public override string ToString()
-            {
-                return JsonKey;
-            }
-        }
-
-        public class ConnectionPoint : MapObject
-        {
-            public override string? Name => $"Connection_{Connection.Source.Name}_{Connection.Destination.Name}_{Connection.Points.IndexOf(this)}";
-
-            public override bool CanSetActive => false;
-
-            public override bool Active => Connection.Active && Main.ActiveRenderLayers.HasFlag(Connection.IsInRoomShortcut ? RenderLayers.InRoomShortcuts : RenderLayers.Connections);
-            public override bool LoadCreationForbidden => true;
-            public override bool NeedsSaving => false;
-
-            public Connection Connection = null!;
-
-            public ObjectProperty<bool> SkipPixelBefore = new("skipBefore", false);
-            public ObjectProperty<bool> SkipPixelAfter = new("skipAfter", false);
-            public ObjectProperty<bool> NoShadow = new("noShadow", false);
-
-            public ConnectionPoint() { }
-            public ConnectionPoint(Connection connection)
-            {
-                Connection = connection;
-
-                if (connection.IsInRoomShortcut)
-                    NoShadow.OriginalValue = true;
-            }
-
-            public override RenderLayers RenderLayer => Connection.IsInRoomShortcut ? RenderLayers.InRoomShortcuts : RenderLayers.Connections;
-            public override Vector2 VisualOffset => -(VisualSize - Vector2.One) / 2;
-            public override Vector2 VisualSize => new(13);
-
-            public JsonNode SaveJson()
-            {
-                return new JsonObject
-                {
-                    ["x"] = ParentPosition.X,
-                    ["y"] = ParentPosition.Y,
-                }.SaveProperty(SkipPixelBefore)
-                .SaveProperty(SkipPixelAfter)
-                .SaveProperty(NoShadow);
-            }
-
-            public void LoadJson(JsonNode node)
-            {
-                ParentPosition = JsonTypes.LoadVector2(node);
-                SkipPixelBefore.LoadFromJson(node);
-                SkipPixelAfter.LoadFromJson(node);
-                NoShadow.LoadFromJson(node);
-            }
-
-            protected override void DrawSelf(Renderer renderer) { }
-
-            protected override void BuildInnerConfig(UIList list)
-            {
-                list.Elements.Add(new UIButton
-                {
-                    Text = "Skip pixel before",
-                    Height = 20,
-
-                    Selectable = true,
-                    Selected = SkipPixelBefore.Value,
-
-                    SelectedTextColor = Color.Black,
-                    SelectedBackColor = Color.White,
-
-                }.OnEvent(UIElement.ClickEvent, (btn, _) => SkipPixelBefore.Value = btn.Selected));
-                list.Elements.Add(new UIButton
-                {
-                    Text = "Skip pixel after",
-                    Height = 20,
-
-                    Selectable = true,
-                    Selected = SkipPixelAfter.Value,
-
-                    SelectedTextColor = Color.Black,
-                    SelectedBackColor = Color.White,
-
-                }.OnEvent(UIElement.ClickEvent, (btn, _) => SkipPixelAfter.Value = btn.Selected));
-                list.Elements.Add(new UIButton
-                {
-                    Text = "Disable shadow",
-                    Height = 20,
-
-                    Selectable = true,
-                    Selected = NoShadow.Value,
-
-                    SelectedTextColor = Color.Black,
-                    SelectedBackColor = Color.White,
-
-                }.OnEvent(UIElement.ClickEvent, (btn, _) => NoShadow.Value = btn.Selected));
-
-                Connection.BuildConfig(list);
-            }
-
-            public override string ToString()
-            {
-                return $"Point {Connection.Points.IndexOf(this)} in {Connection}";
             }
         }
     }

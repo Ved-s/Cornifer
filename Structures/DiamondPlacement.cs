@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Cornifer
+namespace Cornifer.Structures
 {
     public class DiamondPlacement
     {
@@ -23,7 +23,7 @@ namespace Cornifer
         public static Vector2 MaxSize { get; private set; } = Vector2.Zero;
 
         public DiamondPlacement(Vector2[] positions)
-        { 
+        {
             Positions = positions;
 
             if (positions.Length == 0)
@@ -102,7 +102,7 @@ namespace Cornifer
                 placements.Add(placement);
                 MaxSize = new(Math.Max(MaxSize.X, placement.Size.X), Math.Max(MaxSize.Y, placement.Size.Y));
             }
-            
+
             Placements = placements.ToArray();
         }
     }

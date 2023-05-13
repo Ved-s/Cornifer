@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Cornifer
+namespace Cornifer.Helpers
 {
     public class CompoundEnumerable<T> : IEnumerable<T>
     {
@@ -21,7 +21,7 @@ namespace Cornifer
             Enumerables.Remove(enumerable);
         }
 
-        public void Clear() 
+        public void Clear()
         {
             Enumerables.Clear();
         }

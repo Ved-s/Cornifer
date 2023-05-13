@@ -1,4 +1,6 @@
-﻿using Cornifer.MapObjects;
+﻿using Cornifer.Connections;
+using Cornifer.Helpers;
+using Cornifer.MapObjects;
 using Cornifer.Structures;
 using Microsoft.Xna.Framework;
 using System;

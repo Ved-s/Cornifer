@@ -1,4 +1,5 @@
 ﻿using Cornifer.MapObjects;
+using Cornifer.Structures;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
 using System;

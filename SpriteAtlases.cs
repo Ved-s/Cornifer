@@ -227,6 +227,4 @@ namespace Cornifer
             return sprite;
         }
     }
-
-    public record class AtlasSprite(string Name, Texture2D Texture, Rectangle Frame, Color Color, bool Shade);
 }

@@ -4,6 +4,7 @@ using System.Linq;
 using System;
 using Microsoft.Xna.Framework.Graphics;
 using System.Buffers;
+using Cornifer.MapObjects;
 
 namespace Cornifer.Structures
 {

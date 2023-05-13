@@ -1,5 +1,4 @@
 ﻿using Cornifer.Json;
-using Cornifer.MapObjects;
 using Cornifer.Renderers;
 using Cornifer.Structures;
 using Cornifer.UI.Elements;
@@ -14,7 +13,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.Json.Nodes;
 
-namespace Cornifer
+namespace Cornifer.MapObjects
 {
     public class Room : MapObject
     {
@@ -168,7 +167,7 @@ namespace Cornifer
 
         public bool CutOutsDirty = true;
         bool[,]? CutOutSolidTiles = null;
-        
+
         Vector2 Position;
         private Room? boundRoom;
 
@@ -395,7 +394,7 @@ namespace Cornifer
                 Shortcuts = tracedShortcuts.ToArray();
                 Exits = exitEntrances;
             }
-            else 
+            else
             {
                 Main.LoadErrors.Add($"Could not find tile data for room {Name}");
             }
@@ -547,12 +546,12 @@ namespace Cornifer
                 GateRegionText.NoAlignOverride = true;
                 GateRegionText.IconPosAlign = new(.5f);
                 GateSymbols.Offset = new(0, MathF.Floor(-Size.Y / 2 - GateSymbols.Size.Y / 2 - 5));
-                GateRegionText.Offset = new(0, MathF.Floor(-Size.Y / 2 - GateSymbols.Size.Y - 19 - Main.DefaultBigMapFont.LineSpacing/2));
+                GateRegionText.Offset = new(0, MathF.Floor(-Size.Y / 2 - GateSymbols.Size.Y - 19 - Main.DefaultBigMapFont.LineSpacing / 2));
             }
 
             if (!Region.LegacyFormat && VistaRooms.TryGetValue(Name!, out Vector2 vistaPoint))
             {
-                Vector2 rel = (vistaPoint / 20) / Size;
+                Vector2 rel = vistaPoint / 20 / Size;
 
                 rel.Y = 1 - rel.Y;
 
@@ -608,7 +607,7 @@ namespace Cornifer
 
                     if (waterFluxMin is not null && waterFluxMax is not null)
                     {
-                        float waterMid = 1 - ((waterFluxMax.Amount + waterFluxMin.Amount) / 2 * (22f / 20f));
+                        float waterMid = 1 - (waterFluxMax.Amount + waterFluxMin.Amount) / 2 * (22f / 20f);
                         waterLevel = (int)(waterMid * TileSize.Y) + 2;
                     }
                 }
@@ -1124,7 +1123,7 @@ namespace Cornifer
                 Text = "Set acid color",
                 TextAlign = new(.5f)
 
-            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Acid color", AcidColor.Value, (_, c) => 
+            }.OnEvent(UIElement.ClickEvent, (btn, _) => Interface.ColorSelector.Show("Acid color", AcidColor.Value, (_, c) =>
             {
                 AcidColor.Value = c;
                 Region?.MarkRoomTilemapsDirty();

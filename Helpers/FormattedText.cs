@@ -1,11 +1,12 @@
 ﻿using CommunityToolkit.HighPerformance.Buffers;
+using Cornifer.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace Cornifer
+namespace Cornifer.Helpers
 {
     public static class FormattedText
     {
@@ -224,7 +225,7 @@ namespace Cornifer
 
             tagBeginEnd++;
 
-            tagLength = (tagBeginEnd - tagBeginStart) + 1;
+            tagLength = tagBeginEnd - tagBeginStart + 1;
 
             if (NoContentTags.TryGet(tagName, out _))
                 return tagBeginStart - 1;
@@ -340,7 +341,7 @@ namespace Cornifer
                     ReadOnlySpan<char> rad = colorDelimeter < 0 ? ReadOnlySpan<char>.Empty : tagData.Slice(colorDelimeter + 1);
 
                     Color? tagColor = color.Length == 0 ? Color.Black : ColorDatabase.ParseColor(color);
-                    int? shade = rad.Length == 0 ? 1 : (int.TryParse(rad, out int radv) ? radv : null);
+                    int? shade = rad.Length == 0 ? 1 : int.TryParse(rad, out int radv) ? radv : null;
 
                     if (tagColor.HasValue && shade.HasValue)
                     {
