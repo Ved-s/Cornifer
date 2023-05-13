@@ -1,21 +1,16 @@
-﻿using Cornifer.MapObjects;
+﻿using Cornifer.Json;
+using Cornifer.MapObjects;
 using Cornifer.UI;
-using Cornifer.UI.Structures;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using SixLabors.Fonts;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
-using SixLabors.ImageSharp.Processing.Processors;
-using SixLabors.ImageSharp.Processing.Processors.Drawing;
 using System;
-using System.Buffers;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.IO;
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 using Color = Microsoft.Xna.Framework.Color;
@@ -87,7 +82,7 @@ namespace Cornifer.Renderers
             if (CurrentObject is null)
             {
                 RegisterTLBR(point, image);
-                WriteObject(null, image, point, null);
+                WriteObject(null, image, point, false);
             }
             else
             {
@@ -150,10 +145,7 @@ namespace Cornifer.Renderers
             if (img is not null)
             {
                 RegisterTLBR(pos, img);
-                if (CurrentObjectShade)
-                    WriteObject(CurrentObject, null, pos, img);
-                else
-                    WriteObject(CurrentObject, img, pos, null);
+                WriteObject(CurrentObject, img, pos, CurrentObjectShade);
             }
             CurrentObject = null;
         }
@@ -165,7 +157,7 @@ namespace Cornifer.Renderers
 
             return new()
             {
-                ["dimensions"] = new JsonObject 
+                ["dimensions"] = new JsonObject
                 {
                     ["top"] = TopLeft.Y,
                     ["left"] = TopLeft.X,
@@ -191,40 +183,37 @@ namespace Cornifer.Renderers
             BottomRight.Y = Math.Max(BottomRight.Y, pos.Y + img.Height);
         }
 
-        void WriteObject(MapObject? obj, Image<Rgba32>? image, Point? pos, Image<Rgba32>? shade)
+        void WriteObject(MapObject? obj, Image<Rgba32> image, Point pos, bool shade)
         {
             if (obj is null || !WrittenObjects.TryGetValue(obj, out JsonObject? json))
             {
                 json = new();
                 JsonObjectArray.Add(json);
 
-                if (obj is not null) 
+                if (obj is not null)
                 {
                     WrittenObjects[obj] = json;
                     json["data"] = new JsonObject
                     {
-                        // TODO: object data
+                        ["name"] = obj.Name,
+                        ["type"] = obj.GetType().Name,
                     };
                 }
             }
 
-            if (image is not null)
-                json["image"] = SaveBase64Image(image);
-
-            if (pos is not null)
+            if (shade)
             {
-                json["pos"] = new JsonObject
-                {
-                    ["x"] = pos.Value.X,
-                    ["y"] = pos.Value.Y,
-                };
+                json["shade"] = SaveBase64Image(image);
+                json["shade_pos"] = JsonTypes.SaveVector2(pos.ToVector2());
             }
-
-            if (shade is not null)
-                json["shade"] = SaveBase64Image(shade);
+            else 
+            {
+                json["image"] = SaveBase64Image(image);
+                json["pos"] = JsonTypes.SaveVector2(pos.ToVector2());
+            }
         }
 
-        Image<Rgba32>? CombineImages(out Point pos) 
+        Image<Rgba32>? CombineImages(out Point pos)
         {
             Image<Rgba32>? image = null;
             pos = default;
@@ -236,7 +225,7 @@ namespace Cornifer.Renderers
             {
                 (pos, image) = ObjectTextures[0];
             }
-            else 
+            else
             {
                 ObjectTexture first = ObjectTextures[0];
 
@@ -257,7 +246,7 @@ namespace Cornifer.Renderers
                 image = new(br.X - tl.X, br.Y - tl.Y);
                 pos = tl;
 
-                image.Mutate(ctx => 
+                image.Mutate(ctx =>
                 {
                     for (int i = 0; i < ObjectTextures.Count; i++)
                     {
@@ -272,7 +261,7 @@ namespace Cornifer.Renderers
 
         }
 
-        string SaveBase64Image(Image<Rgba32> image) 
+        string SaveBase64Image(Image<Rgba32> image)
         {
             ImageStream.Position = 0;
             ImageStream.SetLength(0);
