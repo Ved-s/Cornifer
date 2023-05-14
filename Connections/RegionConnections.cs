@@ -182,7 +182,6 @@ namespace Cornifer.Connections
                 HoveredConnection = null;
                 HoveredConnectionPoint = null;
             }
-
             if (HoveredConnection is not null && InputHandler.NewConnectionPoint.JustPressed)
             {
                 (Vec2 start, Vec2 end) = GetLinePoints(null, HoveredConnection, HoveredConnectionLine);

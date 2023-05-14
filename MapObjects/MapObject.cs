@@ -2,12 +2,14 @@
 using Cornifer.Renderers;
 using Cornifer.Structures;
 using Cornifer.UI.Elements;
+using Cornifer.UI.Helpers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -38,7 +40,9 @@ namespace Cornifer.MapObjects
         public virtual Vector2 ParentPosition { get; set; }
         public virtual Vector2 Size { get; }
 
-        public abstract RenderLayers RenderLayer { get; }
+        public virtual bool AllowModifyLayer => true;
+        public ObjectProperty<Layer, string> RenderLayer = new("layer", null!);
+        abstract protected Layer DefaultLayer { get; }
 
         public Vector2 VisualPosition => WorldPosition + VisualOffset;
         public virtual Vector2 VisualSize => Size + new Vector2(ShadeSize * 2);
@@ -75,14 +79,17 @@ namespace Cornifer.MapObjects
         public MapObject()
         {
             Children = new(this);
+            RenderLayer.OriginalValue = DefaultLayer;
+            RenderLayer.SaveValue = v => v.Id;
+            RenderLayer.LoadValue = v => Main.Layers.FirstOrDefault(l => l.Id == v) ?? RenderLayer.OriginalValue;
         }
 
-        public void DrawShade(Renderer renderer, RenderLayers renderLayers)
+        public void DrawShade(Renderer renderer, Layer renderLayer)
         {
             if (!Active)
                 return;
 
-            if (renderLayers.HasFlag(RenderLayer))
+            if (renderLayer == RenderLayer.Value)
             {
                 EnsureCorrectShadeTexture();
 
@@ -99,15 +106,15 @@ namespace Cornifer.MapObjects
             }
 
             foreach (MapObject child in Children)
-                child.DrawShade(renderer, renderLayers);
+                child.DrawShade(renderer, renderLayer);
         }
 
-        public void Draw(Renderer renderer, RenderLayers renderLayers)
+        public void Draw(Renderer renderer, Layer renderLayer)
         {
             if (!Active)
                 return;
 
-            if (renderLayers.HasFlag(RenderLayer))
+            if (renderLayer == RenderLayer.Value)
             {
                 if (renderer is ICapturingRenderer caps)
                     caps.BeginObjectCapture(this, false);
@@ -119,7 +126,7 @@ namespace Cornifer.MapObjects
             }
 
             foreach (MapObject child in Children)
-                child.Draw(renderer, renderLayers);
+                child.Draw(renderer, renderLayer);
         }
 
         protected abstract void DrawSelf(Renderer renderer);
@@ -135,6 +142,7 @@ namespace Cornifer.MapObjects
         }
 
         private UIList? ConfigChildrenList;
+        private UIList? ConfigLayerList;
 
         private UIElement? BuildConfig()
         {
@@ -152,9 +160,49 @@ namespace Cornifer.MapObjects
                         TextAlign = new(.5f)
                     },
 
-                    new UIResizeablePanel
+                    new UICollapsedPanel 
                     {
                         BorderColor = new(100, 100, 100),
+                        HeaderText = "Children",
+                        Collapsed = true,
+
+                        Content = new UIResizeablePanel
+                        {
+                            BorderColor = Color.Transparent,
+                            BackColor = Color.Transparent,
+                            Padding = 4,
+                            Height = 100,
+
+                            CanGrabLeft = false,
+                            CanGrabRight = false,
+                            CanGrabTop = false,
+
+                            MinHeight = 30,
+
+                            Elements =
+                            {
+                                new UIList
+                                {
+                                    ElementSpacing = 4,
+                                }.Assign(out ConfigChildrenList)
+                            }
+                        }
+                    },
+                }
+            };
+
+            if (AllowModifyLayer)
+            {
+                list.Elements.Add(new UICollapsedPanel
+                {
+                    BorderColor = new(100, 100, 100),
+                    HeaderText = "Layer",
+                    Collapsed = true,
+
+                    Content = new UIResizeablePanel
+                    {
+                        BorderColor = Color.Transparent,
+                        BackColor = Color.Transparent,
                         Padding = 4,
                         Height = 100,
 
@@ -166,32 +214,15 @@ namespace Cornifer.MapObjects
 
                         Elements =
                         {
-                            new UILabel
+                            new UIList
                             {
-                                Height = 15,
-                                Text = "Children",
-                                WordWrap = false,
-                                TextAlign = new(.5f)
-                            },
-                            new UIPanel
-                            {
-                                BackColor = new(40, 40, 40),
-
-                                Top = 18,
-                                Height = new(-18, 1),
-                                Padding = 4,
-                                Elements =
-                                {
-                                    new UIList
-                                    {
-                                        ElementSpacing = 4
-                                    }.Assign(out ConfigChildrenList)
-                                }
-                            }
+                                ElementSpacing = 4,
+                            }.Assign(out ConfigLayerList)
                         }
                     }
-                }
-            };
+                });
+            }
+
             BuildInnerConfig(list);
             return list;
         }
@@ -221,6 +252,7 @@ namespace Cornifer.MapObjects
                         {
                             Padding = 2,
                             Height = 22,
+                            BackColor = new(40, 40, 40),
 
                             Elements =
                             {
@@ -254,6 +286,39 @@ namespace Cornifer.MapObjects
                     }
                 }
             }
+            if (ConfigLayerList is not null)
+            {
+                ConfigLayerList.Elements.Clear();
+
+                RadioButtonGroup group = new();
+
+                for (int i = Main.Layers.Count - 1; i >= 0; i--)
+                {
+                    Layer layer = Main.Layers[i];
+                    UIButton button = new()
+                    {
+                        Text = layer.Name,
+                        Height = 20,
+                        TextAlign = new(.5f),
+                        RadioGroup = group,
+                        Selectable = true,
+                        Selected = layer == RenderLayer.Value,
+                        RadioTag = layer,
+                        SelectedTextColor = Color.Black,
+                        SelectedBackColor = Color.White,
+                    };
+
+                    ConfigLayerList.Elements.Add(button);
+                }
+
+                group.ButtonClicked += (_, tag) =>
+                {
+                    if (tag is not Layer layer)
+                        return;
+
+                    RenderLayer.Value = layer;
+                };
+            }
 
             UpdateInnerConfig();
         }
@@ -281,6 +346,7 @@ namespace Cornifer.MapObjects
             }
 
             ActiveProperty.SaveToJson(json, forCopy);
+            RenderLayer.SaveToJson(json, forCopy);
 
             if (!LoadCreationForbidden)
                 json["type"] = forCopy ? CopyType.FullName : GetType().FullName;
@@ -303,6 +369,7 @@ namespace Cornifer.MapObjects
                 ParentPosition = JsonTypes.LoadVector2(pos);
 
             ActiveProperty.LoadFromJson(json);
+            RenderLayer.LoadFromJson(json);
 
             if (json.TryGet("children", out JsonArray? children))
                 foreach (JsonNode? childNode in children)
@@ -493,7 +560,7 @@ namespace Cornifer.MapObjects
         {
             foreach (MapObject obj in objects.SmartReverse())
             {
-                if (!obj.Active || !Main.ActiveRenderLayers.HasFlag(obj.RenderLayer))
+                if (!obj.Active || !obj.RenderLayer.Value.Visible)
                     continue;
 
                 if (searchChildren)
@@ -512,7 +579,7 @@ namespace Cornifer.MapObjects
         {
             foreach (MapObject obj in objects.SmartReverse())
             {
-                if (!obj.Active || !Main.ActiveRenderLayers.HasFlag(obj.RenderLayer))
+                if (!obj.Active || !obj.RenderLayer.Value.Visible)
                     continue;
 
                 if (searchChildren)

@@ -58,7 +58,7 @@ namespace Cornifer
                 config.SaveToJson(obj);
 
             obj["hideObjects"] = new JsonArray(PlacedObject.HideObjectTypes.Select(s => JsonValue.Create(s)).ToArray());
-            obj["hideRenderLayers"] = (int)(~Main.ActiveRenderLayers & RenderLayers.All);
+            //TODO: obj["hideRenderLayers"] = (int)(~Main.ActiveRenderLayers & RenderLayers.All);
             return obj;
         }
 
@@ -85,12 +85,21 @@ namespace Cornifer
                 foreach (var (objType, button) in UI.Pages.Visibility.PlacedObjects)
                     button.Selected = !PlacedObject.HideObjectTypes.Contains(objType);
             }
+
+            
             if (node.TryGet("hideRenderLayers", out int hideRenderLayers))
             {
-                Main.ActiveRenderLayers = RenderLayers.All & ~(RenderLayers)hideRenderLayers;
+                // Rooms = 1,
+                // Connections = 2,
+                // InRoomShortcuts = 16,
+                // Icons = 4,
+                // Texts = 8,
 
-                foreach (var (layer, button) in UI.Pages.Visibility.RenderLayerButtons)
-                    button.Selected = Main.ActiveRenderLayers.HasFlag(layer);
+                if ((hideRenderLayers & 1) != 0)  Main.RoomsLayer.Visible = false;
+                if ((hideRenderLayers & 2) != 0)  Main.ConnectionsLayer.Visible = false;
+                if ((hideRenderLayers & 16) != 0) Main.InRoomConnectionsLayer.Visible = false;
+                if ((hideRenderLayers & 4) != 0)  Main.IconsLayer.Visible = false;
+                if ((hideRenderLayers & 8) != 0)  Main.TextsLayer.Visible = false;
             }
         }
 

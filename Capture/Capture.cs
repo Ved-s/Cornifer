@@ -2,6 +2,7 @@
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
 using Cornifer.Structures;
+using Cornifer.UI.Pages;
 using Microsoft.Xna.Framework;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
@@ -60,7 +61,7 @@ namespace Cornifer.Capture
         {
             CaptureRenderer renderer = CreateRenderer();
 
-            Main.DrawMap(renderer, Main.ActiveRenderLayers, null);
+            Main.DrawMap(renderer, null, null);
 
             return renderer.Image;
         }
@@ -72,7 +73,7 @@ namespace Cornifer.Capture
             int order = 1;
             CaptureMapLayered(renderer, info =>
             {
-                string filePath = Path.Combine(dirPath, $"{Main.Region?.Id}_{order}_{info.Layer}{(info.Shadow ? "Border" : "")}.png");
+                string filePath = Path.Combine(dirPath, $"{Main.Region?.Id}_{order}_{info.Layer.Name}{(info.Shadow ? "Border" : "")}.png");
                 order++;
                 renderer.Image.SaveAsPng(filePath);
             });
@@ -101,9 +102,9 @@ namespace Cornifer.Capture
                 psd.Layers.Add(new()
                 {
                     Data = data,
-                    Name = info.Shadow ? $"{info.Layer}_Shadow" : info.Layer.ToString(),
+                    Name = info.Shadow ? $"{info.Layer.Name}_Shadow" : info.Layer.Name,
                     Opacity = 255,
-                    Visible = (Main.ActiveRenderLayers & info.Layer) != 0
+                    Visible = info.Layer.Visible
                 });
             });
 
@@ -120,7 +121,11 @@ namespace Cornifer.Capture
         {
             using ImageMapRenderer renderer = new();
 
-            Main.DrawMap(renderer, Main.ActiveRenderLayers, null);
+            foreach (Layer l in Main.Layers)
+            {
+                renderer.CurrentLayer = l;
+                Main.DrawMap(renderer, l, null);
+            }
 
             using (FileStream fs = File.Create(jsonPath))
                 JsonSerializer.Serialize(fs, renderer.Finish());
@@ -128,39 +133,20 @@ namespace Cornifer.Capture
 
         static void CaptureMapLayered(CaptureRenderer renderer, Action<CapturedLayerInfo> layerHandler)
         {
-            int all = (int)RenderLayers.All;
-            for (int i = 0; i < 32; i++)
-            {
-                if (all >> i == 0)
-                    break;
-
-                int layerInt = 1 << i;
-                if ((layerInt & all) == 0)
-                    continue;
-
-                RenderLayers layer = (RenderLayers)layerInt;
-
+            foreach (Layer layer in Main.Layers)
+            { 
                 CaptureMapLayer(renderer, layer, true);
                 layerHandler(new(layer, true));
             }
 
-            for (int i = 0; i < 32; i++)
+            foreach (Layer layer in Main.Layers)
             {
-                if (all >> i == 0)
-                    break;
-
-                int layerInt = 1 << i;
-                if ((layerInt & all) == 0)
-                    continue;
-
-                RenderLayers layer = (RenderLayers)layerInt;
-
                 CaptureMapLayer(renderer, layer, false);
                 layerHandler(new(layer, false));
             }
         }
 
-        static void CaptureMapLayer(CaptureRenderer renderer, RenderLayers layer, bool shadow)
+        static void CaptureMapLayer(CaptureRenderer renderer, Layer layer, bool shadow)
         {
             for (int j = 0; j < renderer.Image.Height; j++)
             {
@@ -173,6 +159,6 @@ namespace Cornifer.Capture
             Main.DrawMap(renderer, layer, shadow);
         }
 
-        record struct CapturedLayerInfo(RenderLayers Layer, bool Shadow);
+        record struct CapturedLayerInfo(Layer Layer, bool Shadow);
     }
 }

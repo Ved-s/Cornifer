@@ -14,9 +14,16 @@ namespace Cornifer.Connections
 
         public override bool CanSetActive => false;
 
-        public override bool Active => Connection.Active && Main.ActiveRenderLayers.HasFlag(Connection.IsInRoomShortcut ? RenderLayers.InRoomShortcuts : RenderLayers.Connections);
+        public override bool Active => Connection.Active;
         public override bool LoadCreationForbidden => true;
         public override bool NeedsSaving => false;
+
+        public override bool AllowModifyLayer => false;
+
+        protected override Layer DefaultLayer => Connection?.IsInRoomShortcut is true ? Main.InRoomConnectionsLayer : Main.ConnectionsLayer;
+
+        public override Vector2 VisualOffset => -(VisualSize - Vector2.One) / 2;
+        public override Vector2 VisualSize => new(13);
 
         public Connection Connection = null!;
 
@@ -24,7 +31,9 @@ namespace Cornifer.Connections
         public ObjectProperty<bool> SkipPixelAfter = new("skipAfter", false);
         public ObjectProperty<bool> NoShadow = new("noShadow", false);
 
-        public ConnectionPoint() { }
+        public ConnectionPoint() 
+        {
+        }
         public ConnectionPoint(Connection connection)
         {
             Connection = connection;
@@ -32,10 +41,6 @@ namespace Cornifer.Connections
             if (connection.IsInRoomShortcut)
                 NoShadow.OriginalValue = true;
         }
-
-        public override RenderLayers RenderLayer => Connection.IsInRoomShortcut ? RenderLayers.InRoomShortcuts : RenderLayers.Connections;
-        public override Vector2 VisualOffset => -(VisualSize - Vector2.One) / 2;
-        public override Vector2 VisualSize => new(13);
 
         public JsonNode SaveJson()
         {

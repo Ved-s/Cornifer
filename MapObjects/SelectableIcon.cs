@@ -11,7 +11,7 @@ namespace Cornifer.MapObjects
         public Vector2 Offset;
 
         public override bool CanSetActive => true;
-        public override RenderLayers RenderLayer => RenderLayers.Icons;
+        protected override Layer DefaultLayer => Main.IconsLayer;
         public override Vector2 ParentPosition
         {
             get => (Parent?.Size * ParentPosAlign ?? Vector2.Zero) + Offset - Size * IconPosAlign;

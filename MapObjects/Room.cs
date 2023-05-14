@@ -127,7 +127,8 @@ namespace Cornifer.MapObjects
 
         public override bool CanSetActive => true;
 
-        public override RenderLayers RenderLayer => RenderLayers.Rooms;
+        protected override Layer DefaultLayer => Main.RoomsLayer;
+
         public override bool LoadCreationForbidden => true;
         public override int ShadeSize => InterfaceState.DisableRoomCropping.Value ? 0 : 5;
         public override int? ShadeCornerRadius => 6;

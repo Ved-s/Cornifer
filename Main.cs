@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -49,14 +50,13 @@ namespace Cornifer
         public static CompoundEnumerable<MapObject> WorldObjectLists = new();
         public static HashSet<MapObject> SelectedObjects = new();
 
-        public static RenderLayers ActiveRenderLayers = RenderLayers.All;
         public static EnabledDebugMetric DebugMetric = EnabledDebugMetric.None;
 
         public static Slugcat? SelectedSlugcat;
 
         public static Layer RoomsLayer             = new("rooms", "Rooms", true);
-        public static Layer ConnectionsLayer       = new("connections", "Connections", true);
-        public static Layer InRoomConnectionsLayer = new("inroomconnections", "In-Room Connections", true);
+        public static Layer ConnectionsLayer       = new ConnectionsLayer(false);
+        public static Layer InRoomConnectionsLayer = new ConnectionsLayer(true);
         public static Layer IconsLayer             = new("icons", "Icons", true);
         public static Layer TextsLayer             = new("texts", "Texts", true);
 
@@ -263,12 +263,15 @@ namespace Cornifer
             bool active = OldActive && IsActive;
             OldActive = IsActive;
 
-            bool betweenRoomConnections = ActiveRenderLayers.HasFlag(RenderLayers.Connections);
-            bool inRoomConnections = ActiveRenderLayers.HasFlag(RenderLayers.InRoomShortcuts);
+            bool betweenRoomConnections = ConnectionsLayer.Visible;
+            bool inRoomConnections = InRoomConnectionsLayer.Visible;
             bool anyConnections = betweenRoomConnections || inRoomConnections;
-
             if (active && anyConnections)
                 Region?.Connections?.Update(betweenRoomConnections, inRoomConnections);
+
+            foreach (Layer l in Layers)
+                if (l.Visible)
+                    l.Update();
 
             UpdateSelectionAndDrag(active);
 
@@ -420,7 +423,7 @@ namespace Cornifer
                 SpriteBatch.End();
             }
 
-            DrawMap(WorldCamera, ActiveRenderLayers, null);
+            DrawMap(WorldCamera, null, null);
 
             if (!InterfaceState.OverlayBelow.Value)
                 DrawOverlayImage();
@@ -725,45 +728,86 @@ namespace Cornifer
             Undo.Do(new MapObjectAdded<MapObject>(obj, WorldObjects));
         }
 
-        public static void DrawMap(Renderer renderer, RenderLayers layers, bool? border)
+        public static IEnumerable<MapObject> EnumerateAllObjects()
+        {
+            IEnumerable<MapObject> EnumerateRecursive(MapObject obj) 
+            {
+                foreach (MapObject child in obj.Children)
+                {
+                    yield return child;
+                    foreach (MapObject rec in EnumerateRecursive(child))
+                        yield return rec;
+                }
+            }
+            foreach (MapObject obj in WorldObjectLists)
+            {
+                yield return obj;
+                foreach (MapObject rec in EnumerateRecursive(obj))
+                    yield return rec;
+            }
+        }
+
+        public static void DrawMap(Renderer renderer, Layer? layer, bool? border)
         {
             SpriteBatch.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.NonPremultiplied);
 
-            bool betweenRoomConnections = layers.HasFlag(RenderLayers.Connections);
-            bool inRoomConnections = layers.HasFlag(RenderLayers.InRoomShortcuts);
-            bool anyConnections = betweenRoomConnections || inRoomConnections;
-
-            if (border is null && InterfaceState.DrawBorders.Value || border is true)
+            if (layer is not null)
             {
-                if (anyConnections)
-                    Region?.Connections?.DrawShadows(renderer, betweenRoomConnections, inRoomConnections);
+                if (border is null && InterfaceState.DrawBorders.Value || border is true)
+                    layer.DrawShade(renderer);
 
-                foreach (MapObject obj in WorldObjectLists)
-                    obj.DrawShade(renderer, layers);
+                layer.Draw(renderer);
+                layer.DrawGuides(renderer);
+            }
+            else 
+            {
+                if (border is null && InterfaceState.DrawBorders.Value || border is true)
+                    foreach (Layer l in Layers)
+                        if (l.Visible)
+                            l.DrawShade(renderer);
+
+                foreach (Layer l in Layers)
+                    if (l.Visible)
+                        l.Draw(renderer);
+
+                foreach (Layer l in Layers)
+                    if (l.Visible)
+                        l.DrawGuides(renderer);
             }
 
-            if (border is null or false)
-            {
-                if (Region is not null)
-                    foreach (MapObject obj in Region.Rooms)
-                        obj.Draw(renderer, layers);
+            
 
-                if (anyConnections)
-                {
-                    Region?.Connections?.DrawConnections(renderer, true, betweenRoomConnections, inRoomConnections);
-                    Region?.Connections?.DrawConnections(renderer, false, betweenRoomConnections, inRoomConnections);
-                }
+            //if (border is null && InterfaceState.DrawBorders.Value || border is true)
+            //{
+            //    if (anyConnections)
+            //        Region?.Connections?.DrawShadows(renderer, betweenRoomConnections, inRoomConnections);
 
-                if (Region is not null)
-                    foreach (MapObject obj in Region.Objects)
-                        obj.Draw(renderer, layers);
+            //    foreach (MapObject obj in WorldObjectLists)
+            //        obj.DrawShade(renderer, layers);
+            //}
 
-                foreach (MapObject obj in WorldObjects)
-                    obj.Draw(renderer, layers);
+            //if (border is null or false)
+            //{
+            //    if (Region is not null)
+            //        foreach (MapObject obj in Region.Rooms)
+            //            obj.Draw(renderer, layers);
 
-                if (anyConnections)
-                    Region?.Connections?.DrawGuideLines(renderer, betweenRoomConnections, inRoomConnections);
-            }
+            //    if (anyConnections)
+            //    {
+            //        Region?.Connections?.DrawConnections(renderer, true, betweenRoomConnections, inRoomConnections);
+            //        Region?.Connections?.DrawConnections(renderer, false, betweenRoomConnections, inRoomConnections);
+            //    }
+
+            //    if (Region is not null)
+            //        foreach (MapObject obj in Region.Objects)
+            //            obj.Draw(renderer, layers);
+
+            //    foreach (MapObject obj in WorldObjects)
+            //        obj.Draw(renderer, layers);
+
+            //    if (anyConnections)
+            //        Region?.Connections?.DrawGuideLines(renderer, betweenRoomConnections, inRoomConnections);
+            //}
 
             SpriteBatch.End();
         }
@@ -914,6 +958,18 @@ namespace Cornifer
                 ["objects"] = new JsonArray(WorldObjectLists.Enumerate().Select(o => o.SaveJson()).OfType<JsonNode>().ToArray()),
                 ["interface"] = InterfaceState.SaveJson(),
                 ["colors"] = ColorDatabase.SaveJson(),
+                ["layers"] = new JsonArray(Layers.Select(l => 
+                {
+                    JsonObject layer = new()
+                    {
+                        ["id"] = l.Id,
+                        ["visible"] = l.Visible,
+                    };
+                    if (!l.Special)
+                        layer["name"] = l.Name;
+
+                    return layer;
+                }).ToArray())
             };
         }
         public static void LoadJson(JsonNode node, bool shallow)
@@ -943,6 +999,58 @@ namespace Cornifer
             }
             if (node.TryGet("connections", out JsonNode? connections))
                 Region?.Connections?.LoadJson(connections);
+
+            List<Layer> defLayers = new()
+            {
+                RoomsLayer,
+                ConnectionsLayer,
+                InRoomConnectionsLayer,
+                IconsLayer,
+                TextsLayer,
+            };
+            if (node.TryGet("layers", out JsonArray? layers))
+            {
+                Layers.Clear();
+
+                foreach (Layer l in defLayers)
+                    l.Visible = true;
+
+                foreach (JsonNode? ln in layers)
+                {
+                    if (ln is not JsonObject layerObj)
+                        continue;
+
+                    if (!ln.TryGet("id", out string? id))
+                        continue;
+
+                    Layer? layer = Layers.FirstOrDefault(l => l.Id == id) ?? defLayers.FirstOrDefault(l => l.Id == id);
+                    if (layer is null)
+                    {
+                        if (!ln.TryGet("name", out string? name))
+                            continue;
+
+                        layer = new(id, name, false);
+                        Layers.Add(layer);
+                    }
+
+                    if (!Layers.Contains(layer))
+                        Layers.Add(layer);
+
+                    if (ln.TryGet("visible", out bool visible))
+                        layer.Visible = visible;
+                }
+
+                Layer? prevDefLayer = null;
+                foreach (Layer dl in defLayers)
+                {
+                    if (!Layers.Contains(dl))
+                        Layers.Insert(prevDefLayer is null ? 0 : Layers.IndexOf(prevDefLayer) + 1, dl);
+                    
+                    prevDefLayer = dl;
+                }
+
+                UI.Pages.Layers.UpdateLayerList();
+            }
 
             if (node.TryGet("objects", out JsonArray? objects))
                 foreach (JsonNode? objNode in objects)

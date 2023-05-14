@@ -11,6 +11,7 @@ using System;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json.Nodes;
 using Color = Microsoft.Xna.Framework.Color;
@@ -45,6 +46,7 @@ namespace Cornifer.Renderers
         Point TopLeft;
         Point BottomRight;
 
+        public Layer? CurrentLayer;
 
         public void BeginCapture(Vector2 pos, Vector2 size)
         {
@@ -164,6 +166,12 @@ namespace Cornifer.Renderers
                     ["bottom"] = BottomRight.Y,
                     ["right"] = BottomRight.X,
                 },
+                ["layers"] = new JsonArray(Main.Layers.Select(l => new JsonObject 
+                {
+                    ["id"] = l.Id,
+                    ["name"] = l.Name,
+                    ["visible"] = l.Visible,
+                }).ToArray()),
                 ["objects"] = JsonObjectArray
             };
         }
@@ -200,6 +208,9 @@ namespace Cornifer.Renderers
                     };
                 }
             }
+
+            if (CurrentLayer is not null)
+                json["layer"] = CurrentLayer?.Id;
 
             if (shade)
             {

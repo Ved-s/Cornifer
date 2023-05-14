@@ -13,7 +13,6 @@ namespace Cornifer.UI.Pages
     public class Visibility : Page
     {
         public static Dictionary<string, UIButton> PlacedObjects = new();
-        public static Dictionary<RenderLayers, UIButton> RenderLayerButtons = new();
         public static UIButton SlugcatIcons = null!;
         public static UIList MapObjectVisibilityList = null!;
 
@@ -239,71 +238,6 @@ namespace Cornifer.UI.Pages
                                             });
 
                                             PlacedObjects[objectName] = btn;
-                                            list.Elements.Add(btn);
-                                        }
-                                    })
-                                }
-                            }
-                        },
-
-                        new UICollapsedPanel
-                        {
-                            HeaderText = "Map layers",
-                            Collapsed = true,
-
-                            Content = new UIResizeablePanel
-                            {
-                                Height = 120,
-
-                                Padding = 4,
-
-                                CanGrabTop = false,
-                                CanGrabLeft = false,
-                                CanGrabRight = false,
-                                CanGrabBottom = true,
-
-                                Elements =
-                                {
-                                    new UIList
-                                    {
-                                        ElementSpacing = 4
-                                    }.Execute((list) =>
-                                    {
-                                        RenderLayerButtons.Clear();
-
-                                        int all = (int)RenderLayers.All;
-                                        for (int i = 0; i < 32; i++)
-                                        {
-                                            if ((all >> i) == 0)
-                                                break;
-
-                                            int layerInt = 1 << i;
-                                            if ((layerInt & all) == 0)
-                                                continue;
-
-                                            RenderLayers layer = (RenderLayers)layerInt;
-
-                                            UIButton btn = new()
-                                            {
-                                                Text = layer.ToString(),
-                                                Height = 20,
-                                                TextAlign = new(.5f),
-
-                                                Selectable = true,
-                                                Selected = Main.ActiveRenderLayers.HasFlag(layer),
-
-                                                SelectedBackColor = Color.White,
-                                                SelectedTextColor = Color.Black
-                                            };
-                                            btn.OnEvent(UIElement.ClickEvent, (btn, _) =>
-                                            {
-                                                if (btn.Selected)
-                                                    Main.ActiveRenderLayers |= layer;
-                                                else
-                                                    Main.ActiveRenderLayers &= ~layer;
-                                            });
-
-                                            RenderLayerButtons[layer] = btn;
                                             list.Elements.Add(btn);
                                         }
                                     })
