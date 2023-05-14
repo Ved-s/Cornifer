@@ -22,8 +22,7 @@ Fix hack with "To Region" by making a property to manually load/save position da
 Room settings templates
 Discord RPC
 
-Optimize images, cut empty borders
-Move everything, to positive coords
+Optimize images, cut empty borders	(serialized image map)
 
 Use collapsed panels
 Move broadcasts and vistas into separate layers

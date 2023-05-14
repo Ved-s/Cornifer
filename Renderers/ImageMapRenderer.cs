@@ -10,6 +10,7 @@ using SixLabors.ImageSharp.Processing;
 using System;
 using System.Buffers.Text;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -40,6 +41,8 @@ namespace Cornifer.Renderers
         List<ObjectTexture> ObjectTextures = new();
 
         Dictionary<MapObject, JsonObject> WrittenObjects = new();
+
+        List<PositionObject> DelayedPositions = new();
 
         MemoryStream ImageStream = new();
 
@@ -157,14 +160,19 @@ namespace Cornifer.Renderers
             if (CurrentObject is not null)
                 EndObjectCapture();
 
+            foreach (PositionObject obj in DelayedPositions)
+            {
+                Point result = obj.Position - TopLeft;
+                obj.Json["x"] = result.X;
+                obj.Json["y"] = result.Y;
+            }
+
             return new()
             {
                 ["dimensions"] = new JsonObject
                 {
-                    ["top"] = TopLeft.Y,
-                    ["left"] = TopLeft.X,
-                    ["bottom"] = BottomRight.Y,
-                    ["right"] = BottomRight.X,
+                    ["width"] = BottomRight.X - TopLeft.X,
+                    ["height"] = BottomRight.Y - TopLeft.Y,
                 },
                 ["layers"] = new JsonArray(Main.Layers.Select(l => new JsonObject 
                 {
@@ -215,12 +223,12 @@ namespace Cornifer.Renderers
             if (shade)
             {
                 json["shade"] = SaveBase64Image(image);
-                json["shade_pos"] = JsonTypes.SaveVector2(pos.ToVector2());
+                json["shade_pos"] = DelayPositionWrite(pos);
             }
             else 
             {
                 json["image"] = SaveBase64Image(image);
-                json["pos"] = JsonTypes.SaveVector2(pos.ToVector2());
+                json["pos"] = DelayPositionWrite(pos);
             }
         }
 
@@ -272,6 +280,13 @@ namespace Cornifer.Renderers
 
         }
 
+        JsonObject DelayPositionWrite(Point pos)
+        {
+            JsonObject obj = new();
+            DelayedPositions.Add(new(obj, pos));
+            return obj;
+        }
+
         string SaveBase64Image(Image<Rgba32> image)
         {
             ImageStream.Position = 0;
@@ -291,6 +306,7 @@ namespace Cornifer.Renderers
                 arr = new T[size];
         }
 
+        record struct PositionObject(JsonObject Json, Point Position);
         record struct ObjectTexture(Point Position, Image<Rgba32> Image);
     }
 }
