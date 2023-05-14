@@ -224,6 +224,7 @@ namespace Cornifer.UI.Pages
                                 Width = 17,
                                 Height = 17,
                                 TextAlign = new(.5f),
+                                HoverText = "Layer visibility"
                             }.OnClick(b => layer.Visible = b.Selected),
                         }
                     }.Assign(out UIPanel inner)
@@ -241,6 +242,7 @@ namespace Cornifer.UI.Pages
                     Height = 17,
                     TextAlign = new(.5f),
                     AutoSize = false,
+                    HoverText = "Delete layer"
                 }.OnClick(_ =>
                 {
                     RemoveLayer(layer, panel);
@@ -254,6 +256,7 @@ namespace Cornifer.UI.Pages
                     Height = 17,
                     TextAlign = new(.5f),
                     AutoSize = false,
+                    HoverText = "Rename layer"
                 }.OnClick(_ =>
                 {
                     RenameLayer(layer, name);
