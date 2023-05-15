@@ -24,4 +24,3 @@ Discord RPC
 Optimize images, cut empty borders	(serialized image map)
 
 Use collapsed panels
-Move broadcasts and vistas into separate layers
