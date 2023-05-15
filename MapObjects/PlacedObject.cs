@@ -85,11 +85,16 @@ namespace Cornifer.MapObjects
                     obj.RemoveByAvailability = false;
                 else
                     obj.SlugcatAvailability = ParseSlugcats(subsplit[6]);
+
                 obj.Color.OriginalValue.Color.A = 150;
                 obj.Shade.OriginalValue = false;
 
                 switch (objName)
                 {
+                    case "WhiteToken":
+                        obj.RenderLayer.OriginalValue = Main.BroadcastsLayer;
+                        break;
+
                     case "GreenToken":
                         Slugcat? slugcat = StaticData.Slugcats.FirstOrDefault(s => s.Name == subname || s.Id == subname);
 
@@ -200,7 +205,7 @@ namespace Cornifer.MapObjects
 
         public void AddAvailabilityIcons()
         {
-            if (Type == "DevToken" || SlugcatAvailability.Count == 0)
+            if (Type == "DevToken" || Type == "WhiteToken" || SlugcatAvailability.Count == 0)
                 return;
 
             HashSet<string> cats = new(StaticData.Slugcats.Where(s => s.Playable).Select(s => s.Id));

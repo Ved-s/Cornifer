@@ -559,6 +559,7 @@ namespace Cornifer.MapObjects
                 Children.Add(new MapText("VistaMarker", Main.DefaultSmallMapFont, "Expedition\nvista\npoint")
                 {
                     ParentPosAlign = rel,
+                    RenderLayer = { OriginalValue = Main.VistaPointsLayer }
                 });
             }
 

@@ -54,11 +54,13 @@ namespace Cornifer
 
         public static Slugcat? SelectedSlugcat;
 
-        public static Layer RoomsLayer             = new("rooms", "Rooms", true, true);
-        public static Layer ConnectionsLayer       = new ConnectionsLayer(false, true);
-        public static Layer InRoomConnectionsLayer = new ConnectionsLayer(true,  true);
-        public static Layer IconsLayer             = new("icons", "Icons", true, true);
-        public static Layer TextsLayer             = new("texts", "Texts", true, true);
+        public static Layer RoomsLayer             = new("rooms",       "Rooms",        true, true);
+        public static Layer ConnectionsLayer       = new ConnectionsLayer(false,              true);
+        public static Layer InRoomConnectionsLayer = new ConnectionsLayer(true,               true);
+        public static Layer IconsLayer             = new("icons",       "Icons",        true, true);
+        public static Layer BroadcastsLayer        = new("broadcasts",  "Broadcasts",   true, false);
+        public static Layer VistaPointsLayer       = new("vistapoints", "Vista points", true, false);
+        public static Layer TextsLayer             = new("texts",       "Texts",        true, true);
 
         static List<Layer> DefaultLayers = new()
         {
@@ -66,6 +68,8 @@ namespace Cornifer
             ConnectionsLayer,
             InRoomConnectionsLayer,
             IconsLayer,
+            BroadcastsLayer,
+            VistaPointsLayer,
             TextsLayer,
         };
 
