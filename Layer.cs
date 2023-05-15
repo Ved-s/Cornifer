@@ -15,12 +15,15 @@ namespace Cornifer
 
         public virtual bool Special { get; set; }
         public bool Visible = true;
+        public bool DefaultVisibility = true;
 
-        public Layer(string id, string name, bool special)
+        public Layer(string id, string name, bool special, bool defaultVisibility)
         {
             Id = id;
             Name = name;
             Special = special;
+            Visible = defaultVisibility;
+            DefaultVisibility = defaultVisibility;
         }
 
         public virtual void Update() { }
@@ -46,10 +49,10 @@ namespace Cornifer
 
         public override bool Special => true;
 
-        public ConnectionsLayer(bool inRoomConnections) : base(
+        public ConnectionsLayer(bool inRoomConnections, bool defaultVisibility) : base(
             inRoomConnections ? "inroomconnections" : "connections",
             inRoomConnections ? "In-Room Connections" : "Connections",
-            true)
+            true, defaultVisibility)
         {
             InRoomConnections = inRoomConnections;
         }

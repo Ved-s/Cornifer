@@ -54,13 +54,13 @@ namespace Cornifer
 
         public static Slugcat? SelectedSlugcat;
 
-        public static Layer RoomsLayer             = new("rooms", "Rooms", true);
-        public static Layer ConnectionsLayer       = new ConnectionsLayer(false);
-        public static Layer InRoomConnectionsLayer = new ConnectionsLayer(true);
-        public static Layer IconsLayer             = new("icons", "Icons", true);
-        public static Layer TextsLayer             = new("texts", "Texts", true);
+        public static Layer RoomsLayer             = new("rooms", "Rooms", true, true);
+        public static Layer ConnectionsLayer       = new ConnectionsLayer(false, true);
+        public static Layer InRoomConnectionsLayer = new ConnectionsLayer(true,  true);
+        public static Layer IconsLayer             = new("icons", "Icons", true, true);
+        public static Layer TextsLayer             = new("texts", "Texts", true, true);
 
-        public static List<Layer> Layers = new()
+        static List<Layer> DefaultLayers = new()
         {
             RoomsLayer,
             ConnectionsLayer,
@@ -68,6 +68,10 @@ namespace Cornifer
             IconsLayer,
             TextsLayer,
         };
+
+        public static List<Layer> Layers = new(DefaultLayers);
+
+        public static object DrawLock = new();
 
         public static List<string> LoadErrors = new();
 
@@ -749,39 +753,42 @@ namespace Cornifer
 
         public static void DrawMap(Renderer renderer, Layer? layer, bool? border)
         {
-            SpriteBatch.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.NonPremultiplied);
-
-            if (layer is not null)
+            lock (DrawLock)
             {
-                if (border is null && InterfaceState.DrawBorders.Value || border is true)
-                    layer.DrawShade(renderer);
+                SpriteBatch.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.NonPremultiplied);
 
-                if (border is null or false)
+                if (layer is not null)
                 {
-                    layer.Draw(renderer);
-                    layer.DrawGuides(renderer);
-                }
-            }
-            else 
-            {
-                if (border is null && InterfaceState.DrawBorders.Value || border is true)
-                    foreach (Layer l in Layers)
-                        if (l.Visible)
-                            l.DrawShade(renderer);
+                    if (border is null && InterfaceState.DrawBorders.Value || border is true)
+                        layer.DrawShade(renderer);
 
-                if (border is null or false)
+                    if (border is null or false)
+                    {
+                        layer.Draw(renderer);
+                        layer.DrawGuides(renderer);
+                    }
+                }
+                else
                 {
-                    foreach (Layer l in Layers)
-                        if (l.Visible)
-                            l.Draw(renderer);
+                    if (border is null && InterfaceState.DrawBorders.Value || border is true)
+                        foreach (Layer l in Layers)
+                            if (l.Visible)
+                                l.DrawShade(renderer);
 
-                    foreach (Layer l in Layers)
-                        if (l.Visible)
-                            l.DrawGuides(renderer);
+                    if (border is null or false)
+                    {
+                        foreach (Layer l in Layers)
+                            if (l.Visible)
+                                l.Draw(renderer);
+
+                        foreach (Layer l in Layers)
+                            if (l.Visible)
+                                l.DrawGuides(renderer);
+                    }
                 }
-            }
 
-            SpriteBatch.End();
+                SpriteBatch.End();
+            }
         }
 
         public static Task LoadRegion(RegionInfo info)
@@ -834,13 +841,25 @@ namespace Cornifer
 
                 try
                 {
+                    lock (DrawLock)
+                    {
+                        Layers.Clear();
+                        Layers.AddRange(DefaultLayers);
+                        foreach (Layer l in Layers)
+                            l.Visible = l.DefaultVisibility;
+                        UI.Pages.Layers.UpdateLayerList();
+                    }
+
                     Region region = new(info, MergeFiles(worldFile), MergeFiles(mapFile), MergeFiles(propertiesFile), MergeFiles(slugcatPropertiesFile));
 
                     MainThreadQueue.Enqueue(() =>
                     {
                         try
                         {
-                            Region = region;
+                            lock (DrawLock)
+                            {
+                                Region = region;
+                            }
                             RegionLoaded(Region);
                             completion.SetResult();
                         }
@@ -972,20 +991,12 @@ namespace Cornifer
             if (node.TryGet("connections", out JsonNode? connections))
                 Region?.Connections?.LoadJson(connections);
 
-            List<Layer> defLayers = new()
-            {
-                RoomsLayer,
-                ConnectionsLayer,
-                InRoomConnectionsLayer,
-                IconsLayer,
-                TextsLayer,
-            };
             if (node.TryGet("layers", out JsonArray? layers))
             {
                 Layers.Clear();
 
-                foreach (Layer l in defLayers)
-                    l.Visible = true;
+                foreach (Layer l in DefaultLayers)
+                    l.Visible = l.DefaultVisibility;
 
                 foreach (JsonNode? ln in layers)
                 {
@@ -995,13 +1006,13 @@ namespace Cornifer
                     if (!ln.TryGet("id", out string? id))
                         continue;
 
-                    Layer? layer = Layers.FirstOrDefault(l => l.Id == id) ?? defLayers.FirstOrDefault(l => l.Id == id);
+                    Layer? layer = Layers.FirstOrDefault(l => l.Id == id) ?? DefaultLayers.FirstOrDefault(l => l.Id == id);
                     if (layer is null)
                     {
                         if (!ln.TryGet("name", out string? name))
                             continue;
 
-                        layer = new(id, name, false);
+                        layer = new(id, name, false, true);
                         Layers.Add(layer);
                     }
 
@@ -1013,7 +1024,7 @@ namespace Cornifer
                 }
 
                 Layer? prevDefLayer = null;
-                foreach (Layer dl in defLayers)
+                foreach (Layer dl in DefaultLayers)
                 {
                     if (!Layers.Contains(dl))
                         Layers.Insert(prevDefLayer is null ? 0 : Layers.IndexOf(prevDefLayer) + 1, dl);

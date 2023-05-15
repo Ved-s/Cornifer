@@ -68,7 +68,7 @@ namespace Cornifer.UI.Pages
             while (Main.Layers.Any(l => l.Id == id))
                 id = $"u_{Random.Shared.Next():x}";
 
-            Layer layer = new(id, res.String, false);
+            Layer layer = new(id, res.String, false, true);
             LayerUI ui = CreateLayerUI(layer);
 
             Main.Layers.Add(layer);
