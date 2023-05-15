@@ -756,8 +756,11 @@ namespace Cornifer
                 if (border is null && InterfaceState.DrawBorders.Value || border is true)
                     layer.DrawShade(renderer);
 
-                layer.Draw(renderer);
-                layer.DrawGuides(renderer);
+                if (border is null or false)
+                {
+                    layer.Draw(renderer);
+                    layer.DrawGuides(renderer);
+                }
             }
             else 
             {
@@ -766,48 +769,17 @@ namespace Cornifer
                         if (l.Visible)
                             l.DrawShade(renderer);
 
-                foreach (Layer l in Layers)
-                    if (l.Visible)
-                        l.Draw(renderer);
+                if (border is null or false)
+                {
+                    foreach (Layer l in Layers)
+                        if (l.Visible)
+                            l.Draw(renderer);
 
-                foreach (Layer l in Layers)
-                    if (l.Visible)
-                        l.DrawGuides(renderer);
+                    foreach (Layer l in Layers)
+                        if (l.Visible)
+                            l.DrawGuides(renderer);
+                }
             }
-
-            
-
-            //if (border is null && InterfaceState.DrawBorders.Value || border is true)
-            //{
-            //    if (anyConnections)
-            //        Region?.Connections?.DrawShadows(renderer, betweenRoomConnections, inRoomConnections);
-
-            //    foreach (MapObject obj in WorldObjectLists)
-            //        obj.DrawShade(renderer, layers);
-            //}
-
-            //if (border is null or false)
-            //{
-            //    if (Region is not null)
-            //        foreach (MapObject obj in Region.Rooms)
-            //            obj.Draw(renderer, layers);
-
-            //    if (anyConnections)
-            //    {
-            //        Region?.Connections?.DrawConnections(renderer, true, betweenRoomConnections, inRoomConnections);
-            //        Region?.Connections?.DrawConnections(renderer, false, betweenRoomConnections, inRoomConnections);
-            //    }
-
-            //    if (Region is not null)
-            //        foreach (MapObject obj in Region.Objects)
-            //            obj.Draw(renderer, layers);
-
-            //    foreach (MapObject obj in WorldObjects)
-            //        obj.Draw(renderer, layers);
-
-            //    if (anyConnections)
-            //        Region?.Connections?.DrawGuideLines(renderer, betweenRoomConnections, inRoomConnections);
-            //}
 
             SpriteBatch.End();
         }
