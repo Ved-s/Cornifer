@@ -24,3 +24,4 @@ Discord RPC
 Optimize images, cut empty borders	(serialized image map)
 
 Use collapsed panels
+Add vista point icons when rules are resolved, TravellerA 150 trans

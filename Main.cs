@@ -12,7 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -20,7 +19,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace Cornifer
 {
@@ -54,13 +52,13 @@ namespace Cornifer
 
         public static Slugcat? SelectedSlugcat;
 
-        public static Layer RoomsLayer             = new("rooms",       "Rooms",        true, true);
-        public static Layer ConnectionsLayer       = new ConnectionsLayer(false,              true);
-        public static Layer InRoomConnectionsLayer = new ConnectionsLayer(true,               true);
-        public static Layer IconsLayer             = new("icons",       "Icons",        true, true);
-        public static Layer BroadcastsLayer        = new("broadcasts",  "Broadcasts",   true, false);
-        public static Layer VistaPointsLayer       = new("vistapoints", "Vista points", true, false);
-        public static Layer TextsLayer             = new("texts",       "Texts",        true, true);
+        public static Layer RoomsLayer = new("rooms", "Rooms", true, true);
+        public static Layer ConnectionsLayer = new ConnectionsLayer(false, true);
+        public static Layer InRoomConnectionsLayer = new ConnectionsLayer(true, true);
+        public static Layer IconsLayer = new("icons", "Icons", true, true);
+        public static Layer BroadcastsLayer = new("broadcasts", "Broadcasts", true, false);
+        public static Layer VistaPointsLayer = new("vistapoints", "Vista points", true, false);
+        public static Layer TextsLayer = new("texts", "Texts", true, true);
 
         static List<Layer> DefaultLayers = new()
         {
@@ -738,7 +736,7 @@ namespace Cornifer
 
         public static IEnumerable<MapObject> EnumerateAllObjects()
         {
-            IEnumerable<MapObject> EnumerateRecursive(MapObject obj) 
+            IEnumerable<MapObject> EnumerateRecursive(MapObject obj)
             {
                 foreach (MapObject child in obj.Children)
                 {
@@ -755,39 +753,58 @@ namespace Cornifer
             }
         }
 
-        public static void DrawMap(Renderer renderer, Layer? layer, bool? border)
+        public static void DrawMap(Renderer renderer, Layer? layer, bool? border, bool ignoreVisibility = false, bool guides = true)
         {
             lock (DrawLock)
             {
                 SpriteBatch.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.NonPremultiplied);
 
+                ICapturingRenderer? capture = renderer as ICapturingRenderer;
+
                 if (layer is not null)
                 {
                     if (border is null && InterfaceState.DrawBorders.Value || border is true)
+                    {
+                        capture?.BeginLayerCapture(layer, true);
                         layer.DrawShade(renderer);
+                        capture?.EndLayerCapture();
+                    }
 
                     if (border is null or false)
                     {
+                        capture?.BeginLayerCapture(layer, false);
                         layer.Draw(renderer);
-                        layer.DrawGuides(renderer);
+                        capture?.EndLayerCapture();
+
+                        if (guides)
+                            layer.DrawGuides(renderer);
                     }
                 }
                 else
                 {
                     if (border is null && InterfaceState.DrawBorders.Value || border is true)
                         foreach (Layer l in Layers)
-                            if (l.Visible)
+                            if (l.Visible || ignoreVisibility)
+                            {
+                                capture?.BeginLayerCapture(l, true);
                                 l.DrawShade(renderer);
+                                capture?.EndLayerCapture();
+                            }
 
                     if (border is null or false)
                     {
                         foreach (Layer l in Layers)
-                            if (l.Visible)
+                            if (l.Visible || ignoreVisibility)
+                            {
+                                capture?.BeginLayerCapture(l, false);
                                 l.Draw(renderer);
+                                capture?.EndLayerCapture();
+                            }
 
-                        foreach (Layer l in Layers)
-                            if (l.Visible)
-                                l.DrawGuides(renderer);
+                        if (guides)
+                            foreach (Layer l in Layers)
+                                if (l.Visible || ignoreVisibility)
+                                    l.DrawGuides(renderer);
                     }
                 }
 
@@ -800,7 +817,7 @@ namespace Cornifer
             List<string>? worldFile = RWAssets.ResolveUnmergedSlugcatFiles($"{info.Path}/world_{info.Id}.txt");
             List<string>? mapFile = RWAssets.ResolveUnmergedSlugcatFiles($"{info.Path}/map_{info.Id}.txt");
             List<string>? propertiesFile = RWAssets.ResolveUnmergedFiles($"{info.Path}/properties.txt");
-            List<string>? slugcatPropertiesFile = SelectedSlugcat is null || RWAssets.CurrentInstallation?.IsLegacy is true ? null 
+            List<string>? slugcatPropertiesFile = SelectedSlugcat is null || RWAssets.CurrentInstallation?.IsLegacy is true ? null
                 : RWAssets.ResolveUnmergedFiles($"{info.Path}/properties-{SelectedSlugcat.WorldStateSlugcat}.txt");
 
             if (worldFile is null)
@@ -819,7 +836,7 @@ namespace Cornifer
             ThreadPool.QueueUserWorkItem((_) =>
             {
                 [return: NotNullIfNotNull(nameof(paths))]
-                static string? MergeFiles(List<string>? paths) 
+                static string? MergeFiles(List<string>? paths)
                 {
                     if (paths is null)
                         return null;
@@ -832,7 +849,7 @@ namespace Cornifer
 
                     StringBuilder builder = new();
 
-                    foreach (string path in paths) 
+                    foreach (string path in paths)
                     {
                         if (builder.Length > 0 && builder[^1] != '\n')
                             builder.Append('\n');
@@ -953,7 +970,7 @@ namespace Cornifer
                 ["objects"] = new JsonArray(WorldObjectLists.Enumerate().Select(o => o.SaveJson()).OfType<JsonNode>().ToArray()),
                 ["interface"] = InterfaceState.SaveJson(),
                 ["colors"] = ColorDatabase.SaveJson(),
-                ["layers"] = new JsonArray(Layers.Select(l => 
+                ["layers"] = new JsonArray(Layers.Select(l =>
                 {
                     JsonObject layer = new()
                     {
@@ -1032,7 +1049,7 @@ namespace Cornifer
                 {
                     if (!Layers.Contains(dl))
                         Layers.Insert(prevDefLayer is null ? 0 : Layers.IndexOf(prevDefLayer) + 1, dl);
-                    
+
                     prevDefLayer = dl;
                 }
 
@@ -1098,7 +1115,7 @@ namespace Cornifer
                         {
                             await UI.Pages.General.SelectRegionClicked();
                         }
-                        else 
+                        else
                         {
                             SelectedSlugcat = slugcat;
                             await LoadRegion(regionInfo.Value);

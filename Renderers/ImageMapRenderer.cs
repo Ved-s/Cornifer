@@ -49,7 +49,8 @@ namespace Cornifer.Renderers
         Point TopLeft;
         Point BottomRight;
 
-        public Layer? CurrentLayer;
+        Layer? CurrentLayer;
+        bool LayerShade;
 
         public void BeginCapture(Vector2 pos, Vector2 size)
         {
@@ -87,7 +88,7 @@ namespace Cornifer.Renderers
             if (CurrentObject is null)
             {
                 RegisterTLBR(point, image);
-                WriteObject(null, image, point, false);
+                WriteObject(null, image, point, LayerShade);
             }
             else
             {
@@ -142,7 +143,6 @@ namespace Cornifer.Renderers
             CurrentObjectShade = shade;
             ObjectTextures.Clear();
         }
-
         public void EndObjectCapture()
         {
             Image<Rgba32>? img = CombineImages(out Point pos);
@@ -150,9 +150,20 @@ namespace Cornifer.Renderers
             if (img is not null)
             {
                 RegisterTLBR(pos, img);
-                WriteObject(CurrentObject, img, pos, CurrentObjectShade);
+                WriteObject(CurrentObject, img, pos, CurrentObjectShade || LayerShade);
             }
             CurrentObject = null;
+        }
+
+        public void BeginLayerCapture(Layer layer, bool shade)
+        {
+            CurrentLayer = layer;
+            LayerShade = shade;
+        }
+
+        public void EndLayerCapture()
+        {
+            CurrentLayer = null;
         }
 
         public JsonObject Finish()

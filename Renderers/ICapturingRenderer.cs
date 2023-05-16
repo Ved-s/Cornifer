@@ -15,5 +15,8 @@ namespace Cornifer.Renderers
 
         void BeginObjectCapture(MapObject obj, bool shade);
         void EndObjectCapture();
+
+        void BeginLayerCapture(Layer layer, bool shade);
+        void EndLayerCapture();
     }
 }
