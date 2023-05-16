@@ -121,7 +121,7 @@ namespace Cornifer.Capture
         {
             using ImageMapRenderer renderer = new();
 
-            Main.DrawMap(renderer, null, null);
+            Main.DrawMap(renderer, null, null, true, false);
 
             using (FileStream fs = File.Create(jsonPath))
                 JsonSerializer.Serialize(fs, renderer.Finish());
