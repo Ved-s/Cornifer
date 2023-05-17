@@ -1,5 +1,6 @@
 ﻿using Cornifer.Structures;
 using Cornifer.UI.Elements;
+using Microsoft.Xna.Framework;
 
 namespace Cornifer.UI.Modals
 {
@@ -7,11 +8,12 @@ namespace Cornifer.UI.Modals
     {
         UILabel Label;
         UIButton Close;
+        UIList List;
 
         public SlugcatSelect()
         {
             Width = 200;
-            Height = 100;
+            Height = new(0, .9f);
 
             Margin = 5;
             Padding = new(5, 25);
@@ -25,6 +27,12 @@ namespace Cornifer.UI.Modals
                     Text = "Select slugcat",
                     TextAlign = new(.5f)
                 }.Assign(out Label),
+                new UIList 
+                {
+                    ElementSpacing = 4,
+                    Top = 50,
+                    Height = new(-90, 1),
+                }.Assign(out List),
                 new UIButton
                 {
                     Top = new(-20, 1),
@@ -40,69 +48,64 @@ namespace Cornifer.UI.Modals
 
         protected override void Shown()
         {
-            Elements.Clear();
-            Elements.Add(Label);
-            Elements.Add(Close);
-
-            float y = 50;
+            List.Elements.Clear();
 
             foreach (Slugcat slugcat in StaticData.Slugcats)
             {
-                UIButton button = new()
+                UIPanel panel = new()
                 {
-                    Text = slugcat.Name,
+                    BackColor = Color.Transparent,
+                    BorderColor = Color.Transparent,
+
                     Height = 20,
-                    Left = 25,
-                    Width = new(-25, 1),
-                    TextAlign = new(.5f),
-                    Top = y,
-                    AutoSize = false
-                };
-                button.OnEvent(ClickEvent, (_, _) =>
-                {
-                    ReturnResult(new()
+
+                    Elements = 
                     {
-                        Slugcat = slugcat
-                    });
-                });
-                Elements.Add(button);
+                        new UIButton 
+                        {
+                            Text = slugcat.Name,
+                            Left = 25,
+                            Width = new(-25, 1),
+                            TextAlign = new(.5f),
+                            AutoSize = false
+                        }.OnEvent(ClickEvent, (_, _) =>
+                        {
+                            ReturnResult(new()
+                            {
+                                Slugcat = slugcat
+                            });
+                        })
+                    }
+                };
 
                 AtlasSprite? slugcatSprite = SpriteAtlases.GetSpriteOrNull($"Slugcat_{slugcat.Id}");
                 if (slugcatSprite is not null)
                 {
-                    Elements.Add(new UIImage
+                    panel.Elements.Add(new UIImage
                     {
                         Texture = slugcatSprite.Texture,
                         TextureFrame = slugcatSprite.Frame,
                         TextureColor = slugcatSprite.Color,
 
-                        Height = 20,
                         Width = 20,
-                        Top = y
                     });
                 }
-                y += 25;
+
+                List.Elements.Add(panel);
             }
 
-            UIButton all = new()
+            List.Elements.Add(new UIButton 
             {
                 Text = "All",
                 Height = 20,
                 TextAlign = new(.5f),
-                Top = y
-            };
-            all.OnEvent(ClickEvent, (_, _) =>
+            }.OnEvent(ClickEvent, (_, _) =>
             {
                 ReturnResult(new()
                 {
                     Slugcat = null
                 });
-            });
-            Elements.Add(all);
-
-            y += 25;
-
-            Height = y + 40;
+            }));
             Recalculate();
         }
 
