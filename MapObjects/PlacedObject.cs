@@ -34,10 +34,14 @@ namespace Cornifer.MapObjects
                 && base.Active;
         }
 
+        UIList? AvailabilityPresets;
+
         public static HashSet<string> HideObjectTypes = new()
         {
             "DevToken"
         };
+
+        static HashSet<string> HollowSlugcats = new() { "White", "Yellow", "Red", "Gourmand", "Artificer", "Rivulet", "Spear", "Saint" };
 
         public PlacedObject()
         {
@@ -100,7 +104,7 @@ namespace Cornifer.MapObjects
 
                         if (slugcat is not null)
                         {
-                            obj.Children.Add(new SlugcatIcon("GreenTokenSlugcat", slugcat)
+                            obj.Children.Add(new SlugcatIcon("GreenTokenSlugcat", slugcat, false)
                             {
                                 ParentPosition = new(0, 8),
                                 Parent = obj,
@@ -222,14 +226,16 @@ namespace Cornifer.MapObjects
             List<SlugcatIcon> icons = new();
             foreach (Slugcat slugcat in StaticData.Slugcats)
             {
-                if (!SlugcatAvailability.Contains(slugcat.Id))
+                bool available = SlugcatAvailability.Contains(slugcat.Id);
+
+                if (!available && !HollowSlugcats.Contains(slugcat.Id))
                     continue;
 
                 Vector2 offset = new Vector2(MathF.Cos(currentAngle), -MathF.Sin(currentAngle)) * 15;
                 currentAngle -= iconAngle;
 
                 offset.Floor();
-                SlugcatIcon icon = new($"Availability_{slugcat.Id}", slugcat)
+                SlugcatIcon icon = new($"Availability_{slugcat.Id}", slugcat, !available)
                 {
                     ParentPosition = offset
                 };
@@ -256,6 +262,9 @@ namespace Cornifer.MapObjects
 
                 for (int i = 0; i < AvailabilityIcons.Count; i++)
                 {
+                    if (!AvailabilityIcons[i].Active)
+                        continue;
+
                     tl.X = Math.Min(tl.X, AvailabilityIcons[i].ParentPosition.X);
                     tl.Y = Math.Min(tl.Y, AvailabilityIcons[i].ParentPosition.Y);
 
@@ -266,14 +275,24 @@ namespace Cornifer.MapObjects
                 center = tl + (br - tl) / 2;
             }
 
+            int iconInd = 0;
+
             for (int i = 0; i < placement.Positions.Length; i++)
             {
-                if (i >= AvailabilityIcons.Count)
+                if (i >= AvailabilityIcons.Count || iconInd >= AvailabilityIcons.Count)
                     break;
 
                 Vector2 pos = placement.Positions[i] + center.Value;
                 pos.Ceiling();
-                AvailabilityIcons[i].ParentPosition = pos;
+
+                while (iconInd < AvailabilityIcons.Count && !AvailabilityIcons[iconInd].Active)
+                    iconInd++;
+
+                if (iconInd >= AvailabilityIcons.Count)
+                    break;
+
+                AvailabilityIcons[iconInd].ParentPosition = pos;
+                iconInd++;
             }
         }
 
@@ -291,26 +310,42 @@ namespace Cornifer.MapObjects
                 });
             }
 
-            if (AvailabilityIcons?.Count is not null and > 1)
+            AvailabilityPresets = new()
             {
-                UIFlow flow = new()
-                {
-                    ElementSpacing = 4,
-                };
+                Visible = false,
+                AutoSize = true,
+                Height = 0,
+            };
+            list.Elements.Add(AvailabilityPresets);
+        }
 
-                bool any = false;
-                foreach (DiamondPlacement placement in DiamondPlacement.Placements)
-                {
-                    if (placement.Positions.Length != AvailabilityIcons.Count)
-                        continue;
+        protected override void UpdateInnerConfig()
+        {
+            if (AvailabilityPresets is not null)
+            {
+                int visibleAvail = AvailabilityIcons?.Count(i => i.Active) ?? 0;
+                AvailabilityPresets.Visible = false;
 
-                    UIHoverPanel panel = new()
+                if (visibleAvail > 1)
+                {
+                    UIFlow flow = new()
                     {
-                        Width = DiamondPlacement.MaxSize.X + 8,
-                        Height = DiamondPlacement.MaxSize.Y + 8,
+                        ElementSpacing = 4,
+                    };
 
-                        Padding = 4,
-                        Elements =
+                    bool any = false;
+                    foreach (DiamondPlacement placement in DiamondPlacement.Placements)
+                    {
+                        if (placement.Positions.Length != visibleAvail)
+                            continue;
+
+                        UIHoverPanel panel = new()
+                        {
+                            Width = DiamondPlacement.MaxSize.X + 8,
+                            Height = DiamondPlacement.MaxSize.Y + 8,
+
+                            Padding = 4,
+                            Elements =
                         {
                             new UIDiamondPlacementDisplay
                             {
@@ -318,21 +353,25 @@ namespace Cornifer.MapObjects
                                 Icons = AvailabilityIcons
                             }
                         }
-                    };
-                    panel.OnEvent(UIElement.ClickEvent, (_, _) => PositionAvailabilityIcons(placement, null));
-                    flow.Elements.Add(panel);
-                    any = true;
-                }
-                if (any)
-                {
-                    list.Elements.Add(new UILabel
+                        };
+                        panel.OnEvent(UIElement.ClickEvent, (_, _) => PositionAvailabilityIcons(placement, null));
+                        flow.Elements.Add(panel);
+                        any = true;
+                    }
+                    if (any)
                     {
-                        Height = 0,
-                        TextAlign = new(.5f),
+                        AvailabilityPresets.Elements.Clear();
+                        AvailabilityPresets.Elements.Add(new UILabel
+                        {
+                            Height = 0,
+                            TextAlign = new(.5f),
 
-                        Text = "Diamond presets"
-                    });
-                    list.Elements.Add(flow);
+                            Text = "Diamond presets"
+                        });
+                        AvailabilityPresets.Elements.Add(flow);
+                        AvailabilityPresets.Visible = true;
+                        AvailabilityPresets.Recalculate();
+                    }
                 }
             }
         }

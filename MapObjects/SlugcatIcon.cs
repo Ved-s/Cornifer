@@ -18,20 +18,29 @@ namespace Cornifer.MapObjects
         public override bool CanSetActive => true;
 
         public override int ShadeSize => InterfaceState.DrawSlugcatDiamond.Value ? 1 : 2;
-        public override bool Active => (InterfaceState.DrawSlugcatIcons.Value || ForceSlugcatIcon) && base.Active;
+        public override bool Active => InterfaceState.DrawSlugcatIcons.Value 
+            && (!Hollow || InterfaceState.DrawHollowSlugcatDiamond.Value) 
+            && base.Active;
         public override Vector2 Size => CurrentSprite?.Frame.Size.ToVector2() ?? new(10);
 
         public AtlasSprite? DiamondSprite;
+        public AtlasSprite? HollowDiamondSprite;
         public AtlasSprite? IconSprite;
 
-        public AtlasSprite? CurrentSprite => (InterfaceState.DrawSlugcatDiamond.Value && !ForceSlugcatIcon) ? DiamondSprite : IconSprite;
+        public bool Hollow = false;
 
-        public SlugcatIcon(string name, Slugcat slugcat)
+        public AtlasSprite? CurrentSprite => (InterfaceState.DrawSlugcatDiamond.Value && !ForceSlugcatIcon) ?
+            Hollow ? HollowDiamondSprite : DiamondSprite 
+            : IconSprite;
+
+        public SlugcatIcon(string name, Slugcat slugcat, bool hollow)
         {
             Name = name;
             Slugcat = slugcat;
+            Hollow = hollow;
 
             DiamondSprite = SpriteAtlases.GetSpriteOrNull($"SlugcatDiamond_{slugcat.Id}");
+            HollowDiamondSprite = SpriteAtlases.GetSpriteOrNull($"SlugcatHollowDiamond_{slugcat.Id}");
             IconSprite = SpriteAtlases.GetSpriteOrNull($"SlugcatIcon_{slugcat.Id}");
         }
 
@@ -41,12 +50,11 @@ namespace Cornifer.MapObjects
             if (sprite is null)
                 return;
 
-            renderer.DrawTexture(sprite.Texture, WorldPosition, sprite.Frame, null, sprite.Color);
-        }
+            Color color = sprite.Color;
+            if (sprite == IconSprite && Hollow)
+                color = Color.Gray;
 
-        //public static Rectangle GetFrame(int id, bool diamond)
-        //{
-        //    return diamond ? new(id * 9, 8, 9, 9) : new(id * 8, 0, 8, 8);
-        //}
+            renderer.DrawTexture(sprite.Texture, WorldPosition, sprite.Frame, null, color);
+        }
     }
 }

@@ -19,6 +19,7 @@ namespace Cornifer
 
         public static Switch DrawSlugcatIcons = new("slugcatIcons", false);
         public static Switch DrawSlugcatDiamond = new("slugcatDiamond", true);
+        public static Switch DrawHollowSlugcatDiamond = new("hollowSlugcatDiamond", false);
 
         public static Switch DrawBorders = new("borders", true);
 

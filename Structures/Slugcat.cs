@@ -71,13 +71,15 @@ namespace Cornifer.Structures
             texture.SetData(colors, 0, arraySize);
             ArrayPool<Color>.Shared.Return(colors);
 
-            AtlasSprite bigIcon   = new($"Slugcat_{Id}", texture, new(0, 9, 20, 19), Color.White, false);
-            AtlasSprite smallIcon = new($"SlugcatIcon_{Id}", texture, new(9, 0, 8, 8), Color.White, false);
-            AtlasSprite diamond   = new($"SlugcatDiamond_{Id}", texture, new(0, 0, 9, 9), Color.White, false);
+            AtlasSprite bigIcon       = new($"Slugcat_{Id}", texture, new(0, 18, 20, 19), Color.White, false);
+            AtlasSprite smallIcon     = new($"SlugcatIcon_{Id}", texture, new(9, 0, 8, 8), Color.White, false);
+            AtlasSprite diamond       = new($"SlugcatDiamond_{Id}", texture, new(0, 0, 9, 9), Color.White, false);
+            AtlasSprite hollowdiamond = new($"SlugcatHollowDiamond_{Id}", texture, new(0, 9, 9, 9), Color.White, false);
 
             SpriteAtlases.Sprites[bigIcon.Name] = bigIcon;
             SpriteAtlases.Sprites[smallIcon.Name] = smallIcon;
             SpriteAtlases.Sprites[diamond.Name] = diamond;
+            SpriteAtlases.Sprites[hollowdiamond.Name] = hollowdiamond;
         }
 
         public bool CompareIDs(string id) => Id.Equals(id, StringComparison.InvariantCultureIgnoreCase);

@@ -214,8 +214,12 @@ namespace Cornifer
                 frame = new(i * 9, 8, 9, 9);
                 Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
 
+                name = "SlugcatHollowDiamond_" + slugcat;
+                frame = new(i * 9, 17, 9, 9);
+                Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
+
                 name = "Slugcat_" + slugcat;
-                frame = new(i * 20, 17, 20, 19);
+                frame = new(i * 20, 26, 20, 19);
                 Sprites[name] = new(name, Content.SlugcatIcons, frame, Color.White, false);
             }
         }

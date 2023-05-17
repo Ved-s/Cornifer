@@ -72,6 +72,21 @@ namespace Cornifer.UI.Pages
                                     new UIButton
                                     {
                                         Height = 20,
+                                        Text = "Hollow diamonds",
+
+                                        HoverText = "Draw hollow diamonds for unavailable slugcats",
+
+                                        Selectable = true,
+
+                                        SelectedBackColor = Color.White,
+                                        SelectedTextColor = Color.Black,
+
+                                        TextAlign = new(.5f)
+                                    }.BindConfig(InterfaceState.DrawHollowSlugcatDiamond),
+
+                                    new UIButton
+                                    {
+                                        Height = 20,
                                         Text = "Room objects",
 
                                         Selectable = true,
