@@ -41,6 +41,13 @@ namespace Cornifer.MapObjects
             "DevToken"
         };
 
+        static Dictionary<string, string[]> TiedSandboxIDs = new()
+        {
+            ["CicadaA"] = new[] { "CicadaB" },
+            ["SmallCentipede"] = new[] { "MediumCentipede" },
+            ["BigNeedleWorm"] = new[] { "SmallNeedleWorm" },
+        };
+
         static HashSet<string> HollowSlugcats = new() { "White", "Yellow", "Red", "Gourmand", "Artificer", "Rivulet", "Spear", "Saint" };
 
         public PlacedObject()
@@ -121,6 +128,33 @@ namespace Cornifer.MapObjects
                         {
                             subObject.ParentPosition = new(0, 15);
                             obj.Children.Add(subObject);
+
+                            List<PlacedObject> objects = new() { subObject };
+
+                            if (TiedSandboxIDs.TryGetValue(subname, out string[]? tied))
+                            {
+                                foreach (string to in tied)
+                                {
+                                    PlacedObject? tiedObj = Load(to, obj.Size / 2);
+                                    if (tiedObj is null)
+                                        continue;
+
+                                    obj.Children.Add(tiedObj);
+                                    objects.Add(tiedObj);
+                                }
+                            }
+
+                            if (objects.Count > 1)
+                            {
+                                float angle = 0;
+                                float ad = MathF.PI * 2 / objects.Count;
+
+                                foreach (PlacedObject o in objects)
+                                {
+                                    o.Offset = new Vector2(MathF.Cos(angle), MathF.Sin(angle)) * 20;
+                                    angle += ad;
+                                }
+                            }
                         }
                         break;
                 }
