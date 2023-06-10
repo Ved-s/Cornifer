@@ -59,7 +59,6 @@ namespace Cornifer
                 config.SaveToJson(obj);
 
             obj["hideObjects"] = new JsonArray(PlacedObject.HideObjectTypes.Select(s => JsonValue.Create(s)).ToArray());
-            //TODO: obj["hideRenderLayers"] = (int)(~Main.ActiveRenderLayers & RenderLayers.All);
             return obj;
         }
 

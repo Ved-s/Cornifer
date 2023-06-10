@@ -234,6 +234,27 @@ namespace Cornifer
             });
         }
 
+        public static async Task<Image<Rgba32>?> GetClipboardImage() 
+        {
+            return await Sheduler.Shedule(() =>
+            {
+                IDataObject data = Clipboard.GetDataObject();
+
+                if (data.GetDataPresent("PNG") && data.GetData("PNG") is Stream pngStream)
+                {
+                    try
+                    {
+                        return Image<Rgba32>.Load<Rgba32>(pngStream);
+                    }
+                    catch { }
+                }
+
+                // TODO: Bitmap and DIB
+
+                return null;
+            });
+        }
+
         // https://stackoverflow.com/a/46424800
         // Stores clipboard image in PNG, Bitmap and DIB formats
         public static void SetClipboardImage(Image<Rgba32> image)

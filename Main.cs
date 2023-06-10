@@ -8,6 +8,7 @@ using Cornifer.UI.Modals;
 using Cornifer.UndoActions;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -364,48 +365,60 @@ namespace Cornifer
                     Task.Run(async () =>
                     {
                         string json = await Platform.GetClipboardText();
-                        if (json.Length == 0 || string.IsNullOrWhiteSpace(json))
+                        if (json.Length != 0 && !string.IsNullOrWhiteSpace(json))
                         {
-                            await Platform.MessageBox("Clipboard is empty, nothing to paste", "Paste from clipboard");
+                            TryCatchReleaseException(() =>
+                            {
+                                JsonObject[] objectsJson = JsonSerializer.Deserialize<JsonObject[]>(json)!;
+
+                                List<MapObject> objects = objectsJson.Select(j => MapObject.CreateObject(j, false)).OfType<MapObject>().ToList();
+
+                                if (objects.Count == 0)
+                                    return;
+
+                                Vector2 tl = objects[0].WorldPosition;
+                                Vector2 br = objects[0].WorldPosition + objects[0].Size;
+
+                                for (int i = 1; i < objects.Count; i++)
+                                {
+                                    Vector2 pos = objects[i].WorldPosition;
+                                    Vector2 size = objects[i].Size;
+
+                                    tl.X = Math.Min(tl.X, pos.X);
+                                    tl.Y = Math.Min(tl.Y, pos.Y);
+
+                                    br.X = Math.Min(br.X, pos.X + size.X);
+                                    br.Y = Math.Min(tl.Y, pos.Y + size.Y);
+                                }
+
+                                Vector2 bunchSize = br - tl;
+                                Vector2 bunchCenter = tl + bunchSize / 2;
+
+                                Vector2 offset = WorldCamera.InverseTransformVector(InputHandler.MouseState.Position.ToVector2()) - bunchCenter;
+
+                                foreach (MapObject obj in objects)
+                                    obj.WorldPosition += offset;
+
+                                SelectedObjects.Clear();
+                                WorldObjects.AddRange(objects);
+                                SelectedObjects.UnionWith(objects);
+
+                            }, "Exception has been caught while pasting objects");
                             return;
                         }
-                        TryCatchReleaseException(() =>
+
+                        var image = await Platform.GetClipboardImage();
+                        if (image is not null)
                         {
-                            JsonObject[] objectsJson = JsonSerializer.Deserialize<JsonObject[]>(json)!;
-
-                            List<MapObject> objects = objectsJson.Select(j => MapObject.CreateObject(j, false)).OfType<MapObject>().ToList();
-
-                            if (objects.Count == 0)
-                                return;
-
-                            Vector2 tl = objects[0].WorldPosition;
-                            Vector2 br = objects[0].WorldPosition + objects[0].Size;
-
-                            for (int i = 1; i < objects.Count; i++)
-                            {
-                                Vector2 pos = objects[i].WorldPosition;
-                                Vector2 size = objects[i].Size;
-
-                                tl.X = Math.Min(tl.X, pos.X);
-                                tl.Y = Math.Min(tl.Y, pos.Y);
-
-                                br.X = Math.Min(br.X, pos.X + size.X);
-                                br.Y = Math.Min(tl.Y, pos.Y + size.Y);
-                            }
-
-                            Vector2 bunchSize = br - tl;
-                            Vector2 bunchCenter = tl + bunchSize / 2;
-
-                            Vector2 offset = WorldCamera.InverseTransformVector(InputHandler.MouseState.Position.ToVector2()) - bunchCenter;
-
-                            foreach (MapObject obj in objects)
-                                obj.WorldPosition += offset;
-
+                            MapImage mi = new(image);
+                            mi.WorldPosition = WorldCamera.InverseTransformVector(InputHandler.MouseState.Position.ToVector2()) - mi.Size / 2;
                             SelectedObjects.Clear();
-                            WorldObjects.AddRange(objects);
-                            SelectedObjects.UnionWith(objects);
+                            WorldObjects.Add(mi);
+                            SelectedObjects.Add(mi);
+                            return;
+                        }
 
-                        }, "Exception has been caught while pasting objects");
+                        await Platform.MessageBox("Clipboard is empty, nothing to paste", "Paste from clipboard");
                     });
                 }
 
