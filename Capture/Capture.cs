@@ -17,6 +17,8 @@ namespace Cornifer.Capture
 {
     public static class Capture
     {
+        public const int BorderSize = 30;
+
         static CaptureRenderer CreateRenderer(Predicate<MapObject>? objectPredicate = null)
         {
             Vector2 tl = Vector2.Zero;
@@ -120,24 +122,66 @@ namespace Cornifer.Capture
             };
             CaptureMapLayered(renderer, info =>
             {
-                byte[] data = new byte[renderer.Image.Height * renderer.Image.Width * 4];
+                ImageBorder.GetEmptySides(renderer.Image, out int top, out int bottom, out int left, out int right);
 
-                for (int j = 0; j < renderer.Image.Height; j++)
+                int croppedWidth = renderer.Image.Width - left - right;
+                int croppedHeight = renderer.Image.Height - top - bottom;
+
+                croppedHeight = Math.Max(1, croppedHeight);
+                croppedWidth = Math.Max(1, croppedWidth);
+
+                byte[] data = new byte[croppedWidth * croppedHeight * 4];
+
+                for (int j = 0; j < croppedHeight; j++)
                 {
-                    Span<Rgba32> src = renderer.Image.DangerousGetPixelRowMemory(j).Span;
-                    Span<byte> dst = data.AsSpan(j * renderer.Image.Width * 4, renderer.Image.Width * 4);
+                    Span<Rgba32> src = renderer.Image
+                        .DangerousGetPixelRowMemory(j + top).Span
+                        .Slice(left, croppedWidth);
+                    Span<byte> dst = data.AsSpan(j * croppedWidth * 4, croppedWidth * 4);
 
                     src.CopyTo(MemoryMarshal.Cast<byte, Rgba32>(dst));
                 }
 
                 psd.Layers.Add(new()
                 {
+                    X = (uint)left,
+                    Y = (uint)top,
+                    Width = (uint)croppedWidth,
+                    Height = (uint)croppedHeight,
                     Data = data,
                     Name = info.Shadow ? $"{info.Layer.Name}_Shadow" : info.Layer.Name,
                     Opacity = 255,
                     Visible = info.Layer.Visible
                 });
             });
+
+            uint top = psd.Height;
+            uint left = psd.Width;
+            uint bottom = psd.Height;
+            uint right = psd.Width;
+
+            foreach (PSDFile.Layer layer in psd.Layers) 
+            {
+                left = Math.Min(left, layer.X);
+                top = Math.Min(top, layer.Y);
+
+                bottom = Math.Min(bottom, psd.Height - (layer.Y + layer.Height));
+                right = Math.Min(right, psd.Width - (layer.X + layer.Width));
+            }
+
+            int xd = BorderSize - (int)left;
+            int yd = BorderSize - (int)top;
+
+            psd.Width = (BorderSize - left) + psd.Width + (BorderSize - right);
+            psd.Height = (BorderSize - top) + psd.Height + (BorderSize - bottom);
+
+            for (int i = 0; i < psd.Layers.Count; i++)
+            {
+                PSDFile.Layer layer = psd.Layers[i];
+                layer.X = (uint)(layer.X + xd);
+                layer.Y = (uint)(layer.Y + yd);
+                psd.Layers[i] = layer;
+            }
 
             ThreadPool.QueueUserWorkItem((_) =>
             {

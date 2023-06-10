@@ -327,7 +327,7 @@ namespace Cornifer
 
                 if (InputHandler.CopyImage.JustPressed && SelectedObjects.Count > 0)
                 {
-                    Platform.SetClipboardImage(Capture.Capture.CaptureObjects(SelectedObjects.Contains).ValidateBorder());
+                    Platform.SetClipboardImage(ImageBorder.Validate(Capture.Capture.CaptureObjects(SelectedObjects.Contains), out _, Capture.Capture.BorderSize));
                 }
 
                 else if (InputHandler.Undo.JustPressed)

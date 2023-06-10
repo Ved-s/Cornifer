@@ -74,10 +74,10 @@ namespace Cornifer.Capture.PSD
                     {
                         foreach (Layer layer in Layers) // Layer records
                         {
-                            writer.Write(0u); // Top
-                            writer.Write(0u); // Left
-                            writer.Write(Height); // Bottom
-                            writer.Write(Width); // Right
+                            writer.Write(layer.Y); // Top
+                            writer.Write(layer.X); // Left
+                            writer.Write(layer.Height + layer.Y); // Bottom
+                            writer.Write(layer.Width + layer.X); // Right
                             writer.Write((ushort)4); // Number of channels
 
                             int channelLength = WriteChannel(imgWriter, rleTemp, rle, layer, 0);
@@ -161,9 +161,9 @@ namespace Cornifer.Capture.PSD
 
             long rowStart = 0;
             int posCounter = c;
-            for (int j = 0; j < Height; j++)
+            for (int j = 0; j < layer.Height; j++)
             {
-                for (int i = 0; i < Width; i++)
+                for (int i = 0; i < layer.Width; i++)
                 {
                     rle.WriteByte(layer.Data[posCounter]);
                     posCounter += 4;
@@ -253,15 +253,25 @@ namespace Cornifer.Capture.PSD
             writer.BaseStream.Seek(lenpos, SeekOrigin.Begin);
             length = (uint)(curpos - datastart);
 
-            if (length % 2 == 1 && roundEvenLength)
+            bool roundLength = length % 2 == 1 && roundEvenLength;
+
+            if (roundLength)
                 length++;
 
             writer.Write(length);
             writer.BaseStream.Seek(curpos, SeekOrigin.Begin);
+
+            if (roundLength)
+                writer.Write((byte)0x00);
         }
 
         public struct Layer
         {
+            public uint X;
+            public uint Y;
+            public uint Width;
+            public uint Height;
+
             public bool Visible;
             public byte[] Data;
             public byte Opacity;

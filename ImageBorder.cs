@@ -11,15 +11,16 @@ using System.Threading.Tasks;
 
 namespace Cornifer
 {
-    public static class ImageExtensions
+    public static class ImageBorder
     {
-        public static Image<Rgba32> ValidateBorder(this Image<Rgba32> image, int borderSize = 30)
+        /// <returns>False if image is empty</returns>
+        public static bool GetEmptySides(Image<Rgba32> image, out int top, out int bottom, out int left, out int right)
         {
-            int top = -1;
-            int bottom = -1;
+            top = -1;
+            bottom = -1;
 
-            int left = image.Width;
-            int right = image.Width;
+            left = image.Width;
+            right = image.Width;
 
             for (int j = 0; j < image.Height && top < 0; j++)
             {
@@ -34,7 +35,13 @@ namespace Cornifer
 
             // image is empty
             if (top < 0)
-                return image;
+            {
+                top = image.Height / 2;
+                bottom = image.Height / 2;
+                left = image.Width / 2;
+                right = image.Width / 2;
+                return false;
+            }
 
             for (int j = image.Height - 1; j >= 0 && bottom < 0; j--)
             {
@@ -64,6 +71,21 @@ namespace Cornifer
                         break;
                     }
             }
+
+            return true;
+        }
+
+
+
+        public static Image<Rgba32> Validate(Image<Rgba32> image, out Point posDiff, int borderSize)
+        {
+            posDiff = new Point(0, 0);
+
+            if (!GetEmptySides(image, out int top, out int bottom, out int left, out int right))
+                return image;
+
+            posDiff.X = borderSize - left;
+            posDiff.Y = borderSize - top;
 
             int newWidth = (borderSize - left) + image.Width + (borderSize - right);
             int newHeight = (borderSize - top) + image.Height + (borderSize - bottom);
