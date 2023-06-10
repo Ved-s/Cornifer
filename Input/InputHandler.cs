@@ -57,6 +57,8 @@ namespace Cornifer.Input
         public static Keybind Copy = new("Copy", ModifierKeys.Control, Keys.C);
         public static Keybind Paste = new("Paste", ModifierKeys.Control, Keys.V);
 
+        public static Keybind CopyImage = new("Copy as image", ModifierKeys.Control, ModifierKeys.Shift, Keys.C);
+
         public static void Init()
         {
             foreach (FieldInfo field in typeof(InputHandler).GetFields(BindingFlags.Public | BindingFlags.Static))

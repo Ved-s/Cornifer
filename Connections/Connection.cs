@@ -2,10 +2,12 @@
 using Cornifer.MapObjects;
 using Cornifer.UI.Elements;
 using Microsoft.Xna.Framework;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Windows.Forms;
 
 namespace Cornifer.Connections
 {
@@ -145,6 +147,18 @@ namespace Cornifer.Connections
                     LoadPointArray(points);
                 AllowWhiteToRedPixel.LoadFromJson(obj);
             }
+        }
+
+        public bool MatchesPredicate(Predicate<MapObject> predicate) 
+        {
+            if (predicate(Source) || predicate(Destination))
+                return true;
+
+            foreach (ConnectionPoint point in Points)
+                if (predicate(point))
+                    return true;
+
+            return false;
         }
 
         public JsonNode SaveJson()

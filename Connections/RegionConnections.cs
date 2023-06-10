@@ -219,7 +219,7 @@ namespace Cornifer.Connections
             }
         }
 
-        public void DrawShadows(Renderer renderer, bool betweenRooms, bool inRooms)
+        public void DrawShadows(Renderer renderer, bool betweenRooms, bool inRooms, Predicate<MapObject>? predicate = null)
         {
             var state = Main.SpriteBatch.GetState();
             Main.SpriteBatch.End();
@@ -229,6 +229,9 @@ namespace Cornifer.Connections
             foreach (Connection connection in AllConnections)
             {
                 if (!connection.Active || (connection.IsInRoomShortcut ? !inRooms : !betweenRooms))
+                    continue;
+
+                if (predicate is not null && !connection.MatchesPredicate(predicate))
                     continue;
 
                 BeginConnectionCapture(renderer, connection);
@@ -257,7 +260,7 @@ namespace Cornifer.Connections
             Main.SpriteBatch.Begin(state);
         }
 
-        public void DrawConnections(Renderer renderer, bool overRoomShadow, bool betweenRooms, bool inRooms)
+        public void DrawConnections(Renderer renderer, bool overRoomShadow, bool betweenRooms, bool inRooms, Predicate<MapObject>? predicate = null)
         {
             if (ConnectionTexture is null)
             {
@@ -271,6 +274,9 @@ namespace Cornifer.Connections
             foreach (Connection connection in AllConnections)
             {
                 if (!connection.Active || (connection.IsInRoomShortcut ? !inRooms : !betweenRooms))
+                    continue;
+
+                if (predicate is not null && !connection.MatchesPredicate(predicate))
                     continue;
 
                 BeginConnectionCapture(renderer, connection);

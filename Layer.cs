@@ -28,16 +28,18 @@ namespace Cornifer
 
         public virtual void Update() { }
 
-        public virtual void DrawShade(Renderer renderer)
+        public virtual void DrawShade(Renderer renderer, Predicate<MapObject>? predicate = null)
         {
             foreach (MapObject obj in Main.WorldObjectLists)
-                obj.DrawShade(renderer, this);
+                if (predicate?.Invoke(obj) is null or true)
+                    obj.DrawShade(renderer, this);
         }
 
-        public virtual void Draw(Renderer renderer) 
+        public virtual void Draw(Renderer renderer, Predicate<MapObject>? predicate = null) 
         {
             foreach (MapObject obj in Main.WorldObjectLists)
-                obj.Draw(renderer, this);
+                if (predicate?.Invoke(obj) is null or true)
+                    obj.Draw(renderer, this);
         }
 
         public virtual void DrawGuides(Renderer renderer) { }
@@ -57,15 +59,15 @@ namespace Cornifer
             InRoomConnections = inRoomConnections;
         }
 
-        public override void DrawShade(Renderer renderer)
+        public override void DrawShade(Renderer renderer, Predicate<MapObject>? predicate = null)
         {
-            Main.Region?.Connections?.DrawShadows(renderer, !InRoomConnections, InRoomConnections);
+            Main.Region?.Connections?.DrawShadows(renderer, !InRoomConnections, InRoomConnections, predicate);
         }
 
-        public override void Draw(Renderer renderer)
+        public override void Draw(Renderer renderer, Predicate<MapObject>? predicate = null)
         {
-            Main.Region?.Connections?.DrawConnections(renderer, true,  !InRoomConnections, InRoomConnections);
-            Main.Region?.Connections?.DrawConnections(renderer, false, !InRoomConnections, InRoomConnections);
+            Main.Region?.Connections?.DrawConnections(renderer, true,  !InRoomConnections, InRoomConnections, predicate);
+            Main.Region?.Connections?.DrawConnections(renderer, false, !InRoomConnections, InRoomConnections, predicate);
         }
 
         public override void DrawGuides(Renderer renderer)

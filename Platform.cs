@@ -1,18 +1,18 @@
 ﻿using Microsoft.Win32;
-using SixLabors.ImageSharp.ColorSpaces.Conversion;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Advanced;
+using SixLabors.ImageSharp.PixelFormats;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Net.Http;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace Cornifer
 {
@@ -218,7 +218,7 @@ namespace Cornifer
             });
         }
 
-        public static async Task<string> GetClipboard()
+        public static async Task<string> GetClipboardText()
         {
             return await Sheduler.Shedule(() =>
             {
@@ -226,11 +226,93 @@ namespace Cornifer
             });
         }
 
-        public static void SetClipboard(string value)
+        public static void SetClipboardText(string value)
         {
             Sheduler.Shedule(() =>
             {
                 Clipboard.SetText(value);
+            });
+        }
+
+        // https://stackoverflow.com/a/46424800
+        // Stores clipboard image in PNG, Bitmap and DIB formats
+        public static void SetClipboardImage(Image<Rgba32> image)
+        {
+            MemoryStream pngStream = new();
+            image.SaveAsPng(pngStream);
+
+            Bitmap bitmap = new(image.Width, image.Height);
+
+            var bits = bitmap.LockBits(new(0, 0, image.Width, image.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
+
+            static void WriteDIB(Stream stream, Span<byte> argbData, int width, int height)
+            {
+                using BinaryWriter writer = new(stream, Encoding.Default, true);
+
+                // BITMAPINFOHEADER struct for DIB.
+                int hdrSize = 0x28;
+                //Byte[] fullImage = new Byte[hdrSize + 12 + bm32bData.Length];
+
+                //Int32 biSize;
+                writer.Write(hdrSize);
+                //Int32 biWidth;
+                writer.Write(width);
+                //Int32 biHeight;
+                writer.Write(height);
+                //Int16 biPlanes;
+                writer.Write((ushort)1);
+                //Int16 biBitCount;
+                writer.Write((ushort)32);
+                //BITMAPCOMPRESSION biCompression = BITMAPCOMPRESSION.BITFIELDS;
+                writer.Write(3);
+                //Int32 biSizeImage;
+                writer.Write(argbData.Length);
+                //Int32 biXPelsPerMeter = 0;
+                writer.Write(0);
+                //Int32 biYPelsPerMeter = 0;
+                writer.Write(0);
+                //Int32 biClrUsed = 0;
+                writer.Write(0);
+                //Int32 biClrImportant = 0;
+                writer.Write(0);
+
+                // The aforementioned "BITFIELDS": colour masks applied to the Int32 pixel value to get the R, G and B values.
+                writer.Write(0x00FF0000);
+                writer.Write(0x0000FF00);
+                writer.Write(0x000000FF);
+
+                writer.Write(argbData);
+            }
+
+            MemoryStream dibStream = new();
+            unsafe
+            {
+                for (int j = 0; j < image.Height; j++)
+                {
+                    Span<Rgba32> src = image.DangerousGetPixelRowMemory(j).Span;
+                    Span<uint> dst = new((bits.Scan0 + j * image.Width * 4).ToPointer(), image.Width);
+
+                    for (int i = 0; i < image.Width; i++)
+                    {
+                        Rgba32 c = src[i];
+                        dst[i] = (uint)c.A << 24 | (uint)c.R << 16 | (uint)c.G << 8 | (uint)c.B;
+                    }
+                }
+                WriteDIB(dibStream, new(bits.Scan0.ToPointer(), image.Width * image.Height * 4), image.Width, image.Height);
+            }
+            bitmap.UnlockBits(bits);
+
+            Sheduler.Shedule(() =>
+            {
+                DataObject data = new();
+
+                data.SetData(DataFormats.Bitmap, bitmap);
+                data.SetData("PNG", true, pngStream);
+                data.SetData(DataFormats.Dib, false, dibStream);
+
+                Clipboard.SetDataObject(data, true);
+                pngStream.Dispose();
+                dibStream.Dispose();
             });
         }
 

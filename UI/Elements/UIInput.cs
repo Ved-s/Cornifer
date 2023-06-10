@@ -328,12 +328,12 @@ namespace Cornifer.UI.Elements
 
                     if (Input.InputHandler.Copy.JustPressed)
                     {
-                        Platform.SetClipboard(GetSelection());
+                        Platform.SetClipboardText(GetSelection());
                     }
 
                     if (Input.InputHandler.Cut.JustPressed)
                     {
-                        Platform.SetClipboard(GetSelection());
+                        Platform.SetClipboardText(GetSelection());
                         ClearSelection();
                     }
                 }
@@ -342,7 +342,7 @@ namespace Cornifer.UI.Elements
                 {
                     Task.Run(async () =>
                     {
-                        string clipboard = await Platform.GetClipboard();
+                        string clipboard = await Platform.GetClipboardText();
                         Main.MainThreadQueue.Enqueue(() =>
                         {
                             foreach (char c in clipboard)

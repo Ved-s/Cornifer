@@ -1,24 +1,23 @@
 ﻿using Cornifer.Capture.PSD;
 using Cornifer.MapObjects;
 using Cornifer.Renderers;
-using Cornifer.Structures;
-using Cornifer.UI.Pages;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Advanced;
 using SixLabors.ImageSharp.PixelFormats;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Threading;
 
 namespace Cornifer.Capture
 {
     public static class Capture
     {
-        static CaptureRenderer CreateRenderer()
+        static CaptureRenderer CreateRenderer(Predicate<MapObject>? objectPredicate = null)
         {
             Vector2 tl = Vector2.Zero;
             Vector2 br = Vector2.Zero;
@@ -39,7 +38,8 @@ namespace Cornifer.Capture
             }
 
             foreach (MapObject obj in Main.WorldObjectLists)
-                ProcessObjectRect(obj);
+                if (objectPredicate is null || objectPredicate(obj))
+                    ProcessObjectRect(obj);
 
             tl -= new Vector2(30);
             br += new Vector2(30);
@@ -55,6 +55,37 @@ namespace Cornifer.Capture
             };
 
             return renderer;
+        }
+
+        public static Image<Rgba32> CaptureObjects(Predicate<MapObject> predicate)
+        {
+            CaptureRenderer renderer = CreateRenderer(predicate);
+
+            // TODO: move predicate to DrawMap
+            lock (Main.DrawLock)
+            {
+                Main.SpriteBatch.Begin(samplerState: SamplerState.PointClamp, blendState: BlendState.NonPremultiplied);
+
+                if (InterfaceState.DrawBorders.Value)
+                    foreach (Layer l in Main.Layers)
+                        if (l.Visible)
+                        {
+                            renderer.BeginLayerCapture(l, true);
+                            l.DrawShade(renderer, predicate);
+                            renderer.EndLayerCapture();
+                        }
+
+                foreach (Layer l in Main.Layers)
+                    if (l.Visible)
+                    {
+                        renderer.BeginLayerCapture(l, false);
+                        l.Draw(renderer, predicate);
+                        renderer.EndLayerCapture();
+                    }
+            }
+            Main.SpriteBatch.End();
+
+            return renderer.Image;
         }
 
         public static Image<Rgba32> CaptureMap()
@@ -117,7 +148,7 @@ namespace Cornifer.Capture
             });
         }
 
-        public static void CaptureImageMap(string jsonPath) 
+        public static void CaptureImageMap(string jsonPath)
         {
             using ImageMapRenderer renderer = new();
 
@@ -130,7 +161,7 @@ namespace Cornifer.Capture
         static void CaptureMapLayered(CaptureRenderer renderer, Action<CapturedLayerInfo> layerHandler)
         {
             foreach (Layer layer in Main.Layers)
-            { 
+            {
                 CaptureMapLayer(renderer, layer, true);
                 layerHandler(new(layer, true));
             }

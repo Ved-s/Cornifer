@@ -325,19 +325,24 @@ namespace Cornifer
                     }
                 }
 
-                if (InputHandler.Undo.JustPressed)
+                if (InputHandler.CopyImage.JustPressed && SelectedObjects.Count > 0)
+                {
+                    Platform.SetClipboardImage(Capture.Capture.CaptureObjects(SelectedObjects.Contains).ValidateBorder());
+                }
+
+                else if (InputHandler.Undo.JustPressed)
                 {
                     StopDragging();
                     Undo.Undo();
                 }
 
-                if (InputHandler.Redo.JustPressed)
+                else if (InputHandler.Redo.JustPressed)
                 {
                     StopDragging();
                     Undo.Redo();
                 }
 
-                if (InputHandler.Copy.JustPressed)
+                else if (InputHandler.Copy.JustPressed)
                 {
                     JsonArray arr = new();
 
@@ -351,14 +356,14 @@ namespace Cornifer
                             arr.Add(node);
                     }
 
-                    Platform.SetClipboard(JsonSerializer.Serialize(arr));
+                    Platform.SetClipboardText(JsonSerializer.Serialize(arr));
                 }
 
-                if (InputHandler.Paste.JustPressed)
+                else if (InputHandler.Paste.JustPressed)
                 {
                     Task.Run(async () =>
                     {
-                        string json = await Platform.GetClipboard();
+                        string json = await Platform.GetClipboardText();
                         if (json.Length == 0 || string.IsNullOrWhiteSpace(json))
                         {
                             await Platform.MessageBox("Clipboard is empty, nothing to paste", "Paste from clipboard");
@@ -403,6 +408,8 @@ namespace Cornifer
                         }, "Exception has been caught while pasting objects");
                     });
                 }
+
+                
             }
 
             WorldCamera.Update();

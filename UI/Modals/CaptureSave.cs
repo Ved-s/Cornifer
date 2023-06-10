@@ -52,6 +52,7 @@ namespace Cornifer.UI.Modals
                             Main.MainThreadQueue.Enqueue(() =>
                             {
                                 var capResult = Capture.Capture.CaptureMap();
+                                capResult.ValidateBorder();
                                 IImageEncoder encoder = new PngEncoder();
                                 using FileStream fs = File.Create(renderFile);
                                 capResult.Save(fs, encoder);

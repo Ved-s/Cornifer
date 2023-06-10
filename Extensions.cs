@@ -6,18 +6,13 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace Cornifer
 {
@@ -330,7 +325,7 @@ namespace Cornifer
             if (alpha)
                 return $"{color.R:x2}{color.G:x2}{color.B:x2}{color.A:x2}";
 
-           return $"{color.R:x2}{color.G:x2}{color.B:x2}";
+            return $"{color.R:x2}{color.G:x2}{color.B:x2}";
         }
 
         public static bool IsNullEmptyOrWhitespace(this string? str)
@@ -350,7 +345,7 @@ namespace Cornifer
                 return false;
 
             ReadOnlySpan<char> leftSpan = str.AsSpan()[..index];
-            ReadOnlySpan<char> rightSpan = str.AsSpan()[(index+1)..];
+            ReadOnlySpan<char> rightSpan = str.AsSpan()[(index + 1)..];
 
             if ((options & StringSplitOptions.TrimEntries) is not StringSplitOptions.None)
             {
@@ -374,19 +369,19 @@ namespace Cornifer
             return options;
         }
 
-        public static IEnumerable<T?> AsNullable<T>(this IEnumerable<T> ienum) where T : struct 
+        public static IEnumerable<T?> AsNullable<T>(this IEnumerable<T> ienum) where T : struct
         {
             foreach (T t in ienum)
                 yield return t;
         }
 
-        public static Span<byte> AsSpan(this MemoryStream ms) 
+        public static Span<byte> AsSpan(this MemoryStream ms)
             => ms.GetBuffer().AsSpan().Slice(0, (int)ms.Length);
 
         public static T CreateInstance<T>(this Type type)
             => (T)Activator.CreateInstance(type)!;
 
-        public static T OnClick<T>(this T element, Action<T> handler) where T : UIElement 
+        public static T OnClick<T>(this T element, Action<T> handler) where T : UIElement
         {
             element.AddPostEventCallback(UIElement.ClickEvent, (el, _) => handler((T)el));
             return element;
