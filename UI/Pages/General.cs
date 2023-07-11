@@ -25,7 +25,7 @@ namespace Cornifer.UI.Pages
                     Text = "Select region",
 
                     TextAlign = new(.5f)
-                }.OnEvent(UIElement.ClickEvent, async (_, _) => await SelectRegionClicked()),
+                }.OnEvent(ClickEvent, async (_, _) => await SelectRegionClicked()),
 
                 new UIList()
                 {
@@ -73,7 +73,7 @@ namespace Cornifer.UI.Pages
 
                             TextAlign = new(.5f)
 
-                        }.OnEvent(UIElement.ClickEvent, (_, _) =>
+                        }.OnEvent(ClickEvent, (_, _) =>
                         {
                             if (Main.Region is null)
                                 return;
@@ -131,7 +131,7 @@ namespace Cornifer.UI.Pages
 
                             TextAlign = new(.5f)
 
-                        }.OnEvent(UIElement.ClickEvent, async (btn, _) => await AddIconSelect.Show()),
+                        }.OnEvent(ClickEvent, async (btn, _) => await AddIconSelect.Show()),
 
                         new UIButton
                         {
@@ -172,7 +172,7 @@ namespace Cornifer.UI.Pages
                             Text = "Select overlay image",
                             TextAlign = new(.5f)
 
-                        }.OnEvent(UIElement.ClickEvent, SelectOverlayClicked),
+                        }.OnEvent(ClickEvent, SelectOverlayClicked),
 
                         new UIButton
                         {
@@ -245,7 +245,7 @@ namespace Cornifer.UI.Pages
                                     Height = new(-20, 1),
                                     Text = "Open",
                                     TextAlign = new(.5f)
-                                }.OnEvent(UIElement.ClickEvent, async (_, _) => await Main.OpenState()),
+                                }.OnEvent(ClickEvent, async (_, _) => await Main.OpenState()),
                                 new UIButton
                                 {
                                     Top = 20,
@@ -254,7 +254,7 @@ namespace Cornifer.UI.Pages
                                     Height = new(-20, 1),
                                     Text = "Save",
                                     TextAlign = new(.5f)
-                                }.OnEvent(UIElement.ClickEvent, async (_, _) => await Main.SaveState()),
+                                }.OnEvent(ClickEvent, async (_, _) => await Main.SaveState()),
                                 new UIButton
                                 {
                                     Top = 20,
@@ -263,9 +263,24 @@ namespace Cornifer.UI.Pages
                                     Height = new(-20, 1),
                                     Text = "Save as",
                                     TextAlign = new(.5f)
-                                }.OnEvent(UIElement.ClickEvent, async (_, _) => await Main.SaveStateAs())
+                                }.OnEvent(ClickEvent, async (_, _) => await Main.SaveStateAs())
                             }
-                        }
+                        },
+                        new UIButton
+                        {
+                            Height = 20,
+
+                            Text = "Select background color",
+                            HoverText = "Select background color for the editor.\nThis does not affect resulting map.",
+                            TextAlign = new(.5f)
+
+                        }.OnEvent(ClickEvent, (_, _) => Interface.ColorSelector.Show("Background", new(null, Profile.Current.BackgroundColor, false), (r, c) => 
+                        {
+                            Profile.Current.BackgroundColor = c.Color;
+                            if (r is true) {
+                                Profile.Save();
+                            }
+                        })),
                     }
                 },
 
@@ -277,7 +292,7 @@ namespace Cornifer.UI.Pages
                     Text = "Capture map",
 
                     TextAlign = new(.5f)
-                }.OnEvent(UIElement.ClickEvent, async (_, _) => await CaptureSave.Show()),
+                }.OnEvent(ClickEvent, async (_, _) => await CaptureSave.Show()),
             };
         }
 

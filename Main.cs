@@ -436,7 +436,7 @@ namespace Cornifer
             DrawStopwatch.Restart();
             Viewport vp = GraphicsDevice.Viewport;
             GraphicsDevice.ScissorRectangle = new(0, 0, vp.Width, vp.Height);
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Profile.Current.BackgroundColor);
 
             if (InterfaceState.OverlayBelow.Value)
                 DrawOverlayImage();

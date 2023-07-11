@@ -1,5 +1,8 @@
-﻿using Cornifer.Structures;
+﻿using Cornifer.Json.Converters;
+using Cornifer.Structures;
+using Microsoft.Xna.Framework;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -22,6 +25,10 @@ namespace Cornifer
 
         [JsonPropertyName("currentInstall")]
         public string? CurrentInstall { get; set; }
+
+        [JsonConverter(typeof(XNAColor))]
+        [JsonPropertyName("bgColor")]
+        public Color BackgroundColor { get; set; } = Color.CornflowerBlue;
 
         public static void Load()
         {
