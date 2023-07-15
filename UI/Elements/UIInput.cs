@@ -20,6 +20,7 @@ namespace Cornifer.UI.Elements
         public Vec2 TextAlign;
 
         public Color TextColor = Color.White;
+        public Color HintTextColor = Color.White * 0.7f;
         public Color BackColor = new(48, 48, 48);
         public Color BorderColor = new(100, 100, 100);
         public Color SelectionColor = Color.CornflowerBlue;
@@ -70,7 +71,7 @@ namespace Cornifer.UI.Elements
                     }
                     StringBuilder builder = Lines[i];
                     builder.Clear();
-                    builder.Append(Lines[i]);
+                    builder.Append(lines[i]);
                 }
 
                 FixCaretPos(ref CaretPos);
@@ -78,6 +79,48 @@ namespace Cornifer.UI.Elements
                 FixCaretPos(ref SelectionEndPos);
 
                 PostTextChanged();
+            }
+        }
+
+        public virtual string HintText
+        {
+            get => string.Join('\n', HintLines);
+            set
+            {
+
+                if (!Multiline)
+                {
+                    if (HintLines.Count < 1)
+                        HintLines.Add(new());
+                    while (HintLines.Count > 1)
+                        HintLines.RemoveAt(1);
+
+                    HintLines[0].Clear();
+                    HintLines[0].Append(value);
+                    HintLines[0].Replace("\n", "");
+                    return;
+                }
+                string[] lines = value.Split('\n');
+
+                int max = Math.Max(lines.Length, HintLines.Count);
+
+                for (int i = 0; i < max; i++)
+                {
+                    if (lines.Length <= i)
+                    {
+                        HintLines.RemoveAt(HintLines.Count - 1);
+                        continue;
+                    }
+                    if (HintLines.Count <= i)
+                    {
+                        string line = lines[i];
+                        HintLines.Add(new(line));
+                        continue;
+                    }
+                    StringBuilder builder = HintLines[i];
+                    builder.Clear();
+                    builder.Append(lines[i]);
+                }
             }
         }
 
@@ -102,7 +145,9 @@ namespace Cornifer.UI.Elements
         public IEnumerable<StringBuilder.ChunkEnumerator> LineEnumerator => Lines.Select(sb => sb.GetChunks());
 
         protected List<StringBuilder> Lines = new();
+        protected List<StringBuilder> HintLines = new();
         float[] LineWidths = Array.Empty<float>();
+        float[] HintLineWidths = Array.Empty<float>();
         float MaxLineWidth;
         StringBuilder? PartialString;
         int BlinkerCounter;
@@ -402,7 +447,33 @@ namespace Cornifer.UI.Elements
 
             float y = ScreenRect.Y + Padding.Top;
             float x;
-            if (LineWidths.Length >= Lines.Count)
+
+            if (!Active && (Lines.Count == 0 || Lines.Count == 1 && Lines[0].Length == 0)) 
+            {
+                if (HintLineWidths.Length < HintLines.Count)
+                    HintLineWidths = new float[HintLines.Count];
+
+                float maxHintLineWidth = ScreenRect.Width - Padding.Horizontal;
+                for (int i = 0; i < HintLines.Count; i++)
+                {
+                    float lineWidth = Font.MeasureString(HintLines[i]).X;
+                    maxHintLineWidth = Math.Max(MaxLineWidth, lineWidth);
+                    HintLineWidths[i] = lineWidth;
+                }
+
+                for (int i = 0; i < Lines.Count; i++)
+                {
+                    StringBuilder line = HintLines[i];
+                    if (y >= ScreenRect.Y + Padding.Top - Font.LineSpacing || y < ScreenRect.Bottom - Padding.Bottom)
+                    {
+                        x = (maxHintLineWidth - HintLineWidths[i]) * TextAlign.X + ScreenRect.X + Padding.Left;
+
+                        spriteBatch.DrawString(Font, line, new Vec2(x, y).Rounded(), HintTextColor);
+                    }
+                    y += Font.LineSpacing;
+                }
+            }
+            else if (LineWidths.Length >= Lines.Count)
                 for (int i = 0; i < Lines.Count; i++)
                 {
                     StringBuilder line = Lines[i];

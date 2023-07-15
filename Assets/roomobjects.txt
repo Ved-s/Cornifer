@@ -7,8 +7,8 @@
 SS_AI : Icon PebblesIcon GuidancePebbles 72e6c4
 RM_AI : Icon PebblesIcon GuidancePebbles 72e6c4
 CL_AI : Icon PebblesIcon GuidancePebbles 72e6c4
-SL_AI|X-Saint : Icon MoonIconFuture GuidanceMoon f
-SL_AI|Saint : Icon MoonIcon GuidanceMoon 4b7386
+SL_AI|X-Saint : Icon MoonIconWhite GuidanceMoon f
+SL_AI|Saint : Icon MoonIconBlue GuidanceMoon 4b7386
 DM_AI : Icon MoonIcon GuidanceMoon ffeb04
 RM_CORE : Text CellText 05a5d9 : Rarefaction Cell
 RM_CORE : Icon CellIcon Object_EnergyCell

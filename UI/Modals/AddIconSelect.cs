@@ -3,6 +3,7 @@ using Cornifer.UI.Elements;
 using Cornifer.UI.Structures;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Text;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,10 @@ namespace Cornifer.UI.Modals
 {
     public class AddIconSelect : Modal<AddIconSelect, Empty>
     {
+        UIList IconList;
+        UIFlow IconFlow;
+        string Search = "";
+
         public AddIconSelect()
         {
             Width = new(0, .83f);
@@ -19,10 +24,19 @@ namespace Cornifer.UI.Modals
             Margin = 5;
             Padding = 5;
 
-            UIFlow list;
-
             Elements = new(this)
             {
+                new UIInput
+                {
+                    Top = 10,
+                    Left = new(0, 1, -1),
+                    Width = 150,
+                    Height = 20,
+
+                    HintText = "Search...",
+                    Text = Search,
+                }.OnEvent(UIInput.TextChangedEvent, (inp, _) => { Search = inp.Text; UpdateIcons(); }),
+
                 new UILabel
                 {
                     Top = 10,
@@ -30,6 +44,7 @@ namespace Cornifer.UI.Modals
                     Text = "Add icon to the map",
                     TextAlign = new(.5f)
                 },
+
                 new UIList
                 {
                     Top = 35,
@@ -40,9 +55,9 @@ namespace Cornifer.UI.Modals
                         {
                             ElementSpacing = 5
                         }
-                        .Assign(out list),
+                        .Assign(out IconFlow),
                     }
-                },
+                }.Assign(out IconList),
 
                 new UILabel
                 {
@@ -63,8 +78,16 @@ namespace Cornifer.UI.Modals
                 }.OnEvent(UIElement.ClickEvent, (_, _) => ReturnResult(new()))
             };
 
+            UpdateIcons();
+        }
+        private void UpdateIcons() 
+        {
+            IconFlow.Elements.Clear();
             foreach (var (name, sprite) in SpriteAtlases.Sprites.OrderBy(kvp => kvp.Key))
             {
+                if (Search.Length > 0 && !name.Contains(Search, StringComparison.InvariantCultureIgnoreCase))
+                    continue;
+
                 UIHoverPanel panel = new()
                 {
                     Width = 120,
@@ -106,8 +129,9 @@ namespace Cornifer.UI.Modals
                     }
                 });
 
-                list.Elements.Add(panel);
+                IconFlow.Elements.Add(panel);
             }
+            IconList.Recalculate();
         }
     }
 }
