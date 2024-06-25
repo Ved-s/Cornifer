@@ -1,4 +1,8 @@
 # Cornifer
+
+> [!important]
+> This tool is not being maintained or updated
+
 Rain World mapping tool
 
 ### Usage
@@ -13,4 +17,4 @@ Zoom with mouse wheel.
 
 ### Download
 
-Latest autobuild can be downloaded [here](https://nightly.link/Ved-s/Cornifer/workflows/dotnet/master/Build.zip) (powered by nightly.link)
+Latest archive can be downloaded from archival release at https://github.com/Ved-s/Cornifer/releases/download/archive1/Build.zip
